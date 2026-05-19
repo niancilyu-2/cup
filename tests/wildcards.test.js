@@ -6,7 +6,6 @@ import {
   WILDCARD_TABLE,
   WILDCARD_SLOTS,
   ALL_GROUPS,
-  findAssignment,
   lookupAssignment,
   wildcardKey,
 } from '../src/wildcards.js';
@@ -77,8 +76,8 @@ describe('wildcard lookup table', () => {
     expect(wildcardKey(['H', 'C', 'A', 'F', 'B', 'D', 'G', 'E'])).toBe('ABCDEFGH');
   });
 
-  it('findAssignment returns null for impossible cases', () => {
-    // Picking 9 groups breaks the matching (8 slots only).
-    expect(findAssignment(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'])).toBe(null);
+  it('lookupAssignment returns null when not exactly 8 picks', () => {
+    expect(lookupAssignment(['A', 'B', 'C', 'D', 'E', 'F', 'G'])).toBe(null);
+    expect(lookupAssignment(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'])).toBe(null);
   });
 });
