@@ -30,9 +30,28 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 1.5rem;
   padding: 1.25rem 2rem;
   background: var(--surface);
   border-bottom: 2px solid var(--accent);
+}
+
+.site-nav {
+  margin-left: auto;
+  display: flex;
+  gap: 1.25rem;
+  font-size: 0.875rem;
+}
+
+.site-nav a {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.site-nav a:hover {
+  color: var(--text);
 }
 
 h1 {
@@ -56,6 +75,109 @@ main {
   padding: 2rem;
   display: grid;
   gap: 2rem;
+}
+
+/* ---- Rules page ---- */
+
+.rules-main {
+  max-width: 820px;
+}
+
+.rules-main > h2 {
+  font-size: 1.5rem;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text);
+  margin-bottom: 1rem;
+}
+
+.rules-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1.25rem 1.5rem;
+}
+
+.rules-section h3 {
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.75rem;
+}
+
+.rules-section p {
+  color: var(--text);
+  margin-bottom: 0.75rem;
+  line-height: 1.55;
+}
+
+.rules-section p:last-child {
+  margin-bottom: 0;
+}
+
+.rules-section strong {
+  color: var(--text);
+}
+
+.rules-list {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: var(--text);
+  display: grid;
+  gap: 0.4rem;
+}
+
+.rules-list li {
+  line-height: 1.5;
+}
+
+.rules-note {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 0.5rem !important;
+}
+
+.scoring-table-wrap {
+  overflow-x: auto;
+}
+
+.scoring-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.scoring-table th,
+.scoring-table td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+.scoring-table thead th {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.scoring-table td.num,
+.scoring-table th.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.scoring-table tr.row-subtotal td,
+.scoring-table tr.row-total td {
+  background: var(--surface-2);
+}
+
+.scoring-table tr.row-total td {
+  border-bottom: none;
+  color: var(--accent);
 }
 
 /* ---- User bar ---- */

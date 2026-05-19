@@ -1,0 +1,151 @@
+<!--
+ABOUTME: Static rules and scoring page for the WC 2026 bracket.
+ABOUTME: Linked from index.html header; no JS or Supabase required.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rules & Scoring · WC 2026 Bracket</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.2.3/css/flag-icons.min.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header id="site-header">
+    <h1>WC 2026 BRACKET</h1>
+    <nav class="site-nav">
+      <a href="index.html">← Back to picks</a>
+    </nav>
+  </header>
+
+  <main class="rules-main">
+    <h2>Rules &amp; Scoring</h2>
+
+    <section class="rules-section">
+      <h3>The game</h3>
+      <p>A pick'em bracket for the 2026 FIFA World Cup. Predict who advances through every round, earn points for getting it right, and ride the leaderboard from June 11 to the final on July 19.</p>
+    </section>
+
+    <section class="rules-section">
+      <h3>How to play</h3>
+      <ol class="rules-list">
+        <li>Pick your name (or add yourself) on the home page.</li>
+        <li>For each of the 12 groups, predict who finishes <strong>1st</strong> and <strong>2nd</strong>.</li>
+        <li>Fill the 32 <strong>Round of 32</strong> slots with any teams you want. The eight "best 3rd-place" wildcards are implicit — drop in whichever teams you think will sneak through.</li>
+        <li>Click winners through <strong>R32 → R16 → QF → SF → Final</strong>, plus the <strong>3rd-place match</strong>.</li>
+        <li>Enter your <strong>tiebreaker</strong>: how many goals will the eventual champion score across the entire tournament?</li>
+        <li>Optionally, predict <strong>exact final scores</strong> for any knockout match for bonus points.</li>
+        <li>Hit <strong>Submit picks</strong> when you're done. You can come back and edit until first kickoff.</li>
+      </ol>
+    </section>
+
+    <section class="rules-section">
+      <h3>Deadlines</h3>
+      <p>Picks lock at the first kickoff: <strong>Thursday, June 11, 2026 — 1:00&nbsp;PM Mexico City time</strong> (Mexico vs South Africa, Estadio Azteca).</p>
+      <p>After kickoff, no more edits. Everyone's picks become visible, and the leaderboard goes live.</p>
+    </section>
+
+    <section class="rules-section">
+      <h3>Scoring</h3>
+      <div class="scoring-table-wrap">
+        <table class="scoring-table">
+          <thead>
+            <tr>
+              <th>Round</th>
+              <th class="num">Points per correct pick</th>
+              <th class="num">Picks available</th>
+              <th class="num">Subtotal if all right</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Group standings (1st or 2nd of any group)</td>
+              <td class="num">1</td>
+              <td class="num">24</td>
+              <td class="num">24</td>
+            </tr>
+            <tr>
+              <td>R32 winner</td>
+              <td class="num">2</td>
+              <td class="num">16</td>
+              <td class="num">32</td>
+            </tr>
+            <tr>
+              <td>R16 winner</td>
+              <td class="num">4</td>
+              <td class="num">8</td>
+              <td class="num">32</td>
+            </tr>
+            <tr>
+              <td>Quarterfinal winner</td>
+              <td class="num">5</td>
+              <td class="num">4</td>
+              <td class="num">20</td>
+            </tr>
+            <tr>
+              <td>Semifinal winner</td>
+              <td class="num">8</td>
+              <td class="num">2</td>
+              <td class="num">16</td>
+            </tr>
+            <tr>
+              <td>Final winner</td>
+              <td class="num">10</td>
+              <td class="num">1</td>
+              <td class="num">10</td>
+            </tr>
+            <tr class="row-subtotal">
+              <td colspan="3"><strong>Perfect bracket</strong></td>
+              <td class="num"><strong>134</strong></td>
+            </tr>
+            <tr>
+              <td>Exact-score bonus (knockout matches only, R32+)</td>
+              <td class="num">+2</td>
+              <td class="num">up to 32</td>
+              <td class="num">+64 max</td>
+            </tr>
+            <tr class="row-total">
+              <td colspan="3"><strong>Theoretical maximum</strong></td>
+              <td class="num"><strong>198</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="rules-note">A typical good showing lands in the 80–140 range. A great one closes in on 180.</p>
+    </section>
+
+    <section class="rules-section">
+      <h3>How the bracket cascade works</h3>
+      <p>The bracket is one continuous tree. After R32 winners are picked, R16 slots auto-populate with whichever teams you advanced. R16 winners feed QF, QF feeds SF, SF feeds the Final (and the SF losers play for 3rd place).</p>
+      <p>If you change an R32 team partway through, downstream slots update automatically. Any winner pick whose team is no longer in its match is quietly dropped — you'll need to re-pick that match.</p>
+    </section>
+
+    <section class="rules-section">
+      <h3>The tiebreaker, explained</h3>
+      <p>If two players finish on equal points, the player whose tiebreaker number is closest to the <em>actual</em> champion's total tournament goals wins.</p>
+      <p>One key thing: the prediction is about the <strong>real</strong> champion, not the team you picked to win. If you predict <em>"Brazil will win and score 22 goals"</em> but Argentina actually lifts the trophy with 14 goals, your tiebreaker number (22) is compared against 14 (off by 8). Pick a realistic number for whoever you think wins.</p>
+    </section>
+
+    <section class="rules-section">
+      <h3>Visibility</h3>
+      <p>Until first kickoff on June 11, only <strong>your own picks</strong> are visible to you. No peeking at how other players are filling their brackets. At kickoff, everything is revealed and the leaderboard goes live.</p>
+    </section>
+
+    <section class="rules-section">
+      <h3>Picks model: details</h3>
+      <ul class="rules-list">
+        <li><strong>Group picks:</strong> save partial progress (just 1st without 2nd) at any time.</li>
+        <li><strong>R32 draft:</strong> each team can only occupy one R32 slot — picking a team already placed elsewhere moves it.</li>
+        <li><strong>Winner picks:</strong> click a team in a match to advance them; click again to un-pick.</li>
+        <li><strong>Exact-score bonuses:</strong> optional. Predict 2-1, 3-0, etc. for any knockout match. Earn +2 if your score matches the real final score exactly.</li>
+      </ul>
+    </section>
+
+    <section class="rules-section">
+      <h3>How results get entered</h3>
+      <p>The site fetches match results automatically every 30 minutes from a public data source. If that ever falls behind or breaks, an admin can enter scores manually so the leaderboard stays current.</p>
+    </section>
+  </main>
+</body>
+</html>
