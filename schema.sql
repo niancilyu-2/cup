@@ -66,14 +66,15 @@ CREATE TABLE IF NOT EXISTS players (
 -- =======================================================================
 
 -- Group standings prediction: 1st and 2nd of each group.
+-- Columns are nullable so a player can save partial progress.
 CREATE TABLE IF NOT EXISTS group_picks (
   player_id UUID NOT NULL REFERENCES players(id) ON DELETE CASCADE,
   group_code TEXT NOT NULL REFERENCES groups(code),
-  first_code TEXT NOT NULL REFERENCES teams(code),
-  second_code TEXT NOT NULL REFERENCES teams(code),
+  first_code TEXT REFERENCES teams(code),
+  second_code TEXT REFERENCES teams(code),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   PRIMARY KEY (player_id, group_code),
-  CHECK (first_code <> second_code)
+  CHECK (first_code IS NULL OR second_code IS NULL OR first_code <> second_code)
 );
 
 -- R32 draft: which team the player puts in each of the 32 R32 slots.

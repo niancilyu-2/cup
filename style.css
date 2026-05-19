@@ -195,3 +195,141 @@ main {
   background: transparent;
   color: var(--text-muted);
 }
+
+/* ---- Section help text ---- */
+
+.section-help {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-top: -0.5rem;
+  margin-bottom: 1rem;
+}
+
+/* ---- Status bar ---- */
+
+.status-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1rem 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 6px;
+}
+
+.status-card strong {
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.status-sub {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  margin-top: 2px;
+}
+
+/* ---- Group picks grid ---- */
+
+#groups-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.group-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.group-card-header {
+  padding: 0.6rem 1rem;
+  background: var(--surface-2);
+  font-weight: 800;
+  font-size: 0.875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+
+.team-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.team-row {
+  display: grid;
+  grid-template-columns: 28px 1fr auto auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.team-row:last-child {
+  border-bottom: none;
+}
+
+.team-flag {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.team-name {
+  font-size: 0.875rem;
+  color: var(--text);
+}
+
+.rank-btn {
+  padding: 0.25rem 0.5rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  min-width: 36px;
+}
+
+.rank-btn:hover:not(.is-active) {
+  border-color: var(--text-muted);
+  color: var(--text);
+}
+
+.rank-btn.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+.rank-btn[data-slot="second"].is-active {
+  background: var(--accent-2);
+  border-color: var(--accent-2);
+}
+
+.group-card-footer {
+  padding: 0.5rem 0.75rem;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  text-align: right;
+}
+
+.pick-status {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.pick-status.saved { color: var(--accent-2); }
+.pick-status.partial { color: var(--warn); }
+.pick-status.empty { color: var(--text-muted); }
