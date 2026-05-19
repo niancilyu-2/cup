@@ -414,6 +414,7 @@ main {
   font: inherit;
   color: var(--text);
   text-align: left;
+  min-height: 38px;
 }
 
 .bracket-slot:first-of-type {
@@ -425,13 +426,84 @@ main {
   font-style: italic;
 }
 
-.bracket-slot.has-team:hover {
+.bracket-slot:hover:not(.bracket-slot--readonly):not(.bracket-slot--filled) {
   background: var(--surface-2);
 }
 
 .bracket-slot--readonly {
   cursor: default;
   color: var(--text-muted);
+}
+
+/* Filled R32 slot wraps a clickable team area and a small edit icon. */
+.bracket-slot--filled {
+  padding: 0;
+  cursor: default;
+}
+
+.slot-team {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.5rem 0.5rem 0.75rem;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.slot-team:hover {
+  background: var(--surface-2);
+}
+
+.slot-team--readonly {
+  cursor: default;
+}
+
+.slot-team--readonly:hover {
+  background: transparent;
+}
+
+.slot-edit {
+  width: 28px;
+  background: transparent;
+  border: none;
+  border-left: 1px solid var(--border);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 0;
+}
+
+.slot-edit:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+/* Winner highlight on whichever slot was picked. */
+.bracket-slot.is-winner,
+.bracket-slot--filled.is-winner .slot-team {
+  background: rgba(0, 184, 107, 0.18);
+  color: var(--text);
+}
+
+.bracket-slot.is-winner .team-pill,
+.bracket-slot--filled.is-winner .slot-team .team-pill {
+  font-weight: 700;
+}
+
+.bracket-slot.is-winner::after,
+.bracket-slot--filled.is-winner .slot-team::after {
+  content: '✓';
+  margin-left: auto;
+  color: var(--accent-2);
+  font-weight: 800;
+  padding-left: 0.5rem;
 }
 
 .team-pill {

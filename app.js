@@ -475,22 +475,60 @@ function teamPillHTML(teamCode, opts = {}) {
   return `<span class="team-pill">${flagHTML(team.code)}<span>${team.name}</span></span>`;
 }
 
+// Bracket winner is only meaningful when it matches one of the current teams in
+// the match (the underlying R32 draft can change after a winner was saved).
+function effectiveWinner(matchId, teamA, teamB) {
+  const saved = state.picks.bracket[matchId];
+  if (!saved) return null;
+  if (saved === teamA || saved === teamB) return saved;
+  return null;
+}
+
 function matchCellHTML(matchId) {
   const match = state.matches.find((m) => m.id === matchId);
   if (!match) return '';
   const teamA = teamForSlot(matchId, 'a');
   const teamB = teamForSlot(matchId, 'b');
   const isR32 = match.stage === 'r32';
+  const canAdvance = !!(teamA && teamB);
+  const winner = effectiveWinner(matchId, teamA, teamB);
 
   const slotHTML = (position, team) => {
-    if (isR32) {
+    const isWinner = team && winner === team;
+    const pill = teamPillHTML(team, { placeholder: isR32 ? '— pick team —' : '?' });
+
+    if (isR32 && !team) {
       return `
-        <button type="button" class="bracket-slot ${team ? 'has-team' : 'is-empty'}"
+        <button type="button" class="bracket-slot is-empty"
                 data-match="${matchId}" data-position="${position}" data-action="r32-pick">
-          ${teamPillHTML(team)}
+          ${pill}
         </button>`;
     }
-    return `<div class="bracket-slot bracket-slot--readonly">${teamPillHTML(team, { placeholder: '?' })}</div>`;
+
+    if (isR32) {
+      // Filled R32 slot: clickable team area (when both teams present) + small edit icon.
+      const teamEl = canAdvance
+        ? `<button type="button" class="slot-team" data-match="${matchId}" data-team="${team}" data-action="advance">${pill}</button>`
+        : `<div class="slot-team slot-team--readonly">${pill}</div>`;
+      return `
+        <div class="bracket-slot bracket-slot--filled ${isWinner ? 'is-winner' : ''}">
+          ${teamEl}
+          <button type="button" class="slot-edit" data-match="${matchId}" data-position="${position}" data-action="r32-edit" title="Change team">✎</button>
+        </div>`;
+    }
+
+    // R16 and later: not directly editable; clickable only when both teams determined.
+    if (!team) {
+      return `<div class="bracket-slot bracket-slot--readonly">${pill}</div>`;
+    }
+    if (!canAdvance) {
+      return `<div class="bracket-slot bracket-slot--readonly ${isWinner ? 'is-winner' : ''}">${pill}</div>`;
+    }
+    return `
+      <button type="button" class="bracket-slot ${isWinner ? 'is-winner' : ''}"
+              data-match="${matchId}" data-team="${team}" data-action="advance">
+        ${pill}
+      </button>`;
   };
 
   return `
@@ -528,13 +566,48 @@ function renderBracket() {
   `;
 }
 
+async function saveBracketPick(matchId, teamCode) {
+  const current = state.picks.bracket[matchId];
+  if (current === teamCode) {
+    // Toggle off: un-pick this winner.
+    delete state.picks.bracket[matchId];
+    const { error } = await supabase
+      .from('bracket_picks')
+      .delete()
+      .eq('player_id', state.player.id)
+      .eq('match_id', matchId);
+    if (error) console.error('Delete bracket pick failed', error);
+    return;
+  }
+  state.picks.bracket[matchId] = teamCode;
+  const { error } = await supabase.from('bracket_picks').upsert(
+    {
+      player_id: state.player.id,
+      match_id: matchId,
+      winner_code: teamCode,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'player_id,match_id' },
+  );
+  if (error) console.error('Save bracket pick failed', error);
+}
+
 function wireBracketListener() {
   // Attached once to #bracket; survives any number of innerHTML re-renders.
   document.getElementById('bracket').addEventListener('click', async (e) => {
     if (isLocked()) return;
-    const slotBtn = e.target.closest('[data-action="r32-pick"]');
-    if (slotBtn) {
-      const { match, position } = slotBtn.dataset;
+
+    const advance = e.target.closest('[data-action="advance"]');
+    if (advance) {
+      await saveBracketPick(advance.dataset.match, advance.dataset.team);
+      renderBracket();
+      renderStatusBar();
+      return;
+    }
+
+    const pickBtn = e.target.closest('[data-action="r32-pick"], [data-action="r32-edit"]');
+    if (pickBtn) {
+      const { match, position } = pickBtn.dataset;
       const result = await showR32TeamPicker(match, position);
       if (result.action === 'cancel') return;
       const newTeam = result.action === 'clear' ? null : result.team;
@@ -580,6 +653,11 @@ function renderStatusBar() {
     (n, slot) => n + (slot.a ? 1 : 0) + (slot.b ? 1 : 0),
     0,
   );
+  // Count only winner picks that are still valid (team still in the match).
+  const winnersPicked = state.matches
+    .filter((m) => m.stage !== 'group')
+    .filter((m) => effectiveWinner(m.id, teamForSlot(m.id, 'a'), teamForSlot(m.id, 'b')))
+    .length;
   bar.innerHTML = `
     <div class="status-card">
       <div>
@@ -591,6 +669,9 @@ function renderStatusBar() {
       </div>
       <div>
         <strong>R32 slots: ${r32Filled} / 32</strong>
+      </div>
+      <div>
+        <strong>Winner picks: ${winnersPicked} / 32</strong>
       </div>
     </div>
   `;

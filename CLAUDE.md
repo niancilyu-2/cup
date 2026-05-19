@@ -32,12 +32,12 @@ Guidance for Claude Code when working in this repo.
 - Picks freeze at the first kickoff (`LOCK_DATE_ISO` in `app.js`)
 - Other users' picks are hidden until lock; revealed at first kickoff
 
-## Scoring (defaults — tune later)
+## Scoring (final)
 
-- Group standings: 5 points per correctly placed team (1st or 2nd slot)
-- R32 winner: 10 / R16: 20 / QF: 40 / SF: 80 / Final: 120
-- Exact-score bonus: +3 per match where the predicted score matches the actual
-- Tiebreaker decides ties on the leaderboard
+- Group standings: 1 point per correctly placed team (1st or 2nd slot of any group)
+- R32 winner: 2 / R16: 4 / QF: 8 / SF: 16 / Final: 24
+- Exact-score bonus: +3 per knockout match (R32+) where the predicted score matches the actual. **Does NOT apply to group-stage matches.**
+- Tiebreaker: closest guess to the actual champion's total tournament goals (a single integer per player). Compared against reality regardless of which team the player picked to win.
 
 ## Files
 
