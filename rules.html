@@ -28,22 +28,30 @@ ABOUTME: Linked from index.html header; no JS or Supabase required.
     </section>
 
     <section class="rules-section">
-      <h3>How to play</h3>
+      <h3>How to play (two stages)</h3>
+      <p><strong>Stage 1 — Group standings.</strong> Open now, locks at first WC kickoff on June 11.</p>
       <ol class="rules-list">
         <li>Pick your name (or add yourself) on the home page.</li>
         <li>For each of the 12 groups, predict who finishes <strong>1st</strong> and <strong>2nd</strong>.</li>
-        <li>Fill the 32 <strong>Round of 32</strong> slots with any teams you want. The eight "best 3rd-place" wildcards are implicit — drop in whichever teams you think will sneak through.</li>
+        <li>Hit <strong>Submit picks</strong> when you're done — you can keep editing until June 11.</li>
+      </ol>
+      <p><strong>Stage 2 — Bracket.</strong> Opens automatically once group stage ends and the real R32 pairings are confirmed. Locks at first R32 kickoff on June 28.</p>
+      <ol class="rules-list">
+        <li>The R32 matches are pre-filled with the actual qualifying teams (24 group winners/runners-up + 8 best 3rd-place wildcards, per FIFA's rules).</li>
         <li>Click winners through <strong>R32 → R16 → QF → SF → Final</strong>, plus the <strong>3rd-place match</strong>.</li>
         <li>Enter your <strong>tiebreaker</strong>: how many goals will the eventual champion score across the entire tournament?</li>
         <li>Optionally, predict <strong>exact final scores</strong> for any knockout match for bonus points.</li>
-        <li>Hit <strong>Submit picks</strong> when you're done. You can come back and edit until first kickoff.</li>
+        <li>Submit when you're done — editable until R32 kickoff.</li>
       </ol>
     </section>
 
     <section class="rules-section">
       <h3>Deadlines</h3>
-      <p>Picks lock at the first kickoff: <strong>Thursday, June 11, 2026 — 1:00&nbsp;PM Mexico City time</strong> (Mexico vs South Africa, Estadio Azteca).</p>
-      <p>After kickoff, no more edits. Everyone's picks become visible, and the leaderboard goes live.</p>
+      <ul class="rules-list">
+        <li><strong>Group picks lock:</strong> Thursday, June 11, 2026 — 1:00&nbsp;PM Mexico City time (Mexico vs South Africa, Estadio Azteca).</li>
+        <li><strong>Bracket picks lock:</strong> Sunday, June 28, 2026 — 3:00&nbsp;PM Pacific time (first R32 match, SoFi Stadium).</li>
+      </ul>
+      <p>After each lock, no more edits to that section. Everyone's picks become visible for that stage.</p>
     </section>
 
     <section class="rules-section">
@@ -117,8 +125,8 @@ ABOUTME: Linked from index.html header; no JS or Supabase required.
 
     <section class="rules-section">
       <h3>How the bracket cascade works</h3>
-      <p>The bracket is one continuous tree. After R32 winners are picked, R16 slots auto-populate with whichever teams you advanced. R16 winners feed QF, QF feeds SF, SF feeds the Final (and the SF losers play for 3rd place).</p>
-      <p>If you change an R32 team partway through, downstream slots update automatically. Any winner pick whose team is no longer in its match is quietly dropped — you'll need to re-pick that match.</p>
+      <p>The bracket is one continuous tree. R32 starts from the real qualifiers; once you pick a winner, that team flows into the R16 slot they're due to play in. R16 winners feed QF, QF feeds SF, SF feeds the Final (and the SF losers play for 3rd place).</p>
+      <p>Change a winner partway through and downstream slots update automatically. Any winner pick whose team is no longer in its match is quietly dropped — you'll need to re-pick that match.</p>
     </section>
 
     <section class="rules-section">
@@ -136,7 +144,7 @@ ABOUTME: Linked from index.html header; no JS or Supabase required.
       <h3>Picks model: details</h3>
       <ul class="rules-list">
         <li><strong>Group picks:</strong> save partial progress (just 1st without 2nd) at any time.</li>
-        <li><strong>R32 draft:</strong> each team can only occupy one R32 slot — picking a team already placed elsewhere moves it.</li>
+        <li><strong>R32 pairings:</strong> set by FIFA's bracket-resolution rules after group stage — you don't draft teams into slots.</li>
         <li><strong>Winner picks:</strong> click a team in a match to advance them; click again to un-pick.</li>
         <li><strong>Exact-score bonuses:</strong> optional. Predict 2-1, 3-0, etc. for any knockout match. Earn +2 if your score matches the real final score exactly.</li>
       </ul>

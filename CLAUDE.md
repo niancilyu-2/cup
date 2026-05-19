@@ -19,18 +19,23 @@ Guidance for Claude Code when working in this repo.
 - Knockouts: R32 → R16 → QF → SF → Final (+ 3rd place)
 - 104 matches total; tournament runs June 11 – July 19, 2026
 
-## Pick model
+## Pick model (two stages)
 
-- Per group: predict 1st and 2nd (24 teams advance directly)
-- R32 draft: user fills R32 slots with any of the 48 teams (implicitly picks the 8 wildcard thirds)
-- Bracket: click a team in each match to advance them through R16 → QF → SF → Final
-- Exact-score predictions are optional per match and earn bonus points
-- Tiebreaker: predicted total goals scored by the champion
+**Phase 1 — Group standings (locks June 11 first kickoff)**
+- For each of the 12 groups, predict 1st and 2nd.
+
+**Phase 2 — Bracket (opens after group stage, locks at first R32 kickoff June 28)**
+- The R32 matches are populated with the real qualifying teams (24 group winners/runners-up + 8 best 3rds) via FIFA's bracket resolution rules. Admin/auto-fetch sets `matches.team_a_code` / `team_b_code` for M73–M88 once group stage ends.
+- User clicks winners through R32 → R16 → QF → SF → Final, plus the 3rd-place match.
+- Tiebreaker: predicted total goals scored by the eventual champion (a single integer).
+- Optional exact-score predictions for any knockout match (R32+), earning bonus points.
 
 ## Lock & visibility
 
-- Picks freeze at the first kickoff (`LOCK_DATE_ISO` in `app.js`)
-- Other users' picks are hidden until lock; revealed at first kickoff
+- `GROUP_LOCK_ISO` (June 11 13:00 -06:00) freezes group picks.
+- Bracket opens once all 16 R32 matches have `team_a_code` and `team_b_code` populated (or earlier via `?stage=bracket-open` dev override).
+- `BRACKET_LOCK_ISO` (June 28 15:00 -07:00) freezes bracket picks.
+- Other users' picks are hidden until lock; revealed at first kickoff of each stage.
 
 ## Scoring (final)
 

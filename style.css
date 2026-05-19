@@ -470,6 +470,26 @@ main {
   padding-bottom: 1rem;
 }
 
+.bracket-locked-notice {
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  padding: 1.5rem;
+  color: var(--text-muted);
+}
+
+.bracket-locked-notice strong {
+  color: var(--text);
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.bracket-locked-notice p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
 .bracket-grid {
   display: flex;
   gap: 1.25rem;
