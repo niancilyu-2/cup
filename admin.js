@@ -9,6 +9,14 @@
     qf: 'Quarterfinals', sf: 'Semifinals', third: '3rd-place match', final: 'Final',
   };
 
+  // Admin-only display shortenings for long team names that crowd the
+   // results-entry rows. Trims happen at render time only — DB values stay
+   // canonical, so the picks page and leaderboard are unaffected.
+  const TEAM_DISPLAY_NAME = {
+    BIH: 'Bosnia',
+  };
+  const teamLabel = (team) => team ? (TEAM_DISPLAY_NAME[team.code] || team.name) : '';
+
   const FIFA_TO_ISO = {
     MEX: 'mx', RSA: 'za', KOR: 'kr', CZE: 'cz',
     CAN: 'ca', BIH: 'ba', QAT: 'qa', SUI: 'ch',
@@ -30,6 +38,7 @@
 
   let teamsByCode = {};
   let allMatches = [];
+  let allPlayers = [];
 
   init();
 
@@ -60,23 +69,27 @@
   }
 
   async function loadAndRender() {
-    root.innerHTML = '<div class="admin-loading">Loading matches&hellip;</div>';
+    root.innerHTML = '<div class="admin-loading">Loading&hellip;</div>';
     try {
-      const [teamsRes, matchesRes] = await Promise.all([
+      const [teamsRes, matchesRes, playersRes] = await Promise.all([
         supabase.from('teams').select('*').order('code'),
         supabase.from('matches').select('*').order('kickoff_at'),
+        supabase.from('players').select('id, name, created_at, groups_submitted_at, bracket_submitted_at').order('created_at'),
       ]);
       if (teamsRes.error) throw teamsRes.error;
       if (matchesRes.error) throw matchesRes.error;
+      if (playersRes.error) throw playersRes.error;
       teamsByCode = Object.fromEntries(teamsRes.data.map((t) => [t.code, t]));
       allMatches = matchesRes.data;
+      allPlayers = playersRes.data;
       render();
     } catch (err) {
-      root.innerHTML = `<div class="admin-error">Couldn't load matches. ${escapeHtml(err.message || String(err))}</div>`;
+      root.innerHTML = `<div class="admin-error">Couldn't load. ${escapeHtml(err.message || String(err))}</div>`;
     }
   }
 
   function render() {
+    const playersSection = renderPlayersSection();
     const sections = STAGE_ORDER.map((stage) => {
       const matches = allMatches.filter((m) => m.stage === stage);
       if (!matches.length) return '';
@@ -93,9 +106,48 @@
           </div>
         </section>`;
     }).join('');
-    root.innerHTML = sections;
+    root.innerHTML = playersSection + sections;
     root.addEventListener('click', onClick);
     root.addEventListener('change', onChange);
+  }
+
+  function renderPlayersSection() {
+    const rows = allPlayers.length
+      ? allPlayers.map(playerRowHTML).join('')
+      : '<div class="admin-empty">No players yet.</div>';
+    return `
+      <section class="admin-stage admin-players">
+        <header class="admin-stage-head">
+          <h3>Players</h3>
+          <span class="admin-stage-count">${allPlayers.length} total</span>
+        </header>
+        <div class="admin-rows">
+          ${rows}
+        </div>
+      </section>`;
+  }
+
+  function playerRowHTML(p) {
+    const created = p.created_at ? new Date(p.created_at).toLocaleDateString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric',
+    }) : '';
+    const groupsDone = !!p.groups_submitted_at;
+    const bracketDone = !!p.bracket_submitted_at;
+    const status = groupsDone && bracketDone ? 'Submitted'
+      : groupsDone || bracketDone ? 'Partial'
+      : 'Draft';
+    return `
+      <div class="admin-player-row" data-player-id="${escapeAttr(p.id)}">
+        <div class="admin-player-meta">
+          <span class="admin-player-name">${escapeHtml(p.name)}</span>
+          <span class="admin-player-sub">${escapeHtml(status)} · joined ${escapeHtml(created)}</span>
+        </div>
+        <div class="admin-player-controls">
+          <button type="button" class="btn-secondary admin-player-reset">Reset PIN</button>
+          <button type="button" class="btn-secondary admin-player-delete">Delete</button>
+          <span class="admin-row-status" aria-live="polite"></span>
+        </div>
+      </div>`;
   }
 
   function rowHTML(m) {
@@ -106,13 +158,13 @@
       return `
         <span class="admin-team">
           <span class="fi fi-${flagCode(team.code)}" aria-hidden="true"></span>
-          <span class="admin-team-name">${escapeHtml(team.name)}</span>
+          <span class="admin-team-name">${escapeHtml(teamLabel(team))}</span>
         </span>`;
     };
     const winnerOptions = [
       { v: '', label: '— winner —' },
-      ...(teamA ? [{ v: teamA.code, label: teamA.name }] : []),
-      ...(teamB ? [{ v: teamB.code, label: teamB.name }] : []),
+      ...(teamA ? [{ v: teamA.code, label: teamLabel(teamA) }] : []),
+      ...(teamB ? [{ v: teamB.code, label: teamLabel(teamB) }] : []),
     ];
     const winnerSelect = winnerOptions.map((o) =>
       `<option value="${escapeAttr(o.v)}" ${o.v === (m.winner_code || '') ? 'selected' : ''}>${escapeHtml(o.label)}</option>`
@@ -132,10 +184,10 @@
         <div class="admin-row-match">
           ${teamCell(teamA, m.slot_a)}
           <input type="number" class="admin-score" data-field="score_a" min="0" max="30" step="1"
-                 value="${m.score_a == null ? '' : m.score_a}" ${canFill ? '' : 'disabled'} aria-label="Score for ${escapeAttr(teamA?.name || m.slot_a)}" />
+                 value="${m.score_a == null ? '' : m.score_a}" ${canFill ? '' : 'disabled'} aria-label="Score for ${escapeAttr(teamLabel(teamA) || m.slot_a)}" />
           <span class="admin-dash">–</span>
           <input type="number" class="admin-score" data-field="score_b" min="0" max="30" step="1"
-                 value="${m.score_b == null ? '' : m.score_b}" ${canFill ? '' : 'disabled'} aria-label="Score for ${escapeAttr(teamB?.name || m.slot_b)}" />
+                 value="${m.score_b == null ? '' : m.score_b}" ${canFill ? '' : 'disabled'} aria-label="Score for ${escapeAttr(teamLabel(teamB) || m.slot_b)}" />
           ${teamCell(teamB, m.slot_b)}
         </div>
         <div class="admin-row-controls">
@@ -153,8 +205,82 @@
   }
 
   function onClick(e) {
-    const btn = e.target.closest('.admin-save-btn');
-    if (btn) saveRow(btn.closest('.admin-row'));
+    const saveBtn = e.target.closest('.admin-save-btn');
+    if (saveBtn) { saveRow(saveBtn.closest('.admin-row')); return; }
+    const deleteBtn = e.target.closest('.admin-player-delete');
+    if (deleteBtn) { deletePlayer(deleteBtn.closest('.admin-player-row')); return; }
+    const resetBtn = e.target.closest('.admin-player-reset');
+    if (resetBtn) resetPlayerPin(resetBtn.closest('.admin-player-row'));
+  }
+
+  async function hashPin(pin, playerId) {
+    const data = new TextEncoder().encode(String(pin) + String(playerId));
+    const buf = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  async function resetPlayerPin(row) {
+    const playerId = row.dataset.playerId;
+    const player = allPlayers.find((p) => p.id === playerId);
+    if (!player) return;
+    const status = row.querySelector('.admin-row-status');
+    const newPin = window.prompt(`Reset PIN for "${player.name}" to (4 digits):`, '0000');
+    if (newPin == null) return;
+    if (!/^\d{4}$/.test(newPin)) {
+      return fail(status, 'PIN must be 4 digits.');
+    }
+    status.className = 'admin-row-status';
+    status.textContent = 'Resetting…';
+    try {
+      const pin_hash = await hashPin(newPin, playerId);
+      const { error } = await supabase
+        .from('players')
+        .update({ pin_hash })
+        .eq('id', playerId);
+      if (error) throw error;
+      status.classList.add('is-ok');
+      status.textContent = `✓ PIN set to ${newPin}`;
+      setTimeout(() => { if (status.textContent.startsWith('✓')) status.textContent = ''; }, 4000);
+    } catch (err) {
+      fail(status, err.message || String(err));
+    }
+  }
+
+  async function deletePlayer(row) {
+    const playerId = row.dataset.playerId;
+    const player = allPlayers.find((p) => p.id === playerId);
+    if (!player) return;
+    const status = row.querySelector('.admin-row-status');
+    const confirmed = window.confirm(
+      `Delete "${player.name}"? This removes the player and all their picks. Cannot be undone.`
+    );
+    if (!confirmed) return;
+    status.className = 'admin-row-status';
+    status.textContent = 'Deleting…';
+    try {
+      // Chain .select() so PostgREST returns the deleted row(s). If RLS
+      // silently filters the DELETE, data comes back as an empty array.
+      const { data, error } = await supabase
+        .from('players')
+        .delete()
+        .eq('id', playerId)
+        .select('id');
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error(
+          'No row deleted. Likely cause: the players DELETE policy is missing. ' +
+          'Run in Supabase SQL editor: ' +
+          `CREATE POLICY "players_delete" ON players FOR DELETE USING (true); ` +
+          `NOTIFY pgrst, 'reload schema';`
+        );
+      }
+      allPlayers = allPlayers.filter((p) => p.id !== playerId);
+      row.remove();
+      const countEl = root.querySelector('.admin-players .admin-stage-count');
+      if (countEl) countEl.textContent = `${allPlayers.length} total`;
+    } catch (err) {
+      fail(status, err.message || String(err));
+    }
   }
 
   function onChange(e) {

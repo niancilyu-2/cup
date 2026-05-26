@@ -38,9 +38,27 @@ ABOUTME: Linked from index.html header; no JS or Supabase required.
     <nav class="site-nav">
       <a href="index.html">
         <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M10 3 L4 8 L10 13" />
+          <circle cx="8" cy="8" r="6" />
+          <path d="M5 8 L7 10 L11 6" />
         </svg>
-        Back to picks
+        My picks
+      </a>
+      <a href="leaderboard.html">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="1" y="8" width="4" height="7" />
+          <rect x="6" y="4" width="4" height="11" />
+          <rect x="11" y="10" width="4" height="5" />
+        </svg>
+        Leaderboard
+      </a>
+      <a href="rules.html" class="is-active">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="3" width="10" height="12" rx="1" />
+          <path d="M6 2 H10 V4 H6 Z" />
+          <path d="M6 8 H11" />
+          <path d="M6 11 H11" />
+        </svg>
+        Rules &amp; scoring
       </a>
       <a href="livescores.html">
         <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -53,15 +71,8 @@ ABOUTME: Linked from index.html header; no JS or Supabase required.
         </svg>
         Live scores
       </a>
-      <a href="leaderboard.html">
-        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <rect x="1" y="8" width="4" height="7" />
-          <rect x="6" y="4" width="4" height="11" />
-          <rect x="11" y="10" width="4" height="5" />
-        </svg>
-        Leaderboard
-      </a>
     </nav>
+    <div id="user-bar"></div>
   </header>
 
   <section id="ticker-bar" aria-label="Tournament facts">
@@ -77,6 +88,12 @@ ABOUTME: Linked from index.html header; no JS or Supabase required.
     </section>
 
     <section class="rules-section">
+      <h3>Deadlines</h3>
+      <p>Everything locks at the first kickoff: <strong>Thursday, June 11, 2026 — 1:00&nbsp;PM Mexico City time</strong> (Mexico vs South Africa, Estadio Azteca).</p>
+      <p>After kickoff, no more edits. Everyone's picks become visible, and the leaderboard goes live.</p>
+    </section>
+
+    <section class="rules-section">
       <h3>How to play</h3>
       <ol class="rules-list">
         <li>Pick your name (or add yourself) on the home page.</li>
@@ -86,12 +103,33 @@ ABOUTME: Linked from index.html header; no JS or Supabase required.
         <li>Your <strong>champion</strong> is whoever you pick to win the Final. In the tiebreaker, predict that champion's <strong>average goals per game</strong> across the whole tournament.</li>
         <li>Click <strong>Save my picks</strong> as you go (commits your current draft to the database). Click <strong>Submit</strong> when you're done — finalizes everything until you click Edit.</li>
       </ol>
+      <p class="rules-callout">A few mechanics worth knowing:</p>
+      <ul class="rules-list">
+        <li><strong>Group ranks:</strong> tap a team to highlight it, then tap a second team in the same group to swap their positions. Tap the same team twice to deselect. The default order is FIFA pot order until you make your first swap.</li>
+        <li><strong>Auto-fill:</strong> shuffles all four teams in each empty group so the top three become a random 1st/2nd/3rd. Groups you've already touched are left alone.</li>
+        <li><strong>Wildcards:</strong> after every group is ranked, pick exactly 8 of the 12 third-place teams. The R32 matchups are looked up from FIFA's official Annexe&nbsp;C table &mdash; you don't place teams into slots yourself.</li>
+        <li><strong>Winner picks:</strong> click a team in a match to advance them; click again to un-pick.</li>
+        <li><strong>Bracket cascade:</strong> change an upstream winner and downstream slots update. Any later pick whose team is no longer in its match gets dropped — re-pick that round.</li>
+      </ul>
     </section>
 
     <section class="rules-section">
-      <h3>Deadlines</h3>
-      <p>Everything locks at the first kickoff: <strong>Thursday, June 11, 2026 — 1:00&nbsp;PM Mexico City time</strong> (Mexico vs South Africa, Estadio Azteca).</p>
-      <p>After kickoff, no more edits. Everyone's picks become visible, and the leaderboard goes live.</p>
+      <h3>How wildcards get slotted into the Round of 32</h3>
+      <p>Eight of the twelve third-place finishers advance. Which third-place team plays whom in the R32 depends on <em>which eight groups</em> contribute a wildcard, not on the teams themselves &mdash; FIFA pre-computed every combination into a fixed lookup table called <strong>Annexe&nbsp;C</strong>.</p>
+      <p>There are <code>C(12,8) = 495</code> possible combinations of contributing groups. Annexe&nbsp;C lists all 495, and for each combination it spells out which third-place team is paired with which group-winner / group-runner-up in the Round of 32. The bracket code on this site reads from that same table, so once you've ranked all 12 groups and chosen your 8 wildcards, every R32 slot is filled automatically.</p>
+      <p>The full text of Annexe&nbsp;C lives in FIFA's official tournament regulations:</p>
+      <p><a class="rules-link" href="https://digitalhub.fifa.com/m/636f5c9c6f29771f/original/FWC2026_regulations_EN.pdf" target="_blank" rel="noopener">FIFA World Cup 26&trade; Regulations (PDF) &rarr; Annexe&nbsp;C</a></p>
+    </section>
+
+    <section class="rules-section">
+      <h3>Save vs. Submit</h3>
+      <p>Your clicks live in a <strong>draft</strong> until you commit them:</p>
+      <ul class="rules-list">
+        <li><strong>Save my picks</strong> writes your current draft to the database. You can keep editing afterward.</li>
+        <li><strong>Submit</strong> writes your draft AND marks your picks as final. Editing is disabled until you click <strong>Edit picks</strong> to unlock again.</li>
+        <li>Both Save and Submit are no-ops if your draft already matches the database.</li>
+        <li>Leaving the site (close tab, refresh, click Rules) with unsaved changes triggers a warning. The custom modal on internal links offers a "Save &amp; continue" or "Submit &amp; continue" shortcut.</li>
+      </ul>
     </section>
 
     <section class="rules-section">
@@ -160,23 +198,6 @@ ABOUTME: Linked from index.html header; no JS or Supabase required.
     </section>
 
     <section class="rules-section">
-      <h3>How the bracket cascade works</h3>
-      <p>The bracket is one continuous tree. After R32 winners are picked, R16 slots auto-populate with whichever teams you advanced. R16 winners feed QF, QF feeds SF, SF feeds the Final (and the SF losers play for 3rd place).</p>
-      <p>If you change an R32 team partway through, downstream slots update automatically. Any winner pick whose team is no longer in its match is quietly dropped — you'll need to re-pick that match.</p>
-    </section>
-
-    <section class="rules-section">
-      <h3>Save vs. Submit</h3>
-      <p>Your clicks live in a <strong>draft</strong> until you commit them:</p>
-      <ul class="rules-list">
-        <li><strong>Save my picks</strong> writes your current draft to the database. You can keep editing afterward.</li>
-        <li><strong>Submit</strong> writes your draft AND marks your picks as final. Editing is disabled until you click <strong>Edit picks</strong> to unlock again.</li>
-        <li>Both Save and Submit are no-ops if your draft already matches the database.</li>
-        <li>Leaving the site (close tab, refresh, click Rules) with unsaved changes triggers a warning. The custom modal on internal links offers a "Save &amp; continue" or "Submit &amp; continue" shortcut.</li>
-      </ul>
-    </section>
-
-    <section class="rules-section">
       <h3>The tiebreaker, explained</h3>
       <p>Your <strong>champion</strong> is whichever team you've picked to win the Final &mdash; you don't choose them separately. The tiebreaker number is your prediction of that champion's <strong>average goals per game</strong> across every match they play (group stage + knockouts).</p>
       <p>If two players finish tied on points, whoever's prediction is closest to the real tournament average for the <em>actual</em> champion wins the tiebreaker. The team you picked doesn't have to be the team that actually wins &mdash; we always compare against reality.</p>
@@ -189,35 +210,19 @@ ABOUTME: Linked from index.html header; no JS or Supabase required.
     </section>
 
     <section class="rules-section">
-      <h3>Picks model: details</h3>
-      <ul class="rules-list">
-        <li><strong>Group ranks:</strong> tap a team to highlight it, then tap a second team in the same group to swap their positions. Tap the same team twice to deselect. The default order is FIFA pot order until you make your first swap.</li>
-        <li><strong>Auto-fill:</strong> shuffles all four teams in each empty group so the top three become a random 1st/2nd/3rd. Groups you've already touched are left alone.</li>
-        <li><strong>Wildcards:</strong> after every group is ranked, pick exactly 8 of the 12 third-place teams. The R32 matchups are looked up from FIFA's official Annexe&nbsp;C table &mdash; you don't place teams into slots yourself.</li>
-        <li><strong>Winner picks:</strong> click a team in a match to advance them; click again to un-pick.</li>
-      </ul>
-    </section>
-
-    <section class="rules-section">
-      <h3>How wildcards get slotted into the Round of 32</h3>
-      <p>Eight of the twelve third-place finishers advance. Which third-place team plays whom in the R32 depends on <em>which eight groups</em> contribute a wildcard, not on the teams themselves &mdash; FIFA pre-computed every combination into a fixed lookup table called <strong>Annexe&nbsp;C</strong>.</p>
-      <p>There are <code>C(12,8) = 495</code> possible combinations of contributing groups. Annexe&nbsp;C lists all 495, and for each combination it spells out which third-place team is paired with which group-winner / group-runner-up in the Round of 32. The bracket code on this site reads from that same table, so once you've ranked all 12 groups and chosen your 8 wildcards, every R32 slot is filled automatically.</p>
-      <p>The full text of Annexe&nbsp;C lives in FIFA's official tournament regulations:</p>
-      <p><a class="rules-link" href="https://digitalhub.fifa.com/m/636f5c9c6f29771f/original/FWC2026_regulations_EN.pdf" target="_blank" rel="noopener">FIFA World Cup 26&trade; Regulations (PDF) &rarr; Annexe&nbsp;C</a></p>
-    </section>
-
-    <section class="rules-section">
       <h3>How results get entered</h3>
       <p>The site fetches match results automatically every 30 minutes from a public data source. If that ever falls behind or breaks, an admin can enter scores manually so the leaderboard stays current.</p>
     </section>
   </main>
 
   <footer id="site-footer">
+    <a class="admin-footer-link" href="admin.html">admin</a>
     <div class="sig">
       Nianci <span class="sig-dot">×</span> Claude
     </div>
   </footer>
 
   <script src="ticker.js" defer></script>
+  <script src="user-bar.js" defer></script>
 </body>
 </html>

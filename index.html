@@ -36,16 +36,12 @@ ABOUTME: Static shell; all dynamic content rendered by app.js.
       </a>
     </h1>
     <nav class="site-nav">
-      <a href="livescores.html">
+      <a href="index.html" class="is-active">
         <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="8" cy="8" r="5.5" />
-          <path d="M8 5 L9.4 7 L8 9 L6.6 7 Z" />
-          <path d="M8 5 V3" />
-          <path d="M8 9 V13" />
-          <path d="M6.6 7 L4 7.5" />
-          <path d="M9.4 7 L12 7.5" />
+          <circle cx="8" cy="8" r="6" />
+          <path d="M5 8 L7 10 L11 6" />
         </svg>
-        Live scores
+        My picks
       </a>
       <a href="leaderboard.html">
         <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -63,6 +59,17 @@ ABOUTME: Static shell; all dynamic content rendered by app.js.
           <path d="M6 11 H11" />
         </svg>
         Rules &amp; scoring
+      </a>
+      <a href="livescores.html">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="8" cy="8" r="5.5" />
+          <path d="M8 5 L9.4 7 L8 9 L6.6 7 Z" />
+          <path d="M8 5 V3" />
+          <path d="M8 9 V13" />
+          <path d="M6.6 7 L4 7.5" />
+          <path d="M9.4 7 L12 7.5" />
+        </svg>
+        Live scores
       </a>
     </nav>
     <div id="user-bar"></div>
@@ -85,7 +92,7 @@ ABOUTME: Static shell; all dynamic content rendered by app.js.
     <section id="groups-section" class="pick-section pick-section--1 is-collapsible">
       <div class="section-head">
         <h2><span class="step-badge step-badge--1">1</span> Group Stage</h2>
-        <p class="section-help">Tap two teams in a group to swap them. Rank 1st through 4th &mdash; only your 1st and 2nd score points, and your 3rd is eligible for a wildcard slot.</p>
+        <p class="section-help">Tap two teams to swap their rank.</p>
         <button class="section-toggle" type="button" aria-expanded="true" aria-controls="groups-body">
           <span class="section-toggle-summary" data-summary-for="groups"></span>
           <span class="section-toggle-caret" aria-hidden="true">▾</span>
@@ -100,7 +107,7 @@ ABOUTME: Static shell; all dynamic content rendered by app.js.
     <section id="wildcards-section" class="pick-section pick-section--2 is-collapsible">
       <div class="section-head">
         <h2><span class="step-badge step-badge--2">2</span> Wildcards &mdash; 8 best 3rd-place teams</h2>
-        <p class="section-help">Pick exactly 8 of the 12 third-place teams to advance to the Round of 32.</p>
+        <p class="section-help">Pick 8 of the 12 third-place teams to advance.</p>
         <button class="section-toggle" type="button" aria-expanded="true" aria-controls="wildcards-body">
           <span class="section-toggle-summary" data-summary-for="wildcards"></span>
           <span class="section-toggle-caret" aria-hidden="true">▾</span>
@@ -116,7 +123,7 @@ ABOUTME: Static shell; all dynamic content rendered by app.js.
     <section id="bracket-section" class="pick-section pick-section--3">
       <div class="section-head">
         <h2><span class="step-badge step-badge--3">3</span> Knockout Bracket</h2>
-        <p class="section-help">Auto-populates from your group rankings and wildcards. Click winners through to the Final.</p>
+        <p class="section-help">Click a team to advance them to the next round.</p>
       </div>
       <div id="bracket-toolbar" class="section-toolbar"></div>
       <div id="bracket"></div>
@@ -125,7 +132,7 @@ ABOUTME: Static shell; all dynamic content rendered by app.js.
     <section id="tiebreaker-section" class="pick-section pick-section--4">
       <div class="section-head">
         <h2><span class="step-badge step-badge--4">4</span> Tiebreaker</h2>
-        <p class="section-help">Predict your champion's average goals per game. Your champion is whoever you pick to win the Final.</p>
+        <p class="section-help">Predict your champion's average goals per game.</p>
       </div>
       <div id="tiebreaker"></div>
     </section>
@@ -134,6 +141,7 @@ ABOUTME: Static shell; all dynamic content rendered by app.js.
   <div id="modal-root"></div>
 
   <footer id="site-footer">
+    <a class="admin-footer-link" href="admin.html">admin</a>
     <div class="sig">
       Nianci <span class="sig-dot">×</span> Claude
     </div>
@@ -142,6 +150,7 @@ ABOUTME: Static shell; all dynamic content rendered by app.js.
   <script src="ticker.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
+  <script src="user-bar.js" defer></script>
   <script src="mock-results.js"></script>
   <script type="module" src="app.js"></script>
 </body>

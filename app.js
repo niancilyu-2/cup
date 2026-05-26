@@ -80,6 +80,12 @@ function isViewing() {
   return !!state.viewedPlayer;
 }
 
+// Privacy gate: pre-lock, another player's picks are hidden.
+// Lifts automatically when the tournament locks at first kickoff.
+function isPicksHidden() {
+  return isViewing() && !isLocked();
+}
+
 function isSubmitted() {
   return !!state.player?.groups_submitted_at && !!state.player?.bracket_submitted_at;
 }
@@ -148,6 +154,20 @@ function clearStoredPlayer() {
   localStorage.removeItem(STORAGE_KEY_PLAYER);
 }
 
+// Trust-based PIN: SHA-256 of (pin || player_id::text). The player_id acts as a
+// per-row salt so identical PINs hash to different values. Matches the
+// `encode(digest('NNNN' || id::text, 'sha256'), 'hex')` shape used by the
+// pgcrypto backfill in the migration SQL.
+async function hashPin(pin, playerId) {
+  const data = new TextEncoder().encode(String(pin) + String(playerId));
+  const buf = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+function isValidPin(pin) {
+  return typeof pin === 'string' && /^\d{4}$/.test(pin);
+}
+
 // ---------- Player picker (signup + switch) ----------
 
 async function loadPlayers() {
@@ -192,12 +212,62 @@ function showPlayerPicker() {
       root.querySelectorAll('.player-pick').forEach((btn) => {
         btn.addEventListener('click', () => {
           const player = { id: btn.dataset.id, name: btn.dataset.name };
-          setStoredPlayer(player);
-          root.innerHTML = '';
-          resolve(player);
+          renderPinPrompt(player);
         });
       });
       document.getElementById('add-new-player').addEventListener('click', renderNewForm);
+    };
+
+    const renderPinPrompt = (player) => {
+      root.innerHTML = `
+        <div class="modal-overlay">
+          <div class="modal">
+            <h2>Enter PIN for ${player.name}</h2>
+            <p>4-digit PIN. Ask the admin to reset it if you've forgotten.</p>
+            <form id="pin-form">
+              <input id="pin-input" type="password" inputmode="numeric" pattern="\\d{4}" maxlength="4" autocomplete="off" placeholder="••••" required autofocus />
+              <button type="submit" class="btn-primary">Continue</button>
+              <p id="pin-error" class="error" hidden></p>
+            </form>
+            <button type="button" class="link-button" id="pin-back">← back to list</button>
+          </div>
+        </div>
+      `;
+      const form = document.getElementById('pin-form');
+      const errorEl = document.getElementById('pin-error');
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        errorEl.hidden = true;
+        const pin = document.getElementById('pin-input').value.trim();
+        if (!isValidPin(pin)) {
+          errorEl.textContent = 'PIN must be 4 digits.';
+          errorEl.hidden = false;
+          return;
+        }
+        const { data, error } = await supabase
+          .from('players')
+          .select('pin_hash')
+          .eq('id', player.id)
+          .single();
+        if (error || !data) {
+          errorEl.textContent = "Couldn't check PIN. Try again.";
+          errorEl.hidden = false;
+          return;
+        }
+        const provided = await hashPin(pin, player.id);
+        if (provided !== data.pin_hash) {
+          errorEl.textContent = 'Wrong PIN.';
+          errorEl.hidden = false;
+          document.getElementById('pin-input').select();
+          return;
+        }
+        setStoredPlayer(player);
+        root.innerHTML = '';
+        resolve(player);
+      });
+      document.getElementById('pin-back').addEventListener('click', async () => {
+        renderPickerList(await loadPlayers());
+      });
     };
 
     const renderNewForm = () => {
@@ -205,10 +275,11 @@ function showPlayerPicker() {
         <div class="modal-overlay">
           <div class="modal">
             <h2>New player</h2>
-            <p>Pick a display name. Names are unique across the site.</p>
+            <p>Pick a display name and a 4-digit PIN. The PIN gates anyone else from switching into your account.</p>
             <form id="signup-form">
               <input id="signup-name" type="text" maxlength="30" placeholder="Your name" required autofocus />
-              <button type="submit">Enter</button>
+              <input id="signup-pin" type="password" inputmode="numeric" pattern="\\d{4}" maxlength="4" autocomplete="off" placeholder="4-digit PIN" required />
+              <button type="submit" class="btn-primary">Enter</button>
               <p id="signup-error" class="error" hidden></p>
             </form>
             <button type="button" class="link-button" id="back-to-list">← back to list</button>
@@ -221,23 +292,41 @@ function showPlayerPicker() {
         e.preventDefault();
         errorEl.hidden = true;
         const name = document.getElementById('signup-name').value.trim();
+        const pin = document.getElementById('signup-pin').value.trim();
         if (!name) return;
-        const { data, error } = await supabase
-          .from('players')
-          .insert({ name })
-          .select()
-          .single();
-        if (error) {
-          errorEl.textContent =
-            error.code === '23505'
-              ? `"${name}" is already taken. Try another name.`
-              : `Couldn't add you: ${error.message}`;
+        if (!isValidPin(pin)) {
+          errorEl.textContent = 'PIN must be 4 digits.';
           errorEl.hidden = false;
           return;
         }
-        setStoredPlayer({ id: data.id, name: data.name });
+        // Two-step insert so the PIN hash can be salted with the player's UUID:
+        // insert with a placeholder hash, then UPDATE with the real one.
+        const { data: inserted, error: insertErr } = await supabase
+          .from('players')
+          .insert({ name, pin_hash: 'pending' })
+          .select()
+          .single();
+        if (insertErr) {
+          errorEl.textContent =
+            insertErr.code === '23505'
+              ? `"${name}" is already taken. Try another name.`
+              : `Couldn't add you: ${insertErr.message}`;
+          errorEl.hidden = false;
+          return;
+        }
+        const pin_hash = await hashPin(pin, inserted.id);
+        const { error: updateErr } = await supabase
+          .from('players')
+          .update({ pin_hash })
+          .eq('id', inserted.id);
+        if (updateErr) {
+          errorEl.textContent = `Saved your name but couldn't save the PIN: ${updateErr.message}`;
+          errorEl.hidden = false;
+          return;
+        }
+        setStoredPlayer({ id: inserted.id, name: inserted.name });
         root.innerHTML = '';
-        resolve(data);
+        resolve(inserted);
       });
       document.getElementById('back-to-list').addEventListener('click', async () => {
         renderPickerList(await loadPlayers());
@@ -1071,8 +1160,9 @@ function renderAll() {
   // Full re-render after save/submit/edit drops any in-progress selection so
   // the new disabled state doesn't leave a stale highlight on a team row.
   state.selection = null;
+  document.body.classList.toggle('is-picks-hidden', isPicksHidden());
   seedStageProgress();
-  renderUserBar();
+  window.renderUserBar?.();
   renderViewBanner();
   renderCountdownBanner();
   renderGroupPicks();
@@ -1098,9 +1188,8 @@ function renderViewBanner() {
   const safeName = name
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-  const note = isLocked()
-    ? ''
-    : '<span class="view-banner-note">· Other players\' picks are normally hidden until first kickoff</span>';
+  const hidden = isPicksHidden();
+  const placeholder = hidden ? renderPicksHiddenCard(safeName) : '';
   el.hidden = false;
   el.innerHTML = `
     <div class="view-banner-row">
@@ -1108,9 +1197,22 @@ function renderViewBanner() {
       <span class="view-banner-text">
         Viewing <strong>${safeName}</strong>'s picks
         <span class="view-banner-readonly">· read only</span>
-        ${note}
       </span>
       <a class="view-banner-back" href="leaderboard.html">← Back to leaderboard</a>
+    </div>
+    ${placeholder}
+  `;
+}
+
+function renderPicksHiddenCard(safeName) {
+  return `
+    <div class="picks-hidden-card">
+      <div class="picks-hidden-lock" aria-hidden="true">🔒</div>
+      <h3 class="picks-hidden-title">${safeName}'s picks are hidden</h3>
+      <p class="picks-hidden-body">
+        Picks stay private until first kickoff on <strong>June 11, 2026</strong>.
+      </p>
+      <a class="picks-hidden-back" href="leaderboard.html">← Back to leaderboard</a>
     </div>
   `;
 }
@@ -1606,23 +1708,6 @@ function wireBracketListener() {
 
 // ---------- Countdown banner ----------
 
-function renderUserBar() {
-  const bar = document.getElementById('user-bar');
-  bar.innerHTML = `
-    <span class="user-id">
-      <svg class="user-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <circle cx="8" cy="5.5" r="2.5" />
-        <path d="M3 14 C3 11 5 9.5 8 9.5 C11 9.5 13 11 13 14" />
-      </svg>
-      <span class="user-name">${state.player.name}</span>
-    </span>
-    <button id="switch-user" class="link-button">switch</button>
-  `;
-  document.getElementById('switch-user').addEventListener('click', () => {
-    clearStoredPlayer();
-    location.reload();
-  });
-}
 
 // Each cell of the countdown is two flip-card digits. The 8 digits across all
 // four cells are addressed by a stable index [0..7] so the per-second tick can
@@ -1837,7 +1922,11 @@ function initCollapsedSections() {
   const prefs = readCollapsedPrefs();
   for (const key of COLLAPSIBLE_SECTIONS) {
     renderSectionToggle(key);
-    const collapsed = (key in prefs) ? !!prefs[key] : isSectionComplete(key);
+    // Incomplete sections always start expanded so a new player sees them.
+    // The stored pref only applies once the section is complete, so a finished
+    // section can be left expanded if the user explicitly opens it again.
+    const complete = isSectionComplete(key);
+    const collapsed = complete ? ((key in prefs) ? !!prefs[key] : true) : false;
     setSectionCollapsed(key, collapsed);
   }
 }
@@ -1934,11 +2023,11 @@ function renderStepper() {
 
   el.innerHTML = `
     ${stepHTML(1, '#groups-section', 'Group Stage', groupsDone, groupsTotal, s1)}
-    <span class="step-arrow" aria-hidden="true">→</span>
+    <span class="step-arrow" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3 L10 8 L5 13"/></svg></span>
     ${stepHTML(2, '#wildcards-section', 'Wildcards', wildcardsDone, wildcardsTotal, s2)}
-    <span class="step-arrow" aria-hidden="true">→</span>
+    <span class="step-arrow" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3 L10 8 L5 13"/></svg></span>
     ${stepHTML(3, '#bracket-section', 'Bracket', bracketDone, bracketTotal, s3)}
-    <span class="step-arrow" aria-hidden="true">→</span>
+    <span class="step-arrow" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3 L10 8 L5 13"/></svg></span>
     ${stepHTML(4, '#tiebreaker-section', 'Tiebreaker', tbDone, 1, s4, tbCount)}
   `;
 }
@@ -1959,7 +2048,7 @@ async function init() {
   if (!player) player = await showPlayerPicker();
   state.player = player;
 
-  renderUserBar();
+  window.renderUserBar?.();
   await Promise.all([loadReferenceData(), loadCurrentPlayer()]);
 
   if (viewId && viewId !== state.player.id) {

@@ -57,6 +57,9 @@ CREATE INDEX IF NOT EXISTS matches_kickoff_idx ON matches(kickoff_at);
 CREATE TABLE IF NOT EXISTS players (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT UNIQUE NOT NULL,
+  -- SHA-256 hex of (pin || id::text). Trust-based — guards against curious
+  -- friends switching identities, not against attackers with DB access.
+  pin_hash TEXT NOT NULL,
   is_admin BOOLEAN NOT NULL DEFAULT FALSE,
   groups_submitted_at TIMESTAMPTZ,
   bracket_submitted_at TIMESTAMPTZ,
@@ -133,10 +136,12 @@ CREATE POLICY "groups_read"  ON groups  FOR SELECT USING (true);
 CREATE POLICY "teams_read"   ON teams   FOR SELECT USING (true);
 CREATE POLICY "matches_read" ON matches FOR SELECT USING (true);
 
--- Players: read + self-signup + updating submission timestamps (trust-based).
+-- Players: read + self-signup + updating submission timestamps + delete (trust-based).
+-- Admin delete is gated client-side by ADMIN_CODE; FK cascades remove the player's picks.
 CREATE POLICY "players_read"              ON players FOR SELECT USING (true);
 CREATE POLICY "players_insert"            ON players FOR INSERT WITH CHECK (true);
 CREATE POLICY "players_update_submission" ON players FOR UPDATE USING (true) WITH CHECK (true);
+CREATE POLICY "players_delete"            ON players FOR DELETE USING (true);
 
 -- Picks: full read + write for anon (trust-based).
 -- App enforces "only your own picks" and "hidden until lock".
