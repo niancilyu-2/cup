@@ -1347,6 +1347,13 @@ function venueCity(venue) {
   return parts[1] || '';
 }
 
+function mockResultFor(matchId) {
+  const mock = window.MOCK_TOURNAMENT;
+  if (!mock || mock.status === 'not_started') return null;
+  const r = mock.matchResults?.[matchId];
+  return r && r.played ? r : null;
+}
+
 function matchCellHTML(matchId) {
   const match = state.matches.find((m) => m.id === matchId);
   if (!match) return '';
@@ -1359,22 +1366,34 @@ function matchCellHTML(matchId) {
   const num = matchId.slice(1);
   const stadium = venueStadium(match.venue);
   const city = venueCity(match.venue);
+  const result = mockResultFor(matchId);
 
   const slotHTML = (position, team) => {
     const isWinner = team && winner === team;
+    let resultClass = '';
+    if (result && isWinner) {
+      resultClass = team === result.winner ? ' is-correct' : ' is-wrong';
+    }
     const pill = teamPillHTML(team, { placeholder: '?' });
     if (!team || !canAdvance || disabled) {
-      return `<div class="bracket-slot bracket-slot--readonly ${isWinner ? 'is-winner' : ''}">${pill}</div>`;
+      return `<div class="bracket-slot bracket-slot--readonly ${isWinner ? 'is-winner' : ''}${resultClass}">${pill}</div>`;
     }
     return `
-      <button type="button" class="bracket-slot ${isWinner ? 'is-winner' : ''}"
+      <button type="button" class="bracket-slot ${isWinner ? 'is-winner' : ''}${resultClass}"
               data-match="${matchId}" data-team="${team}" data-action="advance">
         ${pill}
       </button>`;
   };
 
+  const winnerTeam = result ? state.teamsByCode[result.winner] : null;
+  const resultBand = result ? `
+    <div class="match-result">
+      <span class="match-score">${result.score}</span>
+      ${winnerTeam ? `<span class="match-result-winner">${flagHTML(winnerTeam.code)}<span>${winnerTeam.name}</span></span>` : ''}
+    </div>` : '';
+
   return `
-    <div class="bracket-match" data-match-id="${matchId}">
+    <div class="bracket-match${result ? ' is-played' : ''}" data-match-id="${matchId}">
       <div class="bracket-match-meta">
         <span class="bracket-match-num">#${num}</span>
         <span class="bracket-match-when">${formatKickoff(match.kickoff_at)}</span>
@@ -1382,6 +1401,7 @@ function matchCellHTML(matchId) {
       ${stadium ? `<div class="bracket-match-venue" title="${match.venue}">${stadium}${city ? ` &middot; ${city}` : ''}</div>` : ''}
       ${slotHTML('a', teamA)}
       ${slotHTML('b', teamB)}
+      ${resultBand}
       ${dest ? `<div class="bracket-feed">winner &rarr; <strong>#${dest.slice(1)}</strong></div>` : ''}
     </div>`;
 }
@@ -1458,7 +1478,17 @@ function renderBracket() {
 
   const thirdMatch = state.matches.find((m) => m.stage === 'third');
   state.bracketPairs = bracketPairOrder();
+  const mock = window.MOCK_TOURNAMENT;
+  const showPreviewPill = mock && mock.status && mock.status !== 'not_started';
+  const previewPill = showPreviewPill ? `
+    <div class="bracket-progress-pill" role="status">
+      <span class="bracket-progress-dot" aria-hidden="true"></span>
+      <span class="bracket-progress-label">Live preview</span>
+      <span class="bracket-progress-sep" aria-hidden="true">·</span>
+      <span class="bracket-progress-asof">${mock.asOfLabel || 'In progress'}</span>
+    </div>` : '';
   root.innerHTML = `
+    ${previewPill}
     <div class="bracket-board">
       <div class="bracket-grid">
         ${KNOCKOUT_ROUNDS.map(bracketColumnHTML).join('')}
@@ -1510,24 +1540,99 @@ function renderUserBar() {
   });
 }
 
-function countdownCellsHTML(ms) {
+// Each cell of the countdown is two flip-card digits. The 8 digits across all
+// four cells are addressed by a stable index [0..7] so the per-second tick can
+// update them in place (preserving DOM for the flip animation).
+function digitsForRemaining(ms) {
   const total = Math.max(0, ms);
-  const days = Math.floor(total / 86_400_000);
+  const days  = Math.floor(total / 86_400_000);
   const hours = Math.floor((total % 86_400_000) / 3_600_000);
-  const mins = Math.floor((total % 3_600_000) / 60_000);
-  const secs = Math.floor((total % 60_000) / 1000);
-  const cell = (n, label) => `
+  const mins  = Math.floor((total % 3_600_000) / 60_000);
+  const secs  = Math.floor((total % 60_000) / 1000);
+  const pad = (n) => String(Math.min(99, n)).padStart(2, '0');
+  return (pad(days) + pad(hours) + pad(mins) + pad(secs)).split('');
+}
+
+function flipDigitHTML(idx, digit) {
+  // A flip-digit has 4 layers: two halves (the resting state) and two leaves
+  // (the animated halves that fold during a change). The halves are clipping
+  // containers — the full digit is rendered in each, but only the top half
+  // shows in flip-half--top and only the bottom half shows in flip-half--bottom
+  // (via flex alignment + overflow:hidden).
+  return `
+    <span class="flip-digit" data-flip-id="${idx}" data-digit="${digit}">
+      <span class="flip-half flip-half--top"><span class="flip-num">${digit}</span></span>
+      <span class="flip-half flip-half--bottom"><span class="flip-num">${digit}</span></span>
+      <span class="flip-leaf flip-leaf--top"><span class="flip-num">${digit}</span></span>
+      <span class="flip-leaf flip-leaf--bottom"><span class="flip-num">${digit}</span></span>
+    </span>`;
+}
+
+function countdownCellsHTML(ms) {
+  const d = digitsForRemaining(ms);
+  const cell = (label, i0, i1) => `
     <span class="countdown-cell">
-      <span class="countdown-cell-num">${String(n).padStart(2, '0')}</span>
+      <span class="countdown-cell-num">
+        ${flipDigitHTML(i0, d[i0])}${flipDigitHTML(i1, d[i1])}
+      </span>
       <span class="countdown-cell-label">${label}</span>
     </span>`;
   return `
     <div class="countdown-clock">
-      ${cell(days, 'Days')}
-      ${cell(hours, 'Hrs')}
-      ${cell(mins, 'Min')}
-      ${cell(secs, 'Sec')}
+      ${cell('Days', 0, 1)}
+      ${cell('Hrs',  2, 3)}
+      ${cell('Min',  4, 5)}
+      ${cell('Sec',  6, 7)}
     </div>`;
+}
+
+function flipDigit(slot, newDigit) {
+  const oldDigit = slot.dataset.digit;
+  if (oldDigit === newDigit) return;
+  slot.dataset.digit = newDigit;
+  // Both resting halves go to NEW immediately. The OLD frame lives only on
+  // the top leaf, which is layered on top during the animation and peels
+  // away to reveal the NEW underneath.
+  slot.querySelector('.flip-half--top    .flip-num').textContent = newDigit;
+  slot.querySelector('.flip-half--bottom .flip-num').textContent = newDigit;
+  slot.querySelector('.flip-leaf--top    .flip-num').textContent = oldDigit;
+  slot.querySelector('.flip-leaf--bottom .flip-num').textContent = newDigit;
+  slot.classList.remove('is-flipping');
+  // Force layout so removing + re-adding the class restarts the keyframes.
+  void slot.offsetWidth;
+  slot.classList.add('is-flipping');
+  setTimeout(() => slot.classList.remove('is-flipping'), 480);
+}
+
+function tickCountdownDigits(remaining) {
+  const slots = document.querySelectorAll('#countdown-banner .flip-digit');
+  if (slots.length !== 8) return;
+  const digits = digitsForRemaining(remaining);
+  slots.forEach((slot, idx) => flipDigit(slot, digits[idx]));
+}
+
+function refreshProgressLine() {
+  const old = document.querySelector('#countdown-banner .countdown-progress');
+  if (!old) return;
+  const tmp = document.createElement('div');
+  tmp.innerHTML = progressLineHTML();
+  const next = tmp.querySelector('.countdown-progress');
+  if (next) old.replaceWith(next);
+}
+
+function tickCountdown() {
+  const banner = document.getElementById('countdown-banner');
+  if (!banner) return;
+  const remaining = new Date(LOCK_DATE_ISO) - new Date();
+  const wasLocked = banner.classList.contains('is-locked');
+  const nowLocked = remaining <= 0;
+  if (wasLocked !== nowLocked) {
+    // Lock state flipped — banner structure differs, so do a full rebuild.
+    renderCountdownBanner();
+    return;
+  }
+  if (!nowLocked) tickCountdownDigits(remaining);
+  refreshProgressLine();
 }
 
 function progressLineHTML() {
@@ -1588,6 +1693,7 @@ function renderCountdownBanner() {
     : `<div class="countdown-headline">Picks lock in</div>
        ${countdownCellsHTML(remaining)}`;
 
+  banner.classList.toggle('is-locked', locked);
   banner.innerHTML = `
     ${headline}
     <div class="countdown-when">${locked ? 'First kickoff: ' : ''}${whenStr}</div>
@@ -1751,14 +1857,10 @@ function renderStepper() {
 }
 
 function startCountdownTicker() {
-  // Tick once per second so the countdown stays live without redrawing the rest.
-  setInterval(() => {
-    const banner = document.getElementById('countdown-banner');
-    if (!banner) return;
-    // Only the countdown numbers change every second; the progress line is
-    // re-rendered too because it's cheap and keeps "Unsaved changes" honest.
-    renderCountdownBanner();
-  }, 1000);
+  // Tick once per second. tickCountdown() updates only the digits in place
+  // (preserving the flip-card DOM so the flip animation can play) plus the
+  // progress line. Full re-renders happen only when the lock state changes.
+  setInterval(tickCountdown, 1000);
 }
 
 // ---------- Init ----------

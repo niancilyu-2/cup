@@ -27,6 +27,10 @@
   /* Winner state — pitch green, calmer than tailwind neon */
   --winner:      #3da55a;
   --winner-soft: rgba(61, 165, 90, 0.16);
+  --lose:        #d6553b;
+  --lose-soft:   rgba(214, 85, 59, 0.14);
+  --banner:      #6b8caf;   /* steel-blue — categorical, neither yellow nor green */
+  --banner-soft: rgba(107, 140, 175, 0.18);
 
   --radius: 4px;
   --gutter: 1.25rem;
@@ -34,6 +38,7 @@
   --font-sans:    'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-display: 'Oswald', 'Inter', system-ui, sans-serif;
   --font-board:   'Big Shoulders Display', 'Oswald', 'Impact', sans-serif;
+  --font-clock:   'Share Tech Mono', 'JetBrains Mono', ui-monospace, monospace;
   --font-mono:    'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
 }
 
@@ -410,45 +415,114 @@ main > * { min-width: 0; }
   display: inline-flex;
   flex-direction: column;
   align-items: center;
-  min-width: 78px;
   padding: 0;
   background: transparent;
   border-radius: 0;
 }
 
+/* Wrapper for the two flip-digits per cell. Sets the font + sizing context;
+   actual rendering lives on the .flip-digit children. */
 .countdown-cell-num {
   position: relative;
-  display: block;
-  width: 100%;
-  padding: 0.45rem 0.65rem 0.55rem;
-  background: linear-gradient(180deg, #161310 0%, #0a0805 100%);
-  border-radius: 4px;
-  font-family: var(--font-board);
-  font-weight: 800;
-  font-size: 2.6rem;
+  display: inline-flex;
+  gap: 0.18rem;
+  font-family: var(--font-clock);
+  font-weight: 400;
+  font-size: 3.1rem;
   line-height: 1;
   color: #eedba8;
-  text-shadow:
-    0 1px 0 rgba(0, 0, 0, 0.85),
-    0 0 10px rgba(238, 219, 168, 0.14);
+  font-variant-numeric: tabular-nums;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.55));
+}
+
+/* ---- Flip-card digit ---- */
+
+.flip-digit {
+  position: relative;
+  display: inline-block;
+  width: 0.66em;
+  height: 1em;
+  line-height: 1;
+  perspective: 600px;
+}
+
+.flip-half,
+.flip-leaf {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 50%;
+  overflow: hidden;
+  background: linear-gradient(180deg, #161310 0%, #0a0805 100%);
+  display: flex;
+  justify-content: center;
+  color: #eedba8;
+  text-shadow: 0 0 8px rgba(238, 219, 168, 0.18);
   box-shadow:
     inset 0 1px 0 rgba(255, 220, 150, 0.08),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.7),
-    0 2px 4px rgba(0, 0, 0, 0.55);
+    inset 0 -1px 0 rgba(0, 0, 0, 0.7);
+}
+
+.flip-half--top,
+.flip-leaf--top {
+  top: 0;
+  align-items: flex-start;
+  border-radius: 4px 4px 0 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.85);
+}
+
+.flip-half--bottom,
+.flip-leaf--bottom {
+  bottom: 0;
+  align-items: flex-end;
+  border-radius: 0 0 4px 4px;
+}
+
+.flip-num {
+  display: block;
+  line-height: 1;
+  font: inherit;
   font-variant-numeric: tabular-nums;
 }
 
-/* Horizontal split-flap seam through the digit */
-.countdown-cell-num::before {
-  content: '';
-  position: absolute;
-  left: 4px;
-  right: 4px;
-  top: 50%;
-  height: 1px;
-  background: rgba(0, 0, 0, 0.75);
-  box-shadow: 0 1px 0 rgba(255, 220, 150, 0.05);
-  pointer-events: none;
+/* The animated halves are hidden until the digit changes. Each is its own
+   card that pivots on the seam: top leaf peels down (0 → -90), bottom leaf
+   falls in from above (90 → 0) with a slight overlap so the cascade reads as
+   one continuous arc. */
+.flip-leaf {
+  display: none;
+  z-index: 2;
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
+.flip-leaf--top    { transform-origin: bottom; }
+.flip-leaf--bottom { transform-origin: top;   transform: rotateX(90deg); }
+
+.flip-digit.is-flipping .flip-leaf { display: flex; }
+
+.flip-digit.is-flipping .flip-leaf--top {
+  animation: flip-top-down 220ms cubic-bezier(0.55, 0, 0.8, 0.35) forwards;
+}
+
+.flip-digit.is-flipping .flip-leaf--bottom {
+  animation: flip-bottom-up 240ms cubic-bezier(0.2, 0.65, 0.3, 1) 180ms forwards;
+}
+
+@keyframes flip-top-down {
+  from { transform: rotateX(0); }
+  to   { transform: rotateX(-90deg); }
+}
+
+@keyframes flip-bottom-up {
+  from { transform: rotateX(90deg); }
+  to   { transform: rotateX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flip-digit.is-flipping .flip-leaf--top,
+  .flip-digit.is-flipping .flip-leaf--bottom { animation: none; }
+  .flip-digit.is-flipping .flip-leaf { display: none; }
 }
 
 .countdown-cell-label {
@@ -771,7 +845,7 @@ main > * { min-width: 0; }
 
 .group-card-header {
   padding: 0.6rem 0.9rem;
-  background: var(--accent-soft);
+  background: var(--banner-soft);
   border-bottom: 1px solid var(--border);
   color: var(--text);
   font-weight: 600;
@@ -1172,8 +1246,17 @@ main > * { min-width: 0; }
   display: flex;
   flex-direction: column;
   justify-content: space-around;
-  gap: 0.5rem;
+  /* The two matches in a pair must never touch — they need clear vertical
+     daylight so the connector stubs read as separate stems. The gap pushes
+     them apart symmetrically around the pair midpoint, so the connector
+     geometry that depends on that midpoint stays correct. */
+  gap: 2rem;
 }
+
+/* R32 packs 16 matches into one column, so each pair has the least slack to
+   distribute. Give each match a guaranteed minimum height there so the gap
+   isn't getting eaten by flex compression. */
+.bracket-column--r32 .bracket-match { min-height: 130px; }
 
 /* Vertical line joining the two matches in a pair. */
 .bracket-column:not(.bracket-column--final) .bracket-pair::after {
@@ -1308,6 +1391,109 @@ main > * { min-width: 0; }
   color: var(--winner);
   font-weight: 700;
   padding-left: 0.5rem;
+}
+
+/* When a mock/real result is known, recolor the user's picked slot to show
+   whether they nailed it. The base is-winner check (✓) gets overridden by
+   one of these so the marker reads as "verdict", not just "your pick". */
+.bracket-slot.is-winner.is-correct {
+  background: var(--winner-soft);
+}
+
+.bracket-slot.is-winner.is-correct::after {
+  content: '✓';
+  color: var(--winner);
+}
+
+.bracket-slot.is-winner.is-wrong {
+  background: var(--lose-soft);
+  color: var(--text-muted);
+}
+
+.bracket-slot.is-winner.is-wrong::after {
+  content: '✗';
+  color: var(--lose);
+}
+
+/* Result band shown under each match cell when the match has been played. */
+.bracket-match.is-played .bracket-match-meta {
+  color: var(--text-faint);
+}
+
+.match-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.35rem 0.75rem;
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
+  font: 600 0.72rem var(--font-board);
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+}
+
+.match-score {
+  font: 700 0.85rem var(--font-board);
+  color: var(--text);
+  letter-spacing: 0.06em;
+}
+
+.match-result-winner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--winner);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.match-result-winner .fi {
+  width: 18px;
+  height: 13px;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+/* Live-preview pill at the top of the bracket section. */
+.bracket-progress-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: max-content;
+  max-width: 100%;
+  margin: 0 auto 1rem;
+  padding: 0.4rem 0.85rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-muted);
+  font: 600 0.72rem var(--font-display);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.bracket-progress-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+  animation: bracket-progress-pulse 1.8s ease-in-out infinite;
+}
+
+.bracket-progress-label { color: var(--accent); }
+.bracket-progress-sep   { color: var(--text-faint); }
+.bracket-progress-asof  { color: var(--text); }
+
+@keyframes bracket-progress-pulse {
+  0%, 100% { box-shadow: 0 0 0 4px var(--accent-soft); }
+  50%      { box-shadow: 0 0 0 6px transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bracket-progress-dot { animation: none; }
 }
 
 .team-pill {
@@ -1898,8 +2084,7 @@ main > * { min-width: 0; }
   main { padding: 1.25rem 1rem 3rem; }
   #countdown-banner { padding: 1.4rem 1rem 1.2rem; }
   .countdown-clock { gap: 0.4rem; }
-  .countdown-cell { min-width: 58px; }
-  .countdown-cell-num { font-size: 1.9rem; padding: 0.35rem 0.45rem 0.45rem; }
+  .countdown-cell-num { font-size: 2.3rem; gap: 0.12rem; }
   .countdown-cell-label { font-size: 0.55rem; letter-spacing: 0.22em; margin-top: 0.4rem; }
   .countdown-locked { font-size: 1.55rem; }
   .countdown-when { font-size: 0.62rem; letter-spacing: 0.14em; }
