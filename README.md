@@ -31,8 +31,6 @@ Picks live in a **draft** until you commit them. **Save my picks** writes the dr
 | SF winner | 8 | 2 | 16 |
 | Final winner | 10 | 1 | 10 |
 | **Perfect bracket** | | | **134** |
-| Exact-score bonus (knockouts only, R32+) | +2 | up to 32 | +64 max |
-| **Theoretical max** | | | **198** |
 
 Tiebreaker: closest guess to the actual champion's real average goals per game wins, regardless of which team the player picked.
 

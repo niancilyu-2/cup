@@ -103,16 +103,6 @@ CREATE TABLE IF NOT EXISTS bracket_picks (
   PRIMARY KEY (player_id, match_id)
 );
 
--- Optional exact-score predictions for any match (bonus points).
-CREATE TABLE IF NOT EXISTS exact_score_picks (
-  player_id UUID NOT NULL REFERENCES players(id) ON DELETE CASCADE,
-  match_id TEXT NOT NULL REFERENCES matches(id),
-  score_a INT NOT NULL CHECK (score_a >= 0),
-  score_b INT NOT NULL CHECK (score_b >= 0),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  PRIMARY KEY (player_id, match_id)
-);
-
 -- Tiebreaker: the player's predicted average goals per game for their
 -- predicted champion (i.e. whichever team they picked to win the Final).
 -- Champion team itself is read from bracket_picks for match M104, so we don't
@@ -136,7 +126,6 @@ ALTER TABLE players           ENABLE ROW LEVEL SECURITY;
 ALTER TABLE group_picks       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE r32_draft         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bracket_picks     ENABLE ROW LEVEL SECURITY;
-ALTER TABLE exact_score_picks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tiebreaker_picks  ENABLE ROW LEVEL SECURITY;
 
 -- Reference tables: read for everyone, no writes from anon.
@@ -154,7 +143,6 @@ CREATE POLICY "players_update_submission" ON players FOR UPDATE USING (true) WIT
 CREATE POLICY "group_picks_all"       ON group_picks       FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "r32_draft_all"         ON r32_draft         FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "bracket_picks_all"     ON bracket_picks     FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "exact_score_picks_all" ON exact_score_picks FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "tiebreaker_picks_all"  ON tiebreaker_picks  FOR ALL USING (true) WITH CHECK (true);
 
 -- Matches: anon may UPDATE results (admin entry is gated client-side by ADMIN_CODE).

@@ -7,53 +7,53 @@
   const MOCK = [
     {
       rank: 1, name: 'Reid', champion: { code: 'br', name: 'Brazil' },
-      points: 142, tiebreaker: 2.4,
-      breakdown: { groups: 19, r32: 26, r16: 24, qf: 15, sf: 16, final: 10, bonus: 32 },
+      points: 112, tiebreaker: 2.4,
+      breakdown: { groups: 19, r32: 26, r16: 26, qf: 15, sf: 16, final: 10 },
     },
     {
       rank: 2, name: 'Nianci', champion: { code: 'fr', name: 'France' },
-      points: 138, tiebreaker: 1.8,
-      breakdown: { groups: 21, r32: 24, r16: 20, qf: 20, sf: 16, final: 10, bonus: 27 },
+      points: 111, tiebreaker: 1.8,
+      breakdown: { groups: 21, r32: 24, r16: 20, qf: 20, sf: 16, final: 10 },
     },
     {
       rank: 3, name: 'Alex', champion: { code: 'ar', name: 'Argentina' },
-      points: 131, tiebreaker: 2.1,
-      breakdown: { groups: 18, r32: 22, r16: 20, qf: 15, sf: 16, final: 10, bonus: 30 },
+      points: 101, tiebreaker: 2.1,
+      breakdown: { groups: 18, r32: 22, r16: 20, qf: 15, sf: 16, final: 10 },
     },
     {
       rank: 4, name: 'Sam', champion: { code: 'es', name: 'Spain' },
-      points: 124, tiebreaker: 2.0,
-      breakdown: { groups: 17, r32: 22, r16: 20, qf: 15, sf: 16, final: 10, bonus: 24 },
+      points: 100, tiebreaker: 2.0,
+      breakdown: { groups: 17, r32: 22, r16: 20, qf: 15, sf: 16, final: 10 },
     },
     {
-      rank: 5, name: 'Jordan', champion: { code: 'br', name: 'Brazil' },
-      points: 118, tiebreaker: 2.5,
-      breakdown: { groups: 16, r32: 20, r16: 16, qf: 15, sf: 16, final: 10, bonus: 25 },
+      rank: 5, name: 'Casey', champion: { code: 'pt', name: 'Portugal' },
+      points: 93, tiebreaker: 1.9,
+      breakdown: { groups: 16, r32: 20, r16: 16, qf: 15, sf: 16, final: 10 },
     },
     {
-      rank: 6, name: 'Casey', champion: { code: 'pt', name: 'Portugal' },
-      points: 112, tiebreaker: 1.9,
-      breakdown: { groups: 16, r32: 20, r16: 16, qf: 15, sf: 16, final: 10, bonus: 19 },
+      rank: 6, name: 'Jordan', champion: { code: 'br', name: 'Brazil' },
+      points: 93, tiebreaker: 2.5,
+      breakdown: { groups: 16, r32: 20, r16: 16, qf: 15, sf: 16, final: 10 },
     },
     {
       rank: 7, name: 'Priya', champion: { code: 'gb-eng', name: 'England' },
-      points: 108, tiebreaker: 1.7,
-      breakdown: { groups: 15, r32: 18, r16: 16, qf: 15, sf: 16, final: 10, bonus: 18 },
+      points: 90, tiebreaker: 1.7,
+      breakdown: { groups: 15, r32: 18, r16: 16, qf: 15, sf: 16, final: 10 },
     },
     {
       rank: 8, name: 'Dosan', champion: { code: 'de', name: 'Germany' },
-      points: 99, tiebreaker: 1.5,
-      breakdown: { groups: 14, r32: 18, r16: 12, qf: 10, sf: 16, final: 10, bonus: 19 },
+      points: 80, tiebreaker: 1.5,
+      breakdown: { groups: 14, r32: 18, r16: 12, qf: 10, sf: 16, final: 10 },
     },
     {
       rank: 9, name: 'Maria', champion: { code: 'nl', name: 'Netherlands' },
-      points: 88, tiebreaker: 2.2,
-      breakdown: { groups: 13, r32: 16, r16: 12, qf: 10, sf: 16, final: 0, bonus: 21 },
+      points: 67, tiebreaker: 2.2,
+      breakdown: { groups: 13, r32: 16, r16: 12, qf: 10, sf: 16, final: 0 },
     },
     {
       rank: 10, name: 'Tomás', champion: { code: 'ar', name: 'Argentina' },
-      points: 76, tiebreaker: 1.9,
-      breakdown: { groups: 12, r32: 14, r16: 12, qf: 10, sf: 8, final: 10, bonus: 10 },
+      points: 66, tiebreaker: 1.9,
+      breakdown: { groups: 12, r32: 14, r16: 12, qf: 10, sf: 8, final: 10 },
     },
   ];
 
@@ -109,10 +109,6 @@
       <div class="lb-breakdown" role="tooltip">
         <div class="lb-bd-title">Score breakdown</div>
         ${rows}
-        <div class="lb-bd-row lb-bd-bonus">
-          <span class="lb-bd-label">Exact-score bonus</span>
-          <span class="lb-bd-val">+${b.bonus}</span>
-        </div>
         <div class="lb-bd-total">
           <span>Total</span>
           <span>${p.points}</span>

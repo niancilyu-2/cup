@@ -27,7 +27,6 @@ All sections open from day 1 and lock at the first WC kickoff on June 11.
 - **Wildcards**: pick exactly 8 of the 12 third-place teams. The R32 matchups are looked up from FIFA's official Annexe C table (`src/wildcards-table.js`); the user does not assign slots manually.
 - **Bracket winners**: click a team in each knockout match to advance through R32 → R16 → QF → SF → Final, plus the 3rd-place match. R32 auto-populates from group ranks + wildcards.
 - **Tiebreaker**: predicted average goals per game for the player's predicted champion. The champion is derived from the Final winner pick (`bracket_picks` row for `M104`), not picked separately. Stored as `tiebreaker_picks.champion_avg_goals NUMERIC(4,2)`.
-- Optional exact-score bonus predictions for knockout matches (R32+) land in a later sub-phase.
 
 ## Two-tier save model
 
@@ -45,10 +44,9 @@ All sections open from day 1 and lock at the first WC kickoff on June 11.
 
 - Group standings: 1 point per correctly placed team (1st or 2nd slot of any group)
 - R32 winner: 2 / R16: 4 / QF: 5 / SF: 8 / Final: 10
-- Exact-score bonus: +2 per knockout match (R32+) where the predicted score matches the actual. **Does NOT apply to group-stage matches.**
 - Tiebreaker: closest guess to the actual tournament champion's average goals per game (a decimal per player). Compared against reality regardless of which team the player picked to win.
 
-Perfect bracket = 134 points before bonuses. Max with all 32 exact-score bonuses = 198.
+Perfect bracket = 134 points.
 
 ## Files
 

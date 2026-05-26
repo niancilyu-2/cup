@@ -2045,8 +2045,6 @@ main > * { min-width: 0; }
   font-weight: 500;
 }
 
-.lb-bd-bonus .lb-bd-val { color: var(--winner); }
-
 .lb-bd-total {
   display: flex;
   justify-content: space-between;
