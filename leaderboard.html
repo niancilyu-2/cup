@@ -1,6 +1,6 @@
 <!--
 ABOUTME: Standalone leaderboard page for the WC 2026 bracket.
-ABOUTME: Static placeholder until scoring engine lands; no Supabase or picks state required.
+ABOUTME: Loads players + picks + match results from Supabase and runs the scoring engine to render ranks.
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -72,7 +72,7 @@ ABOUTME: Static placeholder until scoring engine lands; no Supabase or picks sta
   <main>
     <section id="leaderboard-section" class="section--center">
       <h2>Leaderboard</h2>
-      <p class="section-help">Standings go live at first kickoff on June 11, 2026. The table below is a preview with synthetic data so you can see how it'll look.</p>
+      <p class="section-help">Standings go live at first kickoff on June 11, 2026. Until then, real picks are scored against a demo tournament arc so you can preview how the leaderboard will look. Click a player's name to view their bracket.</p>
       <div id="leaderboard"></div>
     </section>
   </main>
@@ -84,6 +84,9 @@ ABOUTME: Static placeholder until scoring engine lands; no Supabase or picks sta
   </footer>
 
   <script src="ticker.js" defer></script>
-  <script src="leaderboard.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="mock-results.js"></script>
+  <script type="module" src="leaderboard.js"></script>
 </body>
 </html>

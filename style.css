@@ -1939,6 +1939,42 @@ main > * { min-width: 0; }
   vertical-align: 0.15em;
 }
 
+.lb-name-link {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px dotted var(--border-strong);
+  transition: color 120ms ease, border-color 120ms ease;
+}
+.lb-name-link:hover,
+.lb-name-link:focus-visible {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  outline: none;
+}
+
+.lb-champ-empty,
+.lb-tb-empty {
+  color: var(--text-faint);
+  font-weight: 500;
+}
+
+.lb-empty {
+  padding: 1.5rem 0.5rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.lb-error {
+  padding: 1rem 1.25rem;
+  border: 1px solid rgba(214, 85, 59, 0.55);
+  background: rgba(214, 85, 59, 0.12);
+  color: var(--lose);
+  border-radius: var(--radius);
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+}
+
 .lb-col-champ {
   color: var(--text);
   white-space: nowrap;
