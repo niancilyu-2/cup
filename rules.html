@@ -193,6 +193,14 @@ ABOUTME: Linked from index.html header; no JS or Supabase required.
     </section>
 
     <section class="rules-section">
+      <h3>How wildcards get slotted into the Round of 32</h3>
+      <p>Eight of the twelve third-place finishers advance. Which third-place team plays whom in the R32 depends on <em>which eight groups</em> contribute a wildcard, not on the teams themselves &mdash; FIFA pre-computed every combination into a fixed lookup table called <strong>Annexe&nbsp;C</strong>.</p>
+      <p>There are <code>C(12,8) = 495</code> possible combinations of contributing groups. Annexe&nbsp;C lists all 495, and for each combination it spells out which third-place team is paired with which group-winner / group-runner-up in the Round of 32. The bracket code on this site reads from that same table, so once you've ranked all 12 groups and chosen your 8 wildcards, every R32 slot is filled automatically.</p>
+      <p>The full text of Annexe&nbsp;C lives in FIFA's official tournament regulations:</p>
+      <p><a class="rules-link" href="https://digitalhub.fifa.com/m/636f5c9c6f29771f/original/FWC2026_regulations_EN.pdf" target="_blank" rel="noopener">FIFA World Cup 26&trade; Regulations (PDF) &rarr; Annexe&nbsp;C</a></p>
+    </section>
+
+    <section class="rules-section">
       <h3>How results get entered</h3>
       <p>The site fetches match results automatically every 30 minutes from a public data source. If that ever falls behind or breaks, an admin can enter scores manually so the leaderboard stays current.</p>
     </section>

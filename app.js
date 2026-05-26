@@ -85,6 +85,42 @@ function isDirty() {
   return JSON.stringify(state.picks.draft) !== JSON.stringify(state.picks.saved);
 }
 
+function hasResults() {
+  const m = window.MOCK_TOURNAMENT;
+  return !!(m && m.status && m.status !== 'not_started' && m.groupOutcomes);
+}
+
+function groupOutcomeFor(groupCode) {
+  if (!hasResults()) return null;
+  return window.MOCK_TOURNAMENT.groupOutcomes[groupCode] || null;
+}
+
+function pickMarkHTML(correct) {
+  return correct
+    ? '<span class="pick-mark is-correct" aria-label="Correct">✓</span>'
+    : '<span class="pick-mark is-wrong" aria-label="Wrong">✗</span>';
+}
+
+function dirtyCount() {
+  let n = 0;
+  const draftGroups = state.picks.draft.groups || {};
+  const savedGroups = state.picks.saved.groups || {};
+  const groupCodes = new Set([...Object.keys(draftGroups), ...Object.keys(savedGroups)]);
+  for (const code of groupCodes) {
+    const d = draftGroups[code] || { first: null, second: null, third: null, advances: false };
+    const s = savedGroups[code] || { first: null, second: null, third: null, advances: false };
+    if (d.first !== s.first || d.second !== s.second || d.third !== s.third || !!d.advances !== !!s.advances) n++;
+  }
+  const draftBracket = state.picks.draft.bracket || {};
+  const savedBracket = state.picks.saved.bracket || {};
+  const matchIds = new Set([...Object.keys(draftBracket), ...Object.keys(savedBracket)]);
+  for (const id of matchIds) {
+    if ((draftBracket[id] || null) !== (savedBracket[id] || null)) n++;
+  }
+  if ((state.picks.draft.tiebreaker ?? null) !== (state.picks.saved.tiebreaker ?? null)) n++;
+  return n;
+}
+
 function snapshot(obj) {
   return JSON.parse(JSON.stringify(obj));
 }
@@ -601,6 +637,7 @@ function groupCardHTML(groupCode) {
   const sel = state.selection;
   const hasSelection = !disabled && sel && sel.group === groupCode;
   const selectedTeam = hasSelection ? state.teamsByCode[sel.code] : null;
+  const outcome = groupOutcomeFor(groupCode);
   const rows = codes
     .map((code, idx) => {
       const team = state.teamsByCode[code];
@@ -615,6 +652,11 @@ function groupCardHTML(groupCode) {
         isSwapTarget ? 'is-swap-target' : '',
       ].filter(Boolean).join(' ');
       const chipContent = isSelected ? '↕' : rank;
+      let mark = '';
+      if (outcome && (rank === 1 || rank === 2)) {
+        const actual = rank === 1 ? outcome.first : outcome.second;
+        mark = pickMarkHTML(code === actual);
+      }
       return `
         <li>
           <button type="button"
@@ -625,6 +667,7 @@ function groupCardHTML(groupCode) {
             <span class="rank-chip rank-${rank} ${isSelected ? 'is-selected-chip' : ''}">${chipContent}</span>
             ${flagHTML(code)}
             <span class="team-code">${code}</span>
+            ${mark}
           </button>
         </li>`;
     })
@@ -752,12 +795,14 @@ function renderWildcardsSection() {
       const active = !!p.advances;
       const atMax = count >= 8 && !active;
       const teamName = team ? team.name : '—';
+      const outcome = groupOutcomeFor(g.code);
+      const mark = outcome ? pickMarkHTML(active === !!outcome.third_advances) : '';
       return `
         <button type="button" class="wildcard-card ${active ? 'is-active' : ''}"
                 data-group="${g.code}"
                 ${disabled || atMax ? 'disabled' : ''}
                 ${atMax ? 'title="Already 8 picked — deselect another first"' : ''}>
-          <header class="wildcard-card-group">Group ${g.code} · 3rd</header>
+          <header class="wildcard-card-group">Group ${g.code} · 3rd ${mark}</header>
           <div class="wildcard-card-team">
             ${team ? flagHTML(team.code) : ''}
             <span>${teamName}</span>
@@ -948,7 +993,6 @@ function renderActionsBar() {
   }
   if (submitted) {
     bar.innerHTML = `
-      <span class="status-pill submitted">✓ Submitted &mdash; you can edit and re-submit</span>
       <button type="button" class="btn-secondary" id="edit-picks-btn">Edit picks</button>
     `;
     return;
@@ -1470,17 +1514,7 @@ function renderBracket() {
 
   const thirdMatch = state.matches.find((m) => m.stage === 'third');
   state.bracketPairs = bracketPairOrder();
-  const mock = window.MOCK_TOURNAMENT;
-  const showPreviewPill = mock && mock.status && mock.status !== 'not_started';
-  const previewPill = showPreviewPill ? `
-    <div class="bracket-progress-pill" role="status">
-      <span class="bracket-progress-dot" aria-hidden="true"></span>
-      <span class="bracket-progress-label">Live preview</span>
-      <span class="bracket-progress-sep" aria-hidden="true">·</span>
-      <span class="bracket-progress-asof">${mock.asOfLabel || 'In progress'}</span>
-    </div>` : '';
   root.innerHTML = `
-    ${previewPill}
     <div class="bracket-board">
       <div class="bracket-grid">
         ${KNOCKOUT_ROUNDS.map(bracketColumnHTML).join('')}
@@ -1628,38 +1662,20 @@ function tickCountdown() {
 }
 
 function progressLineHTML() {
-  const ranked = groupsRankedCount();
-  const wcCount = advancingGroups().length;
-  const ko = bracketMatches();
-  const bracketWinners = ko
-    .filter((m) => effectiveWinner(m.id, teamForSlot(m.id, 'a'), teamForSlot(m.id, 'b'))).length;
-  const bracketTotal = ko.length;
-  const champCode = predictedChampionCode();
-  const champTeam = champCode ? state.teamsByCode[champCode] : null;
-  const avg = state.picks.draft.tiebreaker;
-
-  const groupsClass = ranked === 12 ? 'ok' : ranked > 0 ? 'warn' : 'dim';
-  const wcClass = wcCount === 8 ? 'ok' : wcCount > 0 ? 'warn' : 'dim';
-  const brktClass = bracketWinners === bracketTotal ? 'ok' : bracketWinners > 0 ? 'warn' : 'dim';
-  const champClass = champTeam && avg != null ? 'ok' : champTeam || avg != null ? 'warn' : 'dim';
-
   const dirty = isDirty();
   const submitted = isSubmitted();
   let saveStateLabel;
-  if (submitted) saveStateLabel = '<span class="ok">✓ Submitted</span>';
-  else if (dirty) saveStateLabel = '<span class="warn">● Unsaved changes</span>';
-  else saveStateLabel = '<span class="dim">All changes saved</span>';
+  if (dirty) {
+    const n = dirtyCount();
+    const label = n === 1 ? '1 unsaved change' : `${n} unsaved changes`;
+    saveStateLabel = `Status: <span class="warn">● ${label}</span>`;
+  } else if (submitted) {
+    saveStateLabel = 'Status: <span class="ok">✓ Submitted</span>';
+  } else {
+    saveStateLabel = 'Status: <span class="dim">All changes saved</span>';
+  }
 
-  return `
-    <div class="countdown-progress">
-      <span>Groups: <span class="${groupsClass}">${ranked}/12 ranked</span></span>
-      <span>Wildcards: <span class="${wcClass}">${wcCount}/8 picked</span></span>
-      <span>Bracket: <span class="${brktClass}">${bracketWinners}/${bracketTotal} winners</span></span>
-      <span>Tiebreaker: <span class="${champClass}">${
-        champTeam ? `${champTeam.code} · ${avg != null ? avg : '—'} avg` : 'no champion yet'
-      }</span></span>
-      <span>${saveStateLabel}</span>
-    </div>`;
+  return `<div class="countdown-progress">${saveStateLabel}</div>`;
 }
 
 function renderCountdownBanner() {
@@ -1809,6 +1825,7 @@ function renderStepper() {
 
   const tbDone = state.picks.draft.tiebreaker != null ? 1 : 0;
   const tbComplete = tbDone === 1;
+  const champCode = predictedChampionCode();
 
   let s1, s2, s3, s4;
   s1 = groupsComplete ? 'is-complete' : 'is-current';
@@ -1822,11 +1839,18 @@ function renderStepper() {
   else if (tbComplete) s4 = 'is-complete';
   else s4 = 'is-current';
 
-  const stepHTML = (n, href, name, done, total, st) => {
+  const stepHTML = (n, href, name, done, total, st, countOverride) => {
     const numContent = st === 'is-complete' ? '✓' : n;
-    const countText = st === 'is-locked'
-      ? 'Locked'
-      : (st === 'is-complete' ? `${done} / ${total} ✓` : `${done} / ${total}`);
+    let countText;
+    if (countOverride != null) {
+      countText = countOverride;
+    } else if (st === 'is-locked') {
+      countText = 'Locked';
+    } else if (st === 'is-complete') {
+      countText = `${done} / ${total} ✓`;
+    } else {
+      countText = `${done} / ${total}`;
+    }
     return `
       <a href="${href}" class="step ${st}">
         <span class="step-num">${numContent}</span>
@@ -1837,6 +1861,14 @@ function renderStepper() {
       </a>`;
   };
 
+  let tbCount = null;
+  if (s4 !== 'is-locked' && champCode) {
+    const avg = state.picks.draft.tiebreaker;
+    tbCount = avg != null
+      ? `${champCode} · ${avg} avg ✓`
+      : `${champCode} · — avg`;
+  }
+
   el.innerHTML = `
     ${stepHTML(1, '#groups-section', 'Group Stage', groupsDone, groupsTotal, s1)}
     <span class="step-arrow" aria-hidden="true">→</span>
@@ -1844,7 +1876,7 @@ function renderStepper() {
     <span class="step-arrow" aria-hidden="true">→</span>
     ${stepHTML(3, '#bracket-section', 'Bracket', bracketDone, bracketTotal, s3)}
     <span class="step-arrow" aria-hidden="true">→</span>
-    ${stepHTML(4, '#tiebreaker-section', 'Tiebreaker', tbDone, 1, s4)}
+    ${stepHTML(4, '#tiebreaker-section', 'Tiebreaker', tbDone, 1, s4, tbCount)}
   `;
 }
 

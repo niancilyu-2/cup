@@ -299,7 +299,7 @@ h2 {
 }
 
 main {
-  max-width: 1200px;
+  max-width: 1440px;
   margin: 0 auto;
   padding: 1.75rem 1.5rem 4rem;
   display: grid;
@@ -328,6 +328,19 @@ main > * { min-width: 0; }
   margin-bottom: 1rem;
   max-width: 64ch;
 }
+
+.pick-section .section-help {
+  font-size: 0.78rem;
+  font-style: italic;
+  margin-bottom: 0;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* Override the wrap-to-own-line rule for collapsible sections — on the picks
+   page we want the explainer to ride alongside the stage label. */
+.pick-section.is-collapsible .section-head .section-help { flex-basis: 0; }
+.pick-section.is-collapsible .section-head h2 { flex: 0 0 auto; }
 
 /* ---- Collapsible sections (Groups + Wildcards) ---- */
 
@@ -710,6 +723,7 @@ main > * { min-width: 0; }
   gap: 0.5rem;
   padding: 0.5rem;
   background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
 }
 
@@ -930,7 +944,7 @@ main > * { min-width: 0; }
 
 .team-row {
   display: grid;
-  grid-template-columns: 24px 26px minmax(0, 1fr);
+  grid-template-columns: 24px 26px minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.65rem;
   padding: 0.55rem 0.85rem 0.55rem 0.95rem;
@@ -994,6 +1008,36 @@ main > * { min-width: 0; }
 
 .team-row.just-swapped {
   animation: swap-pulse 350ms ease-out;
+}
+
+/* Correctness marks shown next to picks once real (or mock) results are in. */
+.pick-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1;
+  font-family: var(--font-sans);
+}
+
+.pick-mark.is-correct {
+  background: var(--winner-soft);
+  color: var(--winner);
+}
+
+.pick-mark.is-wrong {
+  background: var(--lose-soft);
+  color: var(--lose);
+}
+
+.wildcard-card-group .pick-mark {
+  margin-left: 0.4rem;
+  vertical-align: middle;
 }
 
 .team-row.is-default .team-code { color: var(--text-muted); }
@@ -1486,46 +1530,6 @@ main > * { min-width: 0; }
   color: var(--text-faint);
 }
 
-/* Live-preview pill at the top of the bracket section. */
-.bracket-progress-pill {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  width: max-content;
-  max-width: 100%;
-  margin: 0 auto 1rem;
-  padding: 0.4rem 0.85rem;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  color: var(--text-muted);
-  font: 600 0.72rem var(--font-display);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.bracket-progress-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 0 4px var(--accent-soft);
-  animation: bracket-progress-pulse 1.8s ease-in-out infinite;
-}
-
-.bracket-progress-label { color: var(--accent); }
-.bracket-progress-sep   { color: var(--text-faint); }
-.bracket-progress-asof  { color: var(--text); }
-
-@keyframes bracket-progress-pulse {
-  0%, 100% { box-shadow: 0 0 0 4px var(--accent-soft); }
-  50%      { box-shadow: 0 0 0 6px transparent; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .bracket-progress-dot { animation: none; }
-}
-
 .team-pill {
   display: inline-flex;
   align-items: center;
@@ -1770,6 +1774,31 @@ main > * { min-width: 0; }
   font-size: 0.8125rem;
   color: var(--text-muted);
   margin-top: 0.5rem !important;
+}
+
+.rules-section code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--surface-2);
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  color: var(--text);
+}
+
+.rules-link {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid var(--accent-soft);
+  padding-bottom: 1px;
+  font-weight: 500;
+  transition: border-color 0.12s ease;
+}
+
+.rules-link:hover {
+  border-bottom-color: var(--accent);
 }
 
 .scoring-table-wrap { overflow-x: auto; }
