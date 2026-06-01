@@ -24,29 +24,28 @@ describe('computeGroupStandings', () => {
   });
 
   it('breaks a points tie by goal difference', () => {
-    // XXX and YYY both 2 wins / 1 loss; XXX has better GD.
+    // YYY wins all 3 (9 pts); XXX wins 2 (6 pts, GD +8); this asserts points ordering.
     const matches = [
       m('XXX', 'YYY', 0, 1), m('XXX', 'ZZZ', 5, 0), m('XXX', 'WWW', 4, 0),
       m('YYY', 'ZZZ', 1, 0), m('YYY', 'WWW', 1, 0),
       m('ZZZ', 'WWW', 0, 0),
     ];
     const s = computeGroupStandings(matches);
-    // XXX: 6pts GD +8; YYY: 9pts? recompute: YYY beat XXX, ZZZ, WWW => 9pts.
     expect(s.first).toBe('YYY');   // 9 pts
     expect(s.second).toBe('XXX');  // 6 pts, GD +8
   });
 
   it('breaks a full tie by head-to-head points', () => {
-    // PPP and QQQ tie on pts+GD+GF overall; PPP beat QQQ head-to-head.
+    // CCC 1st (6 pts, GD +4); AAA and BBB tied (both 6 pts, GD +2, GF 4); AAA beat BBB 2-0.
     const matches = [
-      m('PPP', 'QQQ', 1, 0), m('PPP', 'RRR', 0, 2), m('PPP', 'SSS', 3, 0),
-      m('QQQ', 'RRR', 2, 0), m('QQQ', 'SSS', 1, 3),
-      m('RRR', 'SSS', 1, 1),
+      m('AAA', 'BBB', 2, 0), m('AAA', 'CCC', 0, 2), m('AAA', 'DDD', 2, 0),
+      m('BBB', 'CCC', 2, 0), m('BBB', 'DDD', 2, 0),
+      m('CCC', 'DDD', 4, 0),
     ];
     const s = computeGroupStandings(matches);
-    const idxP = s.table.findIndex((t) => t.code === 'PPP');
-    const idxQ = s.table.findIndex((t) => t.code === 'QQQ');
-    expect(idxP).toBeLessThan(idxQ); // head-to-head winner ranks higher
+    const idxA = s.table.findIndex((t) => t.code === 'AAA');
+    const idxB = s.table.findIndex((t) => t.code === 'BBB');
+    expect(idxA).toBeLessThan(idxB); // head-to-head winner ranks higher
   });
 
   it('returns null places when the group is incomplete', () => {
