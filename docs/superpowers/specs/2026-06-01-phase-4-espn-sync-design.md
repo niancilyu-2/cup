@@ -17,8 +17,12 @@ manual data entry. Manual admin entry remains as the override / fallback.
    manual-only). Rationale: repo already has Node + npm + Vitest; no Deno /
    Supabase CLI toolchain to learn under a 10-day deadline; trivially testable
    locally (`node scripts/sync-espn.js`); workflow logs give obvious debugging.
-   Accepted cost: service-role key lives in GitHub repo secrets; GH cron can be
-   5–15 min late (fine for a 30-min poll).
+   Auth uses the public anon key (stored as a GitHub secret to keep it out of
+   git, though it is already served to browsers): `matches` SELECT + UPDATE are
+   open to anon via RLS, the same path `admin.js` already uses, so no
+   service-role key is needed. GH cron can be 5–15 min late (fine for a 30-min
+   poll). The schedule is scoped to the tournament window (June 11 – July 19,
+   2026 UTC) so it stays dormant until kickoff.
 
 2. **Script scope: raw scores + derived cascade.** The script writes match
    scores AND computes downstream state: group standings (FIFA tiebreakers),
@@ -48,7 +52,7 @@ manual data entry. Manual admin entry remains as the override / fallback.
 GitHub Actions cron (*/30 * * * *) + workflow_dispatch
    └─→ node scripts/sync-espn.js
          ├─ GET site.api.espn.com/.../fifa.world/scoreboard?dates=20260611-20260719
-         ├─ Load matches table from Supabase (service-role key)
+         ├─ Load matches table from Supabase (public anon key; RLS open)
          ├─ Build lookup index keyed by (dateUTC, sorted([teamA,teamB]))
          ├─ For each ESPN event:
          │    normalize team names → 2-letter codes
@@ -77,7 +81,7 @@ only `completed=true` rows. Live Scores tab also shows in-progress scores.
 | `tests/standings.test.js` | NEW | Tiebreaker edge cases (2-way, 3-way ties, H2H loops, GD/GF ordering). |
 | `tests/cascade.test.js` | NEW | Group completion → R32 fills; KO complete → next-round fill; 3rd-place feeds. |
 | `tests/espn-map.test.js` | NEW | Parse a captured ESPN fixture (`tests/fixtures/espn-2022-wc.json`). |
-| `.github/workflows/sync-results.yml` | NEW | `*/30 * * * *` schedule + `workflow_dispatch`. Secrets: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`. |
+| `.github/workflows/sync-results.yml` | NEW | Tournament-window cron (`*/30 * 11-30 6 *` + `*/30 * 1-19 7 *`) + `workflow_dispatch`. Secrets: `SUPABASE_URL`, `SUPABASE_ANON_KEY`. |
 | `package.json` | EDIT | Scripts `sync:once`, `sync:dry`. No new deps — use Node 22 built-in `fetch`. |
 | `livescores.js`, `leaderboard.js`, `app.js` | EDIT (Phase 4b) | Remove all `window.MOCK_TOURNAMENT` reads; render from `matches`; add pre-tournament empty states; bracket ✓/✗ overlay only against real completed matches. |
 | `mock-results.js` | DELETE (Phase 4b) | Removed at launch. |

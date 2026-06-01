@@ -1,12 +1,12 @@
 // ABOUTME: Minimal Supabase PostgREST client for the sync script (Node, zero deps).
-// ABOUTME: Reads SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY from env; service role bypasses RLS.
+// ABOUTME: Uses the public anon key; matches SELECT + UPDATE are open to anon via RLS.
 
 const URL = process.env.SUPABASE_URL;
-const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const KEY = process.env.SUPABASE_ANON_KEY;
 
 function headers() {
   if (!URL || !KEY) {
-    throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set');
+    throw new Error('SUPABASE_URL and SUPABASE_ANON_KEY must be set');
   }
   return {
     apikey: KEY,

@@ -26,7 +26,7 @@
   - `ALL_GROUPS` — `['A'..'L']`.
 - **`src/scoring.js` exports** (reuse, do not modify): `STAGE_MATCHES`, `STAGE_POINTS`, `PERFECT_TOTAL`.
 - **`matches` columns:** `id, stage, group_code, kickoff_at (timestamptz), venue, slot_a, slot_b, team_a_code, team_b_code, score_a, score_b, winner_code, completed (bool), result_source ('manual'|'espn_fetch'|null), updated_at`.
-- **Supabase access from Node:** PostgREST at `${SUPABASE_URL}/rest/v1/matches`. Headers: `apikey: <service_role>`, `Authorization: Bearer <service_role>`, `Content-Type: application/json`. The service-role key bypasses RLS — required because the cron has no logged-in user.
+- **Supabase access from Node:** PostgREST at `${SUPABASE_URL}/rest/v1/matches`. Headers: `apikey: <anon>`, `Authorization: Bearer <anon>`, `Content-Type: application/json`. The public anon key is sufficient — `matches` SELECT + UPDATE are open to anon via RLS (the same path `admin.js` uses), so no service-role key is needed.
 - **ESPN endpoint:** `https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=YYYYMMDD-YYYYMMDD` (same host family as `ticker.js`'s `/news`). The event/competitor JSON shape is consistent across ESPN's `site.api` sports feeds; Task 6 captures a real fixture to confirm field names before going live.
 
 ## File structure
@@ -36,7 +36,7 @@
 | `src/espn-map.js` | Map ESPN team-name strings → FIFA codes; classify ESPN match status; normalize a raw ESPN event into a flat record. Pure. |
 | `src/standings.js` | Compute one group's final table with FIFA tiebreakers; rank 3rd-place teams; pick the best 8. Pure. |
 | `src/cascade.js` | Given all matches' current state + completed-group standings, resolve slot labels and return the team-code writes needed for downstream matches. Pure. |
-| `scripts/supabase-rest.js` | Thin PostgREST wrapper (select all matches, patch one match). Reads `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` from env. |
+| `scripts/supabase-rest.js` | Thin PostgREST wrapper (select all matches, patch one match). Reads `SUPABASE_URL` / `SUPABASE_ANON_KEY` from env. |
 | `scripts/espn-fetch.js` | Fetch + parse the ESPN scoreboard (or load a fixture file). Returns an array of raw events. |
 | `scripts/sync-espn.js` | Orchestrator + CLI. Wires fetch → normalize → write → cascade. Flags: `--dry-run`, `--fixture <path>`, `--date <YYYYMMDD>`, `--verbose`. |
 | `tests/espn-map.test.js` | Unit tests for `src/espn-map.js`. |
@@ -678,14 +678,14 @@ No unit test — it is a thin network wrapper exercised by the dry-run in Task 7
 
 ```js
 // ABOUTME: Minimal Supabase PostgREST client for the sync script (Node, zero deps).
-// ABOUTME: Reads SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY from env; service role bypasses RLS.
+// ABOUTME: Uses the public anon key; matches SELECT + UPDATE are open to anon via RLS.
 
 const URL = process.env.SUPABASE_URL;
-const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const KEY = process.env.SUPABASE_ANON_KEY;
 
 function headers() {
   if (!URL || !KEY) {
-    throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set');
+    throw new Error('SUPABASE_URL and SUPABASE_ANON_KEY must be set');
   }
   return {
     apikey: KEY,
@@ -986,18 +986,18 @@ Modify `package.json` `"scripts"` block to:
 
 Run:
 ```bash
-SUPABASE_URL=x SUPABASE_SERVICE_ROLE_KEY=x node scripts/sync-espn.js --dry-run --verbose --fixture tests/fixtures/espn-sample.json 2>&1 | head -20
+SUPABASE_URL=x SUPABASE_ANON_KEY=x node scripts/sync-espn.js --dry-run --verbose --fixture tests/fixtures/espn-sample.json 2>&1 | head -20
 ```
 Expected: it reaches `selectMatches()` and errors with a 4xx/connection error (because `SUPABASE_URL=x` is invalid). This proves arg parsing + module wiring. To exercise the full pure pipeline without Supabase, do Step 4.
 
 - [ ] **Step 4: Full dry-run against prod (read-only)**
 
-Prerequisite: a local `.env`-style export of the real prod `SUPABASE_URL` and the **service-role** key (from Supabase dashboard → Project Settings → API). Do NOT commit these.
+Prerequisite: a local export of the real prod `SUPABASE_URL` and the **public anon key** (from `config.js`, or Supabase dashboard → Project Settings → API).
 
 Run:
 ```bash
 export SUPABASE_URL="https://<prod>.supabase.co"
-export SUPABASE_SERVICE_ROLE_KEY="<service-role-key>"
+export SUPABASE_ANON_KEY="<public-anon-key>"
 npm run sync:dry -- --fixture tests/fixtures/espn-sample.json
 ```
 Expected: connects to prod, reads matches, prints planned writes for the 2 fixture events (M1 final MEX 2-1 RSA → completed; the GER vs CUW live event → score-only). NO rows are modified (dry run). Inspect the planned writes for correctness.
@@ -1023,9 +1023,11 @@ git commit -m "feat(phase4): sync orchestrator + CLI with dry-run"
 # ABOUTME: Manual runs via workflow_dispatch (optionally with --dry-run by editing the step).
 name: Sync results
 
+# Dormant until kickoff: only fires during the tournament window (UTC dates).
 on:
   schedule:
-    - cron: '*/30 * * * *'
+    - cron: '*/30 * 11-30 6 *'
+    - cron: '*/30 * 1-19 7 *'
   workflow_dispatch:
 
 # Avoid overlapping runs if one is slow.
@@ -1044,7 +1046,7 @@ jobs:
       - name: Run sync
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: node scripts/sync-espn.js
 ```
 
@@ -1052,7 +1054,7 @@ jobs:
 
 The repo needs two GitHub Actions secrets (Settings → Secrets and variables → Actions):
 - `SUPABASE_URL` — `https://<prod>.supabase.co`
-- `SUPABASE_SERVICE_ROLE_KEY` — the service-role key (NOT the anon key)
+- `SUPABASE_ANON_KEY` — the public anon key (matches SELECT + UPDATE are open to anon via RLS, so no service-role key is needed)
 
 Add these manually in the GitHub UI; they are never committed.
 
