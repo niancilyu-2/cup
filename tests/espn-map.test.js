@@ -1,4 +1,5 @@
 // ABOUTME: Tests for ESPN name→code mapping, status classification, event normalization.
+// ABOUTME: Covers teamCodeFromEspn, classifyStatus, normalizeEspnEvent functions.
 import { describe, it, expect } from 'vitest';
 import { teamCodeFromEspn, classifyStatus, normalizeEspnEvent } from '../src/espn-map.js';
 
