@@ -1,0 +1,27 @@
+# ABOUTME: Polls ESPN every 30 min during the tournament and syncs results to Supabase.
+# ABOUTME: Manual runs via workflow_dispatch (optionally with --dry-run by editing the step).
+name: Sync results
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+# Avoid overlapping runs if one is slow.
+concurrency:
+  group: sync-results
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run sync
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/sync-espn.js
