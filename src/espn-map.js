@@ -9,7 +9,7 @@ export const ESPN_NAME_TO_CODE = {
   'South Korea': 'KOR', 'Korea Republic': 'KOR',
   'Czech Republic': 'CZE', 'Czechia': 'CZE',
   'Canada': 'CAN',
-  'Bosnia and Herzegovina': 'BIH', 'Bosnia & Herzegovina': 'BIH',
+  'Bosnia and Herzegovina': 'BIH', 'Bosnia & Herzegovina': 'BIH', 'Bosnia-Herzegovina': 'BIH',
   'Qatar': 'QAT',
   'Switzerland': 'SUI',
   'Brazil': 'BRA',

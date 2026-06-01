@@ -13,6 +13,7 @@ describe('teamCodeFromEspn', () => {
     expect(teamCodeFromEspn('Korea Republic')).toBe('KOR');
     expect(teamCodeFromEspn('Czechia')).toBe('CZE');
     expect(teamCodeFromEspn('USA')).toBe('USA');
+    expect(teamCodeFromEspn('Bosnia-Herzegovina')).toBe('BIH');
   });
   it('returns null for unknown names', () => {
     expect(teamCodeFromEspn('Atlantis')).toBe(null);
