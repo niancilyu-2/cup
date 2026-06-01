@@ -1,8 +1,9 @@
-// ABOUTME: Renders the leaderboard from Supabase picks scored against MOCK_TOURNAMENT (preview) or real match results.
+// ABOUTME: Renders the leaderboard from Supabase picks scored against real match results.
 // ABOUTME: Each row links to a read-only view of that player's picks on the picks page.
 
 import { scorePlayer, PERFECT_TOTAL, STAGE_POINTS } from './src/scoring.js';
-import { lookupAssignment, WILDCARD_SLOTS, ALL_GROUPS } from './src/wildcards.js';
+import { buildTournamentResults } from './src/results.js';
+import { buildReachability, isOutOfContention, maxPossible } from './src/projection.js';
 
 const STORAGE_KEY_PLAYER = 'wcbracket.player';
 const FINAL_MATCH_ID = 'M104';
@@ -51,7 +52,7 @@ async function init() {
     const [playersRes, teamsRes, matchesRes, groupRes, brktRes, tbRes] = await Promise.all([
       supabase.from('players').select('id, name'),
       supabase.from('teams').select('code, name'),
-      supabase.from('matches').select('id, stage, group_code, slot_a, slot_b, winner_code, completed'),
+      supabase.from('matches').select('id, stage, group_code, slot_a, slot_b, team_a_code, team_b_code, score_a, score_b, winner_code, completed'),
       supabase.from('group_picks').select('player_id, group_code, first_code, second_code, third_code, third_advances'),
       supabase.from('bracket_picks').select('player_id, match_id, winner_code'),
       supabase.from('tiebreaker_picks').select('player_id, champion_avg_goals'),
@@ -63,18 +64,18 @@ async function init() {
 
     const teamsByCode = Object.fromEntries(teamsRes.data.map((t) => [t.code, t]));
     const results = buildResults(matchesRes.data);
-    const usingMock = isUsingMock(results, matchesRes.data);
-    const eliminated = buildEliminatedSet(matchesRes.data, results);
+    const hasResults = matchesRes.data.some((m) => m.completed);
+    const reach = buildReachability(matchesRes.data, results);
 
     const picksByPlayer = bucketPicks(groupRes.data, brktRes.data, tbRes.data);
     const rows = playersRes.data
-      .map((p) => buildRow(p, picksByPlayer.get(p.id) || emptyPicks(), results, eliminated, matchesRes.data, teamsByCode))
+      .map((p) => buildRow(p, picksByPlayer.get(p.id) || emptyPicks(), results, reach, matchesRes.data, teamsByCode))
       .filter((r) => r.hasAnyPicks);
 
     rows.sort((a, b) => b.points - a.points);
     rows.forEach((r, i) => { r.rank = i + 1; });
 
-    render(rows, myName, usingMock);
+    render(rows, myName, hasResults);
   } catch (err) {
     root.innerHTML = `<div class="lb-error">Couldn't load leaderboard. ${escapeHtml(err.message || String(err))}</div>`;
   }
@@ -82,142 +83,8 @@ async function init() {
 
 // ---------- Results assembly ----------
 
-// Build the `results` shape scorePlayer expects. Prefer real match data when
-// any match is marked completed; otherwise fall back to MOCK_TOURNAMENT so the
-// preview shows a meaningful ranking before Phase 4 wires in live results.
-function buildResults(matches) {
-  const realCompleted = matches.some((m) => m.completed);
-  if (realCompleted) return buildResultsFromMatches(matches);
-  const mock = window.MOCK_TOURNAMENT;
-  if (mock && mock.status && mock.status !== 'not_started') return mockToResults(mock);
-  return { groupOutcomes: {}, matchResults: {} };
-}
-
-function isUsingMock(results, matches) {
-  if (matches.some((m) => m.completed)) return false;
-  return Object.keys(results.matchResults).length > 0 || Object.keys(results.groupOutcomes).length > 0;
-}
-
-function buildResultsFromMatches(matches) {
-  // Phase 4 will populate this from real DB data. For now it's empty unless an
-  // admin has marked at least one match completed.
-  const groupOutcomes = {};
-  const matchResults = {};
-  // Group standings can't be derived from individual match rows alone (need
-  // standings calc). Leave empty until Phase 4 builds a real standings view.
-  for (const m of matches) {
-    if (m.stage === 'group') continue;
-    if (m.completed) {
-      matchResults[m.id] = { winner: m.winner_code, played: true };
-    }
-  }
-  return { groupOutcomes, matchResults };
-}
-
-function mockToResults(mock) {
-  const groupOutcomes = {};
-  for (const [code, o] of Object.entries(mock.groupOutcomes || {})) {
-    groupOutcomes[code] = {
-      first: o.first,
-      second: o.second,
-      third: o.third,
-      third_advances: !!o.third_advances,
-    };
-  }
-  const matchResults = {};
-  for (const [id, r] of Object.entries(mock.matchResults || {})) {
-    if (r && r.played && r.winner) {
-      matchResults[id] = { winner: r.winner, played: true };
-    }
-  }
-  return { groupOutcomes, matchResults };
-}
-
-// ---------- Bracket cascade (for "team still alive" / Max possible) ----------
-
-// Walk the actual cascade of completed KO matches and return the set of teams
-// who've been eliminated (played a completed KO match and didn't win it).
-function buildEliminatedSet(matches, results) {
-  const matchById = Object.fromEntries(matches.map((m) => [m.id, m]));
-  const participantCache = {};
-
-  // Wildcard slot assignment requires all 12 groups decided; otherwise leave it
-  // empty and treat 3rd-place R32 slots as unresolved (their participants stay
-  // unknown until the group stage is complete).
-  let wildcardSlotForGroup = {};
-  const allGroupsDecided = Object.keys(results.groupOutcomes).length === 12;
-  if (allGroupsDecided) {
-    const advancing = ALL_GROUPS.filter((g) => results.groupOutcomes[g]?.third_advances).sort();
-    if (advancing.length === 8) {
-      const assignment = lookupAssignment(advancing);
-      if (assignment) {
-        for (const [matchId, group] of Object.entries(assignment)) {
-          wildcardSlotForGroup[group] = matchId;
-        }
-      }
-    }
-  }
-
-  function resolveSlot(matchId, label) {
-    if (!label) return null;
-    if (/^[12][A-L]$/.test(label)) {
-      const place = label[0] === '1' ? 'first' : 'second';
-      return results.groupOutcomes[label[1]]?.[place] || null;
-    }
-    if (label.startsWith('3')) {
-      const slot = WILDCARD_SLOTS.find((s) => s.matchId === matchId);
-      if (!slot) return null;
-      for (const group of slot.eligible) {
-        if (wildcardSlotForGroup[group] === matchId) {
-          return results.groupOutcomes[group]?.third || null;
-        }
-      }
-      return null;
-    }
-    if (label.startsWith('W')) {
-      const priorId = `M${label.slice(1)}`;
-      return results.matchResults[priorId]?.winner || null;
-    }
-    if (label.startsWith('L')) {
-      const priorId = `M${label.slice(1)}`;
-      const winner = results.matchResults[priorId]?.winner;
-      if (!winner) return null;
-      const p = participantsFor(priorId);
-      if (!p) return null;
-      if (winner === p[0]) return p[1];
-      if (winner === p[1]) return p[0];
-      return null;
-    }
-    return null;
-  }
-
-  function participantsFor(matchId) {
-    if (matchId in participantCache) return participantCache[matchId];
-    const m = matchById[matchId];
-    if (!m || m.stage === 'group') {
-      participantCache[matchId] = null;
-      return null;
-    }
-    const a = resolveSlot(matchId, m.slot_a);
-    const b = resolveSlot(matchId, m.slot_b);
-    const out = (a && b) ? [a, b] : null;
-    participantCache[matchId] = out;
-    return out;
-  }
-
-  const eliminated = new Set();
-  for (const m of matches) {
-    if (m.stage === 'group') continue;
-    const r = results.matchResults[m.id];
-    if (!r || !r.played) continue;
-    const p = participantsFor(m.id);
-    if (!p) continue;
-    for (const team of p) {
-      if (team && team !== r.winner) eliminated.add(team);
-    }
-  }
-  return eliminated;
-}
+// Scoring results are derived from raw match rows by the shared results module.
+const buildResults = buildTournamentResults;
 
 // ---------- Pick assembly ----------
 
@@ -249,14 +116,14 @@ function bucketPicks(groupRows, brktRows, tbRows) {
   return out;
 }
 
-function buildRow(player, picks, results, eliminated, matches, teamsByCode) {
+function buildRow(player, picks, results, reach, matches, teamsByCode) {
   const score = scorePlayer(picks, results);
   const champCode = picks.bracket[FINAL_MATCH_ID] || null;
   const champion = champCode
     ? {
         code: champCode,
         name: teamsByCode[champCode]?.name || champCode,
-        eliminated: eliminated.has(champCode),
+        eliminated: isOutOfContention(reach, champCode),
       }
     : null;
   const hasAnyPicks =
@@ -272,7 +139,7 @@ function buildRow(player, picks, results, eliminated, matches, teamsByCode) {
     tiebreaker: picks.tiebreaker,
     hasAnyPicks,
     accuracy: computeAccuracy(score, results),
-    maxPossible: computeMaxPossible(score, picks, results, eliminated, matches),
+    maxPossible: maxPossible({ breakdown: score, picks, results, matches, reach }),
   };
 }
 
@@ -300,62 +167,24 @@ function computeAccuracy(breakdown, results) {
   return Math.round((correctCount(breakdown) / decided) * 100);
 }
 
-// Current points already in the bag + max points still earnable on undecided
-// items where the player's pick is still viable. A player only gets max-credit
-// for slots they actually picked — empty picks can't earn points.
-function computeMaxPossible(breakdown, picks, results, eliminated, matches) {
-  let max = breakdown.total;
-
-  // Groups: undecided groups can still award 1 pt for each of 1st/2nd slot the
-  // player filled in.
-  const decidedGroups = new Set(Object.keys(results.groupOutcomes));
-  for (const g of ALL_GROUPS) {
-    if (decidedGroups.has(g)) continue;
-    const gp = picks.groups[g];
-    if (!gp) continue;
-    if (gp.first) max += 1;
-    if (gp.second) max += 1;
-  }
-
-  // Wildcards: only realized once all 12 groups decided. While groups are still
-  // open, the player can still earn up to (groups flagged as advancing, capped
-  // at 8) wildcard points.
-  if (decidedGroups.size < 12) {
-    const flagged = Object.values(picks.groups).filter((g) => g.advances).length;
-    max += Math.min(8, flagged) - (breakdown.wildcards || 0);
-  }
-
-  // Knockouts: for each match not yet played, add stage points if the player
-  // has a pick AND that pick hasn't been eliminated in an earlier round.
-  for (const m of matches) {
-    if (m.stage === 'group') continue;
-    const r = results.matchResults[m.id];
-    if (r && r.played) continue;
-    const pick = picks.bracket[m.id];
-    if (!pick) continue;
-    if (eliminated.has(pick)) continue;
-    max += STAGE_POINTS[m.stage] || 0;
-  }
-  return max;
-}
-
 // ---------- Rendering ----------
 
-function render(rows, myNameLower, usingMock) {
-  const badge = usingMock
-    ? '<div class="lb-preview-badge">Preview · scored against demo results</div>'
-    : '';
-
+function render(rows, myNameLower, hasResults) {
   if (!rows.length) {
     root.innerHTML = `
-      ${badge}
       <div class="lb-empty">No players have entered picks yet. Once anyone saves picks on the home page, they'll appear here.</div>
     `;
     return;
   }
 
+  if (!hasResults) {
+    root.innerHTML = `
+      <div class="lb-empty">The leaderboard goes live when the first match kicks off on June&nbsp;11. Check back once results start coming in.</div>
+    `;
+    return;
+  }
+
   root.innerHTML = `
-    ${badge}
     <div class="lb-legend">
       <span class="lb-legend-item lb-legend-item--primary">
         <span class="lb-legend-key"><span class="lb-pts-star" aria-hidden="true">★</span> Pts</span>
@@ -472,13 +301,7 @@ function breakdownHTML(p) {
       <div class="lb-bd-title">Score breakdown</div>
       <div class="lb-bd-head">
         <span></span>
-        <span class="lb-bd-head-calc">
-          <span>correct</span>
-          <span></span>
-          <span>pts</span>
-          <span></span>
-          <span>total</span>
-        </span>
+        <span class="lb-bd-head-calc">correct &times; pts = total</span>
       </div>
       ${rows}
       <div class="lb-bd-total">

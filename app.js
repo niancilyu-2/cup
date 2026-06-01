@@ -2,6 +2,7 @@
 // ABOUTME: Handles self-signup, picks, lock logic, stage flow, tiebreaker, and bracket rendering.
 
 import { lookupAssignment } from './src/wildcards.js';
+import { buildTournamentResults } from './src/results.js';
 
 // Single-phase model: everything (groups + bracket + tiebreaker) is editable
 // until the first WC kickoff on June 11.
@@ -100,13 +101,11 @@ function isDirty() {
 }
 
 function hasResults() {
-  const m = window.MOCK_TOURNAMENT;
-  return !!(m && m.status && m.status !== 'not_started' && m.groupOutcomes);
+  return !!state.matches?.some((m) => m.completed);
 }
 
 function groupOutcomeFor(groupCode) {
-  if (!hasResults()) return null;
-  return window.MOCK_TOURNAMENT.groupOutcomes[groupCode] || null;
+  return state.results?.groupOutcomes?.[groupCode] || null;
 }
 
 function pickMarkHTML(correct) {
@@ -346,6 +345,7 @@ async function loadReferenceData() {
   state.groups = groups;
   state.teams = teams;
   state.matches = matches;
+  state.results = buildTournamentResults(matches);
   // Reverse map: for each match, find the downstream match that consumes its
   // winner (so we can render "→ #89" hints in the bracket).
   state.matchDestinations = {};
@@ -1586,10 +1586,8 @@ function venueCity(venue) {
   return parts[1] || '';
 }
 
-function mockResultFor(matchId) {
-  const mock = window.MOCK_TOURNAMENT;
-  if (!mock || mock.status === 'not_started') return null;
-  const r = mock.matchResults?.[matchId];
+function resultFor(matchId) {
+  const r = state.results?.matchResults?.[matchId];
   return r && r.played ? r : null;
 }
 
@@ -1605,7 +1603,7 @@ function matchCellHTML(matchId) {
   const num = matchId.slice(1);
   const stadium = venueStadium(match.venue);
   const city = venueCity(match.venue);
-  const result = mockResultFor(matchId);
+  const result = resultFor(matchId);
 
   const slotHTML = (position, team) => {
     const isWinner = team && winner === team;

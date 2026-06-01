@@ -1,12 +1,11 @@
-// ABOUTME: Renders the schedule + live results page from Supabase matches + MOCK_TOURNAMENT overlay.
-// ABOUTME: Replaced by Phase-4 real results when the admin / edge-function pipeline lands.
+// ABOUTME: Renders the schedule + live results page from the Supabase matches table.
+// ABOUTME: Scores, winners, and knockout matchups come from the results-sync pipeline.
 
 (() => {
   const root = document.getElementById('livescores-root');
   if (!root) return;
 
   const supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
-  const mock = window.MOCK_TOURNAMENT || { matchResults: {}, groupOutcomes: {} };
 
   // Mirror of FIFA_TO_ISO in app.js. Kept inline so this page has no module dep.
   const FIFA_TO_ISO = {
@@ -76,10 +75,9 @@
   }
 
   function statusFor(match) {
-    if (mock.status === 'not_started') return 'upcoming';
-    const r = mock.matchResults?.[match.id];
-    if (r?.live) return 'live';
-    if (r?.played) return 'final';
+    if (match.completed) return 'final';
+    // The sync writes in-progress scores (without completing) for live games.
+    if (match.score_a != null && match.score_b != null) return 'live';
     return 'upcoming';
   }
 
@@ -104,17 +102,14 @@
   }
 
   function renderLiveCard(match, teamByCode) {
-    const result = mock.matchResults?.[match.id] || {};
-    const teamA = teamByCode[result.team_a || match.team_a_code];
-    const teamB = teamByCode[result.team_b || match.team_b_code];
-    const [sa, sb] = (result.score || '0-0').split('-');
-    const minute = mock.liveNow?.matchId === match.id
-      ? (mock.liveNow.minute || result.minute || '')
-      : (result.minute || '');
+    const teamA = teamByCode[match.team_a_code];
+    const teamB = teamByCode[match.team_b_code];
+    const sa = match.score_a ?? 0;
+    const sb = match.score_b ?? 0;
     return `
       <section class="ls-live-card">
         <header class="ls-live-card-head">
-          <span class="ls-live-min">${escapeHtml(String(minute))}'</span>
+          <span class="ls-live-min">LIVE</span>
           <span class="ls-live-meta">${escapeHtml(stageMetaLabel(match))} · ${escapeHtml(venueShort(match.venue))}</span>
         </header>
         <div class="ls-live-matchup">
@@ -177,15 +172,14 @@
   }
 
   function matchRowHTML(match, teamByCode) {
-    const result = mock.matchResults?.[match.id] || {};
-    const teamACode = result.team_a || match.team_a_code;
-    const teamBCode = result.team_b || match.team_b_code;
+    const teamACode = match.team_a_code;
+    const teamBCode = match.team_b_code;
     const teamA = teamACode ? teamByCode[teamACode] : null;
     const teamB = teamBCode ? teamByCode[teamBCode] : null;
     const status = statusFor(match);
-    const winnerCode = result.winner;
-    const scoreStr = result.score || '';
-    const [sa, sb] = scoreStr ? scoreStr.split('-') : ['', ''];
+    const winnerCode = match.winner_code;
+    const sa = match.score_a != null ? match.score_a : '';
+    const sb = match.score_b != null ? match.score_b : '';
 
     const teamLine = (team, code, side) => {
       if (!team) {
@@ -208,12 +202,9 @@
         <span class="ls-score">${escapeHtml(sa)}<span class="ls-score-dash">–</span>${escapeHtml(sb)}</span>
         <span class="ls-status ls-status--final">FT</span>`;
     } else if (status === 'live') {
-      const minute = mock.liveNow?.matchId === match.id
-        ? (mock.liveNow.minute || result.minute || '')
-        : (result.minute || '');
       centerHTML = `
         <span class="ls-score ls-score--live">${escapeHtml(sa)}<span class="ls-score-dash">–</span>${escapeHtml(sb)}</span>
-        <span class="ls-status ls-status--live"><span class="ls-pulse" aria-hidden="true"></span>${escapeHtml(String(minute))}'</span>`;
+        <span class="ls-status ls-status--live"><span class="ls-pulse" aria-hidden="true"></span>LIVE</span>`;
     } else {
       centerHTML = `<span class="ls-vs">vs</span>`;
     }
