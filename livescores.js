@@ -51,26 +51,14 @@
     const matchesByStage = groupBy(matches, 'stage');
     const matchesByGroup = groupBy(matchesByStage.group || [], 'group_code');
 
-    const focal = pickFocalMatch(matches);
-    const expandedStage = focal && focal.stage !== 'group' ? focal.stage : null;
-    const expandedGroup = focal && focal.stage === 'group' ? focal.group_code : null;
-    // If we're deep in knockouts, also expand the next stage so the upcoming
-    // Final stays visible alongside the live 3rd-place match.
-    const expandedStages = new Set();
-    if (expandedStage) {
-      expandedStages.add(expandedStage);
-      const nextStage = KNOCKOUT_STAGES[KNOCKOUT_STAGES.indexOf(expandedStage) + 1];
-      if (nextStage) expandedStages.add(nextStage);
-    }
-
-    const liveHTML = renderLiveCard(matches, teamByCode);
+    const liveBlockHTML = renderLiveBlock(matches, teamByCode);
     const knockoutsHTML = KNOCKOUT_STAGES
-      .map((stage) => renderStageSection(stage, STAGE_LABEL[stage], matchesByStage[stage] || [], teamByCode, expandedStages.has(stage)))
+      .map((stage) => renderStageSection(stage, STAGE_LABEL[stage], matchesByStage[stage] || [], teamByCode))
       .join('');
-    const groupsHTML = renderGroupStage(matchesByGroup, teamByCode, expandedGroup);
+    const groupsHTML = renderGroupStage(matchesByGroup, teamByCode);
 
     root.innerHTML = `
-      ${liveHTML}
+      ${liveBlockHTML}
       <section class="ls-block">
         <h3 class="ls-block-head">Knockouts</h3>
         ${knockoutsHTML}
@@ -87,15 +75,6 @@
     });
   }
 
-  function pickFocalMatch(pool) {
-    const liveId = mock.liveNow?.matchId;
-    const live = pool.find((m) => m.id === liveId);
-    if (live) return live;
-    return pool
-      .filter((m) => statusFor(m) === 'upcoming')
-      .sort((a, b) => new Date(a.kickoff_at) - new Date(b.kickoff_at))[0];
-  }
-
   function statusFor(match) {
     if (mock.status === 'not_started') return 'upcoming';
     const r = mock.matchResults?.[match.id];
@@ -104,24 +83,38 @@
     return 'upcoming';
   }
 
-  function renderLiveCard(matches, teamByCode) {
-    const liveId = mock.liveNow?.matchId;
-    if (!liveId) return '';
-    const match = matches.find((m) => m.id === liveId);
-    if (!match) return '';
-    const result = mock.matchResults?.[liveId];
-    if (!result || !result.live) return '';
+  function liveMatches(matches) {
+    return matches.filter((m) => statusFor(m) === 'live');
+  }
+
+  function renderLiveBlock(matches, teamByCode) {
+    const lives = liveMatches(matches);
+    if (!lives.length) return '';
+    const cards = lives.map((m) => renderLiveCard(m, teamByCode)).join('');
+    const countLabel = lives.length === 1 ? '1 match' : `${lives.length} matches`;
+    return `
+      <section class="ls-live-block">
+        <header class="ls-live-block-head">
+          <span class="ls-live-pulse" aria-hidden="true"></span>
+          <h3 class="ls-live-block-title">Live Now</h3>
+          <span class="ls-live-block-count">${countLabel}</span>
+        </header>
+        <div class="ls-live-block-body">${cards}</div>
+      </section>`;
+  }
+
+  function renderLiveCard(match, teamByCode) {
+    const result = mock.matchResults?.[match.id] || {};
     const teamA = teamByCode[result.team_a || match.team_a_code];
     const teamB = teamByCode[result.team_b || match.team_b_code];
     const [sa, sb] = (result.score || '0-0').split('-');
-    const minute = mock.liveNow.minute || result.minute || '';
+    const minute = mock.liveNow?.matchId === match.id
+      ? (mock.liveNow.minute || result.minute || '')
+      : (result.minute || '');
     return `
       <section class="ls-live-card">
         <header class="ls-live-card-head">
-          <span class="ls-live-pulse" aria-hidden="true"></span>
-          <span class="ls-live-label">Live now</span>
-          <span class="ls-live-min">${minute}'</span>
-          <span class="ls-live-sep">·</span>
+          <span class="ls-live-min">${escapeHtml(String(minute))}'</span>
           <span class="ls-live-meta">${escapeHtml(stageMetaLabel(match))} · ${escapeHtml(venueShort(match.venue))}</span>
         </header>
         <div class="ls-live-matchup">
@@ -136,16 +129,15 @@
       </section>`;
   }
 
-  function renderStageSection(stage, label, matches, teamByCode, expanded) {
+  function renderStageSection(stage, label, matches, teamByCode) {
     const ordered = matches.slice().sort((a, b) => new Date(a.kickoff_at) - new Date(b.kickoff_at));
     const completed = ordered.filter((m) => statusFor(m) === 'final').length;
-    const live = ordered.some((m) => statusFor(m) === 'live');
     const summary = ordered.length
-      ? (live ? `Live · ${completed}/${ordered.length} done` : `${completed}/${ordered.length} done`)
+      ? `${completed}/${ordered.length} done`
       : 'No matches';
     return `
-      <section class="ls-section ${expanded ? 'is-expanded' : ''}" data-stage="${stage}">
-        <button type="button" class="ls-toggle" aria-expanded="${expanded ? 'true' : 'false'}">
+      <section class="ls-section" data-stage="${stage}">
+        <button type="button" class="ls-toggle" aria-expanded="false">
           <span class="ls-toggle-title">${label}</span>
           <span class="ls-toggle-meta">${summary}</span>
           <span class="ls-toggle-caret" aria-hidden="true">▾</span>
@@ -156,20 +148,18 @@
       </section>`;
   }
 
-  function renderGroupStage(matchesByGroup, teamByCode, expandedGroup) {
+  function renderGroupStage(matchesByGroup, teamByCode) {
     const groups = Object.keys(matchesByGroup).sort();
     if (!groups.length) return '';
     const sections = groups.map((code) => {
       const matches = matchesByGroup[code].slice().sort((a, b) => new Date(a.kickoff_at) - new Date(b.kickoff_at));
-      const expanded = expandedGroup === code;
       const completed = matches.filter((m) => statusFor(m) === 'final').length;
-      const live = matches.some((m) => statusFor(m) === 'live');
-      const summary = live
-        ? `Live · ${completed}/${matches.length} done`
-        : (completed === matches.length ? `All ${matches.length} done` : `${completed}/${matches.length} done`);
+      const summary = completed === matches.length
+        ? `All ${matches.length} done`
+        : `${completed}/${matches.length} done`;
       return `
-        <section class="ls-section ls-section--group ${expanded ? 'is-expanded' : ''}" data-group="${code}">
-          <button type="button" class="ls-toggle" aria-expanded="${expanded ? 'true' : 'false'}">
+        <section class="ls-section ls-section--group" data-group="${code}">
+          <button type="button" class="ls-toggle" aria-expanded="false">
             <span class="ls-toggle-title">Group ${code}</span>
             <span class="ls-toggle-meta">${summary}</span>
             <span class="ls-toggle-caret" aria-hidden="true">▾</span>

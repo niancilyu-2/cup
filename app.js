@@ -40,8 +40,6 @@ const state = {
     draft: blankPicks(),
     saved: blankPicks(),
   },
-  // Transient UI: which team is currently selected for a tap-swap.
-  selection: null, // { group, code } | null
 };
 
 // Latches so each stage-complete transition triggers its auto-advance only
@@ -359,7 +357,7 @@ async function loadReferenceData() {
     }
   }
   // Within each group, default order is by pot (1..4) then alphabetical so the
-  // top-seeded team starts at the top of the tap-to-swap list.
+  // top-seeded team starts at the top of the rank list.
   state.teamsByGroup = teams.reduce((acc, t) => {
     (acc[t.group_code] ||= []).push(t);
     return acc;
@@ -631,7 +629,7 @@ function showTiebreakerModal() {
   });
 }
 
-// ---------- Group picks (tap-to-swap) ----------
+// ---------- Group picks (drag-to-reorder) ----------
 
 function emptyGroupPick() {
   return { first: null, second: null, third: null, advances: false };
@@ -660,67 +658,20 @@ function hasGroupPick(groupCode) {
   return !!(p && p.first && p.second && p.third);
 }
 
-// Materialize a group pick from its current (default) order — used right
-// before applying the first swap, so subsequent swaps act on a stored order.
-function ensureGroupPickFromOrder(groupCode, order) {
-  if (!state.picks.draft.groups[groupCode]) {
-    state.picks.draft.groups[groupCode] = {
-      first: order[0],
-      second: order[1],
-      third: order[2],
-      advances: false,
-    };
-  }
-}
-
-function swapTeamsInGroup(groupCode, codeA, codeB) {
-  const { codes } = rankedOrder(groupCode);
-  ensureGroupPickFromOrder(groupCode, codes);
-  const order = rankedOrder(groupCode).codes.slice();
-  const ia = order.indexOf(codeA);
-  const ib = order.indexOf(codeB);
-  if (ia === -1 || ib === -1) return;
-  [order[ia], order[ib]] = [order[ib], order[ia]];
+// Commit a new rank order for a group. newOrder is a 4-item array of team
+// codes in 1st..4th order. Preserves the wildcard `advances` flag iff the
+// team at slot 3 is unchanged; otherwise the prior flag no longer matches
+// any real team and is cleared.
+function reorderTeamsInGroup(groupCode, newOrder) {
+  if (!Array.isArray(newOrder) || newOrder.length !== 4) return;
   const prev = state.picks.draft.groups[groupCode];
+  const advances = !!(prev && prev.advances && prev.third === newOrder[2]);
   state.picks.draft.groups[groupCode] = {
-    first: order[0],
-    second: order[1],
-    third: order[2],
-    // If the 3rd team changed, the old `advances` flag no longer makes sense.
-    advances: prev.third === order[2] ? prev.advances : false,
+    first: newOrder[0],
+    second: newOrder[1],
+    third: newOrder[2],
+    advances,
   };
-}
-
-function tapTeam(groupCode, teamCode) {
-  if (isEditingDisabled()) return;
-  const sel = state.selection;
-  if (sel && sel.group === groupCode && sel.code === teamCode) {
-    // Tap same team twice → deselect.
-    state.selection = null;
-    renderGroupCard(groupCode);
-    return;
-  }
-  if (sel && sel.group === groupCode) {
-    // Two taps in same group → swap.
-    const swappedA = sel.code;
-    const swappedB = teamCode;
-    swapTeamsInGroup(groupCode, swappedA, swappedB);
-    state.selection = null;
-    renderGroupCard(groupCode);
-    flashSwappedRows(groupCode, swappedA, swappedB);
-    renderWildcardsSection();
-    renderBracket();
-    renderTiebreaker();
-    renderCountdownBanner();
-    renderActionsBar();
-    maybeAdvanceStage();
-    return;
-  }
-  // First tap (or switching groups): select the new team, clear any prior.
-  const prevGroup = sel?.group;
-  state.selection = { group: groupCode, code: teamCode };
-  if (prevGroup && prevGroup !== groupCode) renderGroupCard(prevGroup);
-  renderGroupCard(groupCode);
 }
 
 function toggleWildcardAdvance(groupCode) {
@@ -744,59 +695,74 @@ function toggleWildcardAdvance(groupCode) {
 function groupCardHTML(groupCode) {
   const { codes, isDefault } = rankedOrder(groupCode);
   const disabled = isEditingDisabled();
-  const sel = state.selection;
-  const hasSelection = !disabled && sel && sel.group === groupCode;
-  const selectedTeam = hasSelection ? state.teamsByCode[sel.code] : null;
   const outcome = groupOutcomeFor(groupCode);
   const rows = codes
     .map((code, idx) => {
       const team = state.teamsByCode[code];
       if (!team) return '';
       const rank = idx + 1;
-      const isSelected = hasSelection && sel.code === code;
-      const isSwapTarget = hasSelection && !isSelected;
-      const classes = [
-        'team-row',
-        isDefault ? 'is-default' : '',
-        isSelected ? 'is-selected' : '',
-        isSwapTarget ? 'is-swap-target' : '',
-      ].filter(Boolean).join(' ');
-      const chipContent = isSelected ? '↕' : rank;
+      const classes = ['team-row', isDefault ? 'is-default' : '']
+        .filter(Boolean)
+        .join(' ');
       let mark = '';
       if (outcome && (rank === 1 || rank === 2)) {
         const actual = rank === 1 ? outcome.first : outcome.second;
         mark = pickMarkHTML(code === actual);
       }
       return `
-        <li>
-          <button type="button"
-                  class="${classes}"
-                  data-group="${groupCode}" data-team="${code}"
-                  title="${team.name}"
-                  ${disabled ? 'disabled' : ''}>
-            <span class="rank-chip rank-${rank} ${isSelected ? 'is-selected-chip' : ''}">${chipContent}</span>
+        <li class="team-item" data-team="${code}"${disabled ? ' aria-disabled="true"' : ''}>
+          <div class="${classes}" title="${team.name}">
+            <span class="rank-chip rank-${rank}">${rank}</span>
             ${flagHTML(code)}
             <span class="team-code">${code}</span>
             ${mark}
-          </button>
+          </div>
         </li>`;
     })
     .join('');
 
-  let statusLabel;
-  if (selectedTeam) {
-    statusLabel = `<strong>↕ ${selectedTeam.code}</strong> selected`;
-  } else {
-    statusLabel = 'Tap two teams to swap their positions.';
-  }
   return `
-    <div class="group-card ${hasSelection ? 'has-selection' : ''}" data-group-card="${groupCode}">
+    <div class="group-card" data-group-card="${groupCode}">
       <header class="group-card-header">
         <span>Group ${groupCode}</span>
       </header>
       <ul class="team-list">${rows}</ul>
-      <footer class="group-card-footer ${selectedTeam ? 'has-selection' : ''}">${statusLabel}</footer>
     </div>`;
+}
+
+// Attach SortableJS to a group's row list. Re-runs on every renderGroupCard
+// because replaceWith() throws away the previous Sortable instance with the
+// old DOM nodes. Touch behavior: a short hold starts the drag, so vertical
+// page-scroll gestures still feel normal.
+function initGroupCardSortable(groupCode) {
+  if (typeof Sortable === 'undefined') return;
+  const list = document.querySelector(`[data-group-card="${groupCode}"] .team-list`);
+  if (!list) return;
+  Sortable.create(list, {
+    animation: 150,
+    delay: 150,
+    delayOnTouchOnly: true,
+    touchStartThreshold: 5,
+    disabled: isEditingDisabled(),
+    ghostClass: 'team-row-ghost',
+    chosenClass: 'team-row-chosen',
+    dragClass: 'team-row-dragging',
+    onEnd(evt) {
+      if (evt.oldIndex === evt.newIndex) return;
+      const newOrder = Array.from(evt.to.children).map((li) => li.dataset.team);
+      reorderTeamsInGroup(groupCode, newOrder);
+      // Re-render the card so rank chips, stripe colors, and the "default"
+      // styling reflect the new positions. Sortable already mutated the DOM
+      // but render() is the source of truth for these visuals.
+      renderGroupCard(groupCode);
+      renderWildcardsSection();
+      renderBracket();
+      renderTiebreaker();
+      renderCountdownBanner();
+      renderActionsBar();
+      maybeAdvanceStage();
+    },
+  });
 }
 
 function renderGroupCard(groupCode) {
@@ -805,36 +771,17 @@ function renderGroupCard(groupCode) {
   const wrapper = document.createElement('div');
   wrapper.innerHTML = groupCardHTML(groupCode);
   existing.replaceWith(wrapper.firstElementChild);
+  initGroupCardSortable(groupCode);
   renderGroupsToolbar();
   renderSectionToggle('groups');
-}
-
-// Briefly flash the two rows that just swapped so the change registers.
-function flashSwappedRows(groupCode, codeA, codeB) {
-  const card = document.querySelector(`[data-group-card="${groupCode}"]`);
-  if (!card) return;
-  for (const code of [codeA, codeB]) {
-    const row = card.querySelector(`.team-row[data-team="${code}"]`);
-    if (!row) continue;
-    row.classList.add('just-swapped');
-    setTimeout(() => row.classList.remove('just-swapped'), 360);
-  }
 }
 
 function renderGroupPicks() {
   const grid = document.getElementById('groups-grid');
   grid.innerHTML = state.groups.map((g) => groupCardHTML(g.code)).join('');
+  for (const g of state.groups) initGroupCardSortable(g.code);
   renderGroupsToolbar();
   renderSectionToggle('groups');
-}
-
-function wireGroupsGrid() {
-  // Single delegated listener — survives card re-renders.
-  document.getElementById('groups-grid').addEventListener('click', (e) => {
-    const row = e.target.closest('.team-row');
-    if (!row || row.disabled) return;
-    tapTeam(row.dataset.group, row.dataset.team);
-  });
 }
 
 // ---------- Auto-fill empty groups ----------
@@ -865,7 +812,6 @@ function autoFillEmptyGroups() {
     changed++;
   }
   if (!changed) return;
-  state.selection = null;
   renderGroupPicks();
   renderWildcardsSection();
   renderBracket();
@@ -1136,6 +1082,25 @@ function wireActionsBar() {
       renderCountdownBanner();
       updateNavigationGuards();
     } else if (e.target.id === 'submit-picks-btn') {
+      const missing = getMissingPickSections();
+      if (missing.length) {
+        const decision = await showIncompletePicksModal(missing);
+        if (decision === 'save') {
+          try {
+            await saveDraft();
+          } catch (err) {
+            console.error('Save failed', err);
+            alert('Save failed — see console.');
+            return;
+          }
+          renderActionsBar();
+          renderCountdownBanner();
+          updateNavigationGuards();
+        } else {
+          jumpToMissingSection(missing[0]);
+        }
+        return;
+      }
       try {
         await submitPicks();
       } catch (err) {
@@ -1157,9 +1122,6 @@ function wireActionsBar() {
 }
 
 function renderAll() {
-  // Full re-render after save/submit/edit drops any in-progress selection so
-  // the new disabled state doesn't leave a stale highlight on a team row.
-  state.selection = null;
   document.body.classList.toggle('is-picks-hidden', isPicksHidden());
   seedStageProgress();
   window.renderUserBar?.();
@@ -1288,7 +1250,6 @@ function clearMyPicks() {
   const ok = confirm('Clear ALL your picks (groups, wildcards, bracket, tiebreaker)?\n\nThis only resets your in-page draft. Your saved picks in the database stay until you click Save again.');
   if (!ok) return;
   state.picks.draft = blankPicks();
-  state.selection = null;
   seedStageProgress();
   renderGroupPicks();
   renderGroupsToolbar();
@@ -1436,7 +1397,7 @@ function renderTiebreaker() {
 function shouldWarnOnLeave() {
   if (isLocked()) return false;
   if (isViewing()) return false;
-  return isDirty() || !isSubmitted();
+  return isDirty();
 }
 
 function beforeUnloadHandler(e) {
@@ -1455,20 +1416,13 @@ function updateNavigationGuards() {
 function showLeaveSiteModal() {
   return new Promise((resolve) => {
     const root = document.getElementById('modal-root');
-    const dirty = isDirty();
-    const submitted = isSubmitted();
     root.innerHTML = `
       <div class="modal-overlay">
         <div class="modal">
           <h2>You haven't saved your progress</h2>
-          <p>${
-            dirty
-              ? 'You have unsaved picks. Save them now, leave without saving, or stay here.'
-              : 'Your picks are saved to the database, but you haven\'t hit <strong>Submit</strong> yet.'
-          }</p>
+          <p>You have unsaved picks. Save them now, leave without saving, or stay here.</p>
           <div class="modal-actions">
-            ${dirty ? `<button type="button" class="btn-primary" id="leave-save">Save &amp; continue</button>` : ''}
-            ${!submitted ? `<button type="button" class="btn-primary" id="leave-submit">Submit &amp; continue</button>` : ''}
+            <button type="button" class="btn-primary" id="leave-save">Save &amp; continue</button>
             <button type="button" class="btn-secondary" id="leave-go">Leave without saving</button>
             <button type="button" class="btn-link" id="leave-cancel">Cancel</button>
           </div>
@@ -1479,17 +1433,98 @@ function showLeaveSiteModal() {
       root.innerHTML = '';
       resolve(decision);
     };
-    document.getElementById('leave-save')?.addEventListener('click', async () => {
+    document.getElementById('leave-save').addEventListener('click', async () => {
       try { await saveDraft(); } catch (err) { console.error(err); }
       finish('save');
-    });
-    document.getElementById('leave-submit')?.addEventListener('click', async () => {
-      try { await submitPicks(); } catch (err) { console.error(err); }
-      finish('submit');
     });
     document.getElementById('leave-go').addEventListener('click', () => finish('go'));
     document.getElementById('leave-cancel').addEventListener('click', () => finish('cancel'));
   });
+}
+
+function bracketPickedCount() {
+  return bracketMatches().filter((m) => !!state.picks.draft.bracket[m.id]).length;
+}
+
+// Ordered top-to-bottom so the first entry is also where we scroll on "return".
+function getMissingPickSections() {
+  const missing = [];
+  if (!isGroupsComplete()) {
+    const done = groupsRankedCount();
+    const total = state.groups.length || 12;
+    missing.push({
+      key: 'groups',
+      anchorId: 'groups-section',
+      label: 'Group rankings',
+      detail: `${done} of ${total} groups ranked`,
+    });
+  }
+  if (!isWildcardsComplete()) {
+    const done = advancingGroups().length;
+    missing.push({
+      key: 'wildcards',
+      anchorId: 'wildcards-section',
+      label: 'Wildcards',
+      detail: `${done} of 8 selected`,
+    });
+  }
+  if (!isBracketComplete()) {
+    const done = bracketPickedCount();
+    const total = bracketMatches().length;
+    missing.push({
+      key: 'bracket',
+      anchorId: 'bracket-section',
+      label: 'Bracket',
+      detail: `${done} of ${total} winners picked`,
+    });
+  }
+  if (state.picks.draft.tiebreaker == null) {
+    missing.push({
+      key: 'tiebreaker',
+      anchorId: 'tiebreaker-section',
+      label: 'Tiebreaker',
+      detail: 'avg goals not entered',
+    });
+  }
+  return missing;
+}
+
+function showIncompletePicksModal(missing) {
+  return new Promise((resolve) => {
+    const root = document.getElementById('modal-root');
+    const items = missing.map((m) => `
+      <li class="incomplete-item">
+        <span class="incomplete-label">${m.label}</span>
+        <span class="incomplete-detail">${m.detail}</span>
+      </li>`).join('');
+    root.innerHTML = `
+      <div class="modal-overlay">
+        <div class="modal">
+          <h2>Not quite ready to submit</h2>
+          <p>You still have picks to finish before you can submit:</p>
+          <ul class="incomplete-list">${items}</ul>
+          <div class="modal-actions">
+            <button type="button" class="btn-secondary" id="incomplete-save">Save current progress</button>
+            <button type="button" class="btn-primary" id="incomplete-return">Return to finish picks</button>
+          </div>
+        </div>
+      </div>`;
+    const finish = (decision) => {
+      root.innerHTML = '';
+      resolve(decision);
+    };
+    document.getElementById('incomplete-save').addEventListener('click', () => finish('save'));
+    document.getElementById('incomplete-return').addEventListener('click', () => finish('return'));
+  });
+}
+
+function jumpToMissingSection(item) {
+  if (!item) return;
+  if (item.key === 'groups' || item.key === 'wildcards') {
+    setSectionCollapsed(item.key, false);
+    writeCollapsedPref(item.key, false);
+  }
+  scrollToSection(item.anchorId);
 }
 
 function wireInternalLinkGuards() {
@@ -1805,6 +1840,9 @@ function tickCountdown() {
 }
 
 function progressLineHTML() {
+  if (isLocked()) {
+    return `<div class="countdown-progress">Status: <span class="ok">Picks locked</span></div>`;
+  }
   if (isViewing()) {
     const safeName = state.viewedPlayer.name
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -1812,18 +1850,19 @@ function progressLineHTML() {
   }
   const dirty = isDirty();
   const submitted = isSubmitted();
-  let saveStateLabel;
+  let savePart;
   if (dirty) {
     const n = dirtyCount();
     const label = n === 1 ? '1 unsaved change' : `${n} unsaved changes`;
-    saveStateLabel = `Status: <span class="warn">● ${label}</span>`;
-  } else if (submitted) {
-    saveStateLabel = 'Status: <span class="ok">✓ Submitted</span>';
+    savePart = `<span class="warn">● ${label}</span>`;
   } else {
-    saveStateLabel = 'Status: <span class="dim">All changes saved</span>';
+    savePart = `<span class="ok">✓ All changes saved</span>`;
   }
+  const submitPart = submitted
+    ? `<span class="ok">✓ Submitted</span>`
+    : `<span class="warn">○ Not submitted</span>`;
 
-  return `<div class="countdown-progress">${saveStateLabel}</div>`;
+  return `<div class="countdown-progress">Status: ${savePart} <span class="dim">·</span> ${submitPart}</div>`;
 }
 
 function renderCountdownBanner() {
@@ -1845,13 +1884,13 @@ function renderCountdownBanner() {
   });
 
   const headline = locked
-    ? `<div class="countdown-locked">PICKS ARE LOCKED</div>`
-    : `<div class="countdown-headline">Picks lock in</div>
-       ${countdownCellsHTML(remaining)}`;
+    ? `<div class="countdown-headline countdown-headline--locked">Picks locked</div>`
+    : `<div class="countdown-headline">Picks lock in</div>`;
 
   banner.classList.toggle('is-locked', locked);
   banner.innerHTML = `
     ${headline}
+    ${countdownCellsHTML(Math.max(0, remaining))}
     <div class="countdown-when">${locked ? 'First kickoff: ' : ''}${whenStr}</div>
     ${progressLineHTML()}
   `;
@@ -2067,7 +2106,6 @@ async function init() {
 
   renderAll();
   initCollapsedSections();
-  wireGroupsGrid();
   wireWildcards();
   wireBracketListener();
   wireActionsBar();

@@ -97,7 +97,7 @@ ABOUTME: Linked from index.html header; no JS or Supabase required.
       <h3>How to play</h3>
       <ol class="rules-list">
         <li>Pick your name (or add yourself) on the home page.</li>
-        <li>For each of the 12 groups, rank all 4 teams from <strong>1st to 4th</strong> by tapping two teams to swap their positions. Only your 1st and 2nd score group-stage points; your 3rd determines wildcard eligibility.</li>
+        <li>For each of the 12 groups, rank all 4 teams from <strong>1st to 4th</strong> by dragging them into your preferred order. Only your 1st and 2nd score group-stage points; your 3rd determines wildcard eligibility.</li>
         <li>Pick exactly <strong>8 of the 12 third-place teams</strong> to advance as wildcards. The R32 bracket auto-populates from FIFA's official Annexe&nbsp;C lookup table.</li>
         <li>Click winners through <strong>R32 → R16 → QF → SF → Final</strong>, plus the <strong>3rd-place match</strong>.</li>
         <li>Your <strong>champion</strong> is whoever you pick to win the Final. In the tiebreaker, predict that champion's <strong>average goals per game</strong> across the whole tournament.</li>
@@ -105,7 +105,7 @@ ABOUTME: Linked from index.html header; no JS or Supabase required.
       </ol>
       <p class="rules-callout">A few mechanics worth knowing:</p>
       <ul class="rules-list">
-        <li><strong>Group ranks:</strong> tap a team to highlight it, then tap a second team in the same group to swap their positions. Tap the same team twice to deselect. The default order is FIFA pot order until you make your first swap.</li>
+        <li><strong>Group ranks:</strong> drag a team row up or down inside its group to change its rank; the other rows shift to make room. On phone, hold the row briefly, then drag. The default order is FIFA pot order until you make your first change.</li>
         <li><strong>Auto-fill:</strong> shuffles all four teams in each empty group so the top three become a random 1st/2nd/3rd. Groups you've already touched are left alone.</li>
         <li><strong>Wildcards:</strong> after every group is ranked, pick exactly 8 of the 12 third-place teams. The R32 matchups are looked up from FIFA's official Annexe&nbsp;C table &mdash; you don't place teams into slots yourself.</li>
         <li><strong>Winner picks:</strong> click a team in a match to advance them; click again to un-pick.</li>
@@ -128,7 +128,7 @@ ABOUTME: Linked from index.html header; no JS or Supabase required.
         <li><strong>Save my picks</strong> writes your current draft to the database. You can keep editing afterward.</li>
         <li><strong>Submit</strong> writes your draft AND marks your picks as final. Editing is disabled until you click <strong>Edit picks</strong> to unlock again.</li>
         <li>Both Save and Submit are no-ops if your draft already matches the database.</li>
-        <li>Leaving the site (close tab, refresh, click Rules) with unsaved changes triggers a warning. The custom modal on internal links offers a "Save &amp; continue" or "Submit &amp; continue" shortcut.</li>
+        <li>Leaving the site (close tab, refresh, click Rules) with unsaved changes triggers a warning. The modal offers a "Save &amp; continue" shortcut, or you can leave without saving.</li>
       </ul>
     </section>
 
@@ -171,9 +171,9 @@ ABOUTME: Linked from index.html header; no JS or Supabase required.
             </tr>
             <tr>
               <td>Quarterfinal winner</td>
-              <td class="num">5</td>
+              <td class="num">6</td>
               <td class="num">4</td>
-              <td class="num">20</td>
+              <td class="num">24</td>
             </tr>
             <tr>
               <td>Semifinal winner</td>
@@ -183,18 +183,18 @@ ABOUTME: Linked from index.html header; no JS or Supabase required.
             </tr>
             <tr>
               <td>Final winner</td>
-              <td class="num">10</td>
+              <td class="num">12</td>
               <td class="num">1</td>
-              <td class="num">10</td>
+              <td class="num">12</td>
             </tr>
             <tr class="row-total">
               <td colspan="3"><strong>Perfect bracket</strong></td>
-              <td class="num"><strong>142</strong></td>
+              <td class="num"><strong>148</strong></td>
             </tr>
           </tbody>
         </table>
       </div>
-      <p class="rules-note">A typical good showing lands in the 85–115 range. A great one closes in on 135.</p>
+      <p class="rules-note">A typical good showing lands in the 90–120 range. A great one closes in on 140.</p>
     </section>
 
     <section class="rules-section">
@@ -224,5 +224,6 @@ ABOUTME: Linked from index.html header; no JS or Supabase required.
 
   <script src="ticker.js" defer></script>
   <script src="user-bar.js" defer></script>
+  <script src="back-to-top.js" defer></script>
 </body>
 </html>
