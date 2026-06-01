@@ -23,7 +23,7 @@ Guidance for Claude Code when working in this repo.
 
 All sections open from day 1 and lock at the first WC kickoff on June 11.
 
-- **Group ranks**: rank all 4 teams in each of the 12 groups via tap-to-swap (tap two teams in the same group to swap their positions). 1st and 2nd score group-stage points; the 3rd team is eligible for wildcard selection.
+- **Group ranks**: rank all 4 teams in each of the 12 groups by dragging rows into 1st/2nd/3rd/4th order (SortableJS, mouse + touch). 1st and 2nd score group-stage points; the 3rd team is eligible for wildcard selection.
 - **Wildcards**: pick exactly 8 of the 12 third-place teams. The R32 matchups are looked up from FIFA's official Annexe C table (`src/wildcards-table.js`); the user does not assign slots manually.
 - **Bracket winners**: click a team in each knockout match to advance through R32 → R16 → QF → SF → Final, plus the 3rd-place match. R32 auto-populates from group ranks + wildcards.
 - **Tiebreaker**: predicted average goals per game for the player's predicted champion. The champion is derived from the Final winner pick (`bracket_picks` row for `M104`), not picked separately. Stored as `tiebreaker_picks.champion_avg_goals NUMERIC(4,2)`.
@@ -34,7 +34,7 @@ All sections open from day 1 and lock at the first WC kickoff on June 11.
 - **Save my picks**: flushes the draft to DB. Picks remain editable.
 - **Submit**: flushes the draft to DB AND sets `players.groups_submitted_at` / `bracket_submitted_at`. Editing is disabled until **Edit picks** clears those timestamps.
 - **Auto-pick (groups only)**: shuffles teams in any empty group and assigns the top two as 1st/2nd. Updates draft only — Save to persist.
-- Navigation guards (browser `beforeunload` + custom modal on internal links) fire whenever the draft differs from the saved snapshot OR the player hasn't submitted.
+- Navigation guards (browser `beforeunload` + custom modal on internal links) fire whenever the draft differs from the saved snapshot. The modal offers Save & continue / Leave without saving / Cancel — no Submit shortcut.
 
 ## Lock & visibility
 
@@ -44,10 +44,10 @@ All sections open from day 1 and lock at the first WC kickoff on June 11.
 
 - Group standings: 1 point per correctly placed team (1st or 2nd slot of any group)
 - Wildcards: 1 point for each group the player flagged as advancing whose 3rd-place team actually advanced (max 8, since the player picks 8 of 12)
-- R32 winner: 2 / R16: 4 / QF: 5 / SF: 8 / Final: 10
+- R32 winner: 2 / R16: 4 / QF: 6 / SF: 8 / Final: 12
 - Tiebreaker: closest guess to the actual tournament champion's average goals per game (a decimal per player). Compared against reality regardless of which team the player picked to win.
 
-Perfect bracket = 142 points.
+Perfect bracket = 148 points.
 
 ## Files
 

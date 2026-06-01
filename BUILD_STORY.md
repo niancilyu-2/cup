@@ -44,7 +44,7 @@ Polish that touched every page:
 - **Collapsible Groups and Wildcards** with a smart default: collapsed once the section is complete, expanded otherwise. Persisted in `localStorage`. Bracket becomes the prominent live area.
 - **Bracket live preview** — `mock-results.js` exposes a synthetic `MOCK_TOURNAMENT` so the bracket renders score lines and per-pick ✓/✗ before any real match is played. Phase 4 swaps this for real data without changing `renderBracket()`.
 - **Leaderboard hover breakdown** — per-stage points popover on each player's total.
-- **Drop exact-score bonus** — simplified scoring to the table now in `rules.html` (perfect bracket = 142).
+- **Drop exact-score bonus** — simplified scoring to the table now in `rules.html` (perfect bracket = 148 after the QF/Final bump).
 - **Live scores page** — standalone schedule + scores view that overlays `MOCK_TOURNAMENT` until Phase 4 lands.
 - **Privacy gate** — until first kickoff, only your own picks are visible to you.
 - **Per-player PIN auth** — SHA-256 hash stored as `players.pin_hash`. Trust-based, not adversarial.
