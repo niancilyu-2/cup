@@ -3,24 +3,6 @@
  * ABOUTME: Broadcast-booth theme — true black surfaces, yellow accent, condensed display type.
  */
 
-/* Soccer-ball cursor everywhere. `!important` is the right tool here — the
-   later per-element `cursor: pointer` / `cursor: help` rules have higher
-   specificity than `*`, so without it the ball would only show on whitespace
-   and the system pointer would take over on every button and link.
-   The ⚽ emoji is rendered into an SVG so we can pin the hotspot to the
-   center of the ball. */
-*,
-*::before,
-*::after {
-  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><text y="20" font-size="20">⚽</text></svg>') 10 11, auto !important;
-}
-
-:disabled,
-[disabled],
-[aria-disabled="true"] {
-  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><text y="20" font-size="20">⚽</text></svg>') 10 11, not-allowed !important;
-}
-
 :root {
   /* Surfaces — three tiers separated by raised tone, not by borders. */
   --bg:            #0c0d10;   /* page — true black with a touch of warmth */
