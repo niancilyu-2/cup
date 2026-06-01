@@ -57,6 +57,21 @@ describe('normalizeEspnEvent', () => {
     draw.competitions[0].competitors[0].score = '1';
     expect(normalizeEspnEvent(draw).winnerCode).toBe(null);
   });
+  it('keeps the regulation score but takes the winner flag for a penalty shootout', () => {
+    // Real 2022 final: Argentina 3-3 France, decided on penalties. ESPN reports
+    // the 3-3 regulation score and flags Argentina as the winner.
+    const pens = structuredClone(event);
+    pens.competitions[0].competitors[0].team.displayName = 'Argentina';
+    pens.competitions[0].competitors[0].score = '3';
+    pens.competitions[0].competitors[0].winner = true;
+    pens.competitions[0].competitors[1].team.displayName = 'France';
+    pens.competitions[0].competitors[1].score = '3';
+    pens.competitions[0].competitors[1].winner = false;
+    const n = normalizeEspnEvent(pens);
+    expect(n.scoreA).toBe(3);
+    expect(n.scoreB).toBe(3);
+    expect(n.winnerCode).toBe('ARG');
+  });
   it('returns null if a team name is unmappable', () => {
     const bad = structuredClone(event);
     bad.competitions[0].competitors[0].team.displayName = 'Atlantis';
