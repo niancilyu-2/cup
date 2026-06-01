@@ -44,6 +44,24 @@ describe('buildReachability', () => {
     expect(reach.participants('M73').has('A1')).toBe(false);
   });
 
+  it('excludes a 4th-place team from wildcard reachability mid-group-stage', () => {
+    // Group A complete, other groups still open. Only A's 3rd can be a wildcard;
+    // A's 4th is already mathematically out even before the rest finish.
+    const matches = [
+      { id: 'M1', stage: 'group', group_code: 'A', team_a_code: 'A1', team_b_code: 'A2' },
+      { id: 'M2', stage: 'group', group_code: 'A', team_a_code: 'A3', team_b_code: 'A4' },
+      { id: 'M74', stage: 'r32', slot_a: '1E', slot_b: '3A/B/C/D/F' },
+    ];
+    const results = {
+      groupOutcomes: { A: { first: 'A1', second: 'A2', third: 'A3', third_advances: false } },
+      matchResults: {},
+    };
+    const reach = buildReachability(matches, results);
+    const p = reach.participants('M74');
+    expect(p.has('A3')).toBe(true);
+    expect(p.has('A4')).toBe(false);
+  });
+
   it('tightens downstream participants as feeders are decided', () => {
     const { matches, results } = fixture({ M73: { winner: 'A2', played: true } });
     const reach = buildReachability(matches, results);

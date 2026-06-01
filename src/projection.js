@@ -85,8 +85,15 @@ export function buildReachability(matches, results) {
         }
         return [];
       }
+      // Groups still resolving: only a group's 3rd-place can be a wildcard. For a
+      // complete group that is its known 3rd (its 4th is already out); for an
+      // incomplete group any team could still finish 3rd.
       const out = [];
-      for (const g of slot.eligible) out.push(...(groupTeams[g] || []));
+      for (const g of slot.eligible) {
+        const o = results.groupOutcomes[g];
+        if (o) { if (o.third) out.push(o.third); }
+        else out.push(...(groupTeams[g] || []));
+      }
       return out;
     }
     if (label.startsWith('W')) return [...winnersOf(`M${label.slice(1)}`)];

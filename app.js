@@ -108,6 +108,12 @@ function groupOutcomeFor(groupCode) {
   return state.results?.groupOutcomes?.[groupCode] || null;
 }
 
+// The eight advancing 3rd-place teams are only known once every group is done,
+// so wildcard correctness can't be shown until then.
+function allGroupsDecided() {
+  return Object.keys(state.results?.groupOutcomes || {}).length === 12;
+}
+
 function pickMarkHTML(correct) {
   return correct
     ? '<span class="pick-mark is-correct" aria-label="Correct">✓</span>'
@@ -852,7 +858,7 @@ function renderWildcardsSection() {
       const atMax = count >= 8 && !active;
       const teamName = team ? team.name : '—';
       const outcome = groupOutcomeFor(g.code);
-      const mark = outcome ? pickMarkHTML(active === !!outcome.third_advances) : '';
+      const mark = (outcome && allGroupsDecided()) ? pickMarkHTML(active === !!outcome.third_advances) : '';
       return `
         <button type="button" class="wildcard-card ${active ? 'is-active' : ''}"
                 data-group="${g.code}"
