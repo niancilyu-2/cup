@@ -1,0 +1,24 @@
+{
+  "events": [
+    {
+      "date": "2026-06-11T19:00Z",
+      "competitions": [{
+        "status": { "type": { "state": "post", "completed": true } },
+        "competitors": [
+          { "homeAway": "home", "team": { "displayName": "Mexico" }, "score": "2", "winner": true },
+          { "homeAway": "away", "team": { "displayName": "South Africa" }, "score": "1", "winner": false }
+        ]
+      }]
+    },
+    {
+      "date": "2026-06-11T22:00Z",
+      "competitions": [{
+        "status": { "type": { "state": "in", "completed": false } },
+        "competitors": [
+          { "homeAway": "home", "team": { "displayName": "Germany" }, "score": "0", "winner": false },
+          { "homeAway": "away", "team": { "displayName": "Curaçao" }, "score": "0", "winner": false }
+        ]
+      }]
+    }
+  ]
+}
