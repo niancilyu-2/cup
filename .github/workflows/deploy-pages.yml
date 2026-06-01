@@ -1,0 +1,40 @@
+# ABOUTME: Builds config.js from repo secrets and deploys the static site to GitHub Pages.
+# ABOUTME: Keeps the anon key + admin code out of the public repo (injected at deploy time).
+name: Deploy to Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Let a running deploy finish; queue the next one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate config.js from secrets
+        run: |
+          cat > config.js <<EOF
+          window.SUPABASE_URL = '${{ secrets.SUPABASE_URL }}';
+          window.SUPABASE_ANON_KEY = '${{ secrets.SUPABASE_ANON_KEY }}';
+          window.ADMIN_CODE = '${{ secrets.ADMIN_CODE }}';
+          EOF
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: deployment
+        uses: actions/deploy-pages@v4
