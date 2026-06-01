@@ -46,6 +46,14 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* Disable mobile browsers' automatic text inflation (Android font boosting,
+   iOS auto-adjust), which was enlarging the news ticker on phones. */
+html {
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   background: var(--bg);
   color: var(--text);
