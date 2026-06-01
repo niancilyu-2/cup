@@ -52,7 +52,52 @@ Polish that touched every page:
 - **Mobile pass** — stepper chevrons as inline SVG, condensed at 560px; bracket compacts at 600px; section toggle summaries hide on narrow screens.
 - **Admin** — delete players from the admin page (added `players_delete` RLS policy in `schema.sql`); shortened Bosnia and Herzegovina to "Bosnia" in the admin UI only.
 
-## Up next
+## Phase 4 — Results sync (2026-06-01)
 
-- **Phase 4** — auto-fetch live results via a Supabase Edge Function on a 30-minute cron, hitting ESPN's undocumented WC scoreboard endpoint. Admin entry remains the manual fallback.
-- **Phase 5** — reveal-day polish: tournament-style bracket visualization, share cards, end-of-tournament wrap-up screen.
+Automated pull of match results from ESPN's undocumented World Cup scoreboard. Decisions that stuck:
+
+- **GitHub Actions cron, not a Supabase Edge Function.** The repo already had Node + Vitest; no Deno/Supabase CLI to learn. The script (`scripts/sync-espn.js`) runs every 30 minutes, is testable locally, and its logs live in the Actions tab.
+- **Public anon key, not the service-role key.** `matches` SELECT + UPDATE are already open to anon via RLS (the same path `admin.js` uses), so the cron needs no elevated secret. The dangerous key never enters the repo or CI.
+- **Tournament-windowed schedule.** Cron fires `*/30` only across June 11–July 19 (UTC), so it stays dormant until kickoff instead of running year-round.
+- **Scores + derived cascade.** The script writes raw scores and, on final results, computes group standings (FIFA tiebreakers, `src/standings.js`), assigns the 8 best third-places via the Annexe C table, and fills knockout matchups (`src/cascade.js`). In-progress scores are written for the Live Scores tab; the leaderboard/picks pages only react to completed matches.
+- **Admin always wins.** Rows with `result_source='manual'` are never overwritten by the sync.
+
+Pieces: `src/espn-map.js` (name → FIFA-code map + event normalizer), `src/standings.js`, `src/cascade.js`, `scripts/{espn-fetch,supabase-rest,sync-espn}.js`, `.github/workflows/sync-results.yml`, plus unit + fixture tests.
+
+**Validation before launch.** Confirmed ESPN fetching works from both this machine and the Actions runner. Replayed the real **2022 World Cup** through the parser — finals, group draws (no winner), and penalty shootouts (regulation score kept, shootout winner flagged) all handled, locked in with a regression test. Ran a full simulated group stage as a read-only dry-run against prod (72 finals → 16 R32 fills, 32 distinct teams, no duplicates), then a live write-and-revert to prove the write path. The dry-run caught a real bug: ESPN spells it **"Bosnia-Herzegovina"** (hyphenated), which the map missed — all three of Bosnia's group games would have silently failed to sync.
+
+## Phase 4b — Frontend on real data (2026-06-01)
+
+The sync wrote correct data, but the pages were never wired to read it — they still ran on the `MOCK_TOURNAMENT` stub. Fixed:
+
+- New `src/results.js` derives the `{groupOutcomes, matchResults}` scoring shape from raw match rows (shared by leaderboard + picks page).
+- New `src/projection.js` computes the **mathematically-reachable maximum** soundly: a knockout pick counts toward a player's max only if that team can still reach the match — excluding teams that didn't qualify or are stranded in the wrong half by real seeding. The champion ❌ marker uses the same reachability.
+- Leaderboard, picks/bracket overlay, and live-scores all read real results; `mock-results.js` deleted; pre-tournament empty states added.
+
+## Bug sweeps (2026-06-01)
+
+Two passes, with parallel review agents (findings verified against code — several false positives rejected):
+
+- **Stale bracket picks** — changing a group/wildcard after building the bracket left stale teams advancing downstream and let the Submit gate pass with invalid picks. `teamForSlot`, `isBracketComplete`, and auto-pick are now validity-aware.
+- **Reachability tightening** — a team that finished 4th in a completed group is out immediately; max-possible no longer over-counts it.
+- **Wildcard ✓/✗ timing** — only shown once all 12 groups finish (the 8 advancing thirds aren't knowable before then).
+- **Admin score validation** — reject negative/decimal/NaN scores and group draws saved with a winner.
+- **Storage resilience** — corrupted `localStorage` no longer crashes page load.
+- **Group ranked ✓** — each group card shows a check once the player has ranked it.
+
+## Phase 5 — Reveal + visual polish
+
+Effectively delivered across earlier work and confirmed done: the editorial broadcast theme, the column bracket with connectors, the date-based reveal/privacy gate (picks revealed + leaderboard live once matches start), the "Picks locked" countdown, and the leaderboard viz (medals, Accuracy %, Max-possible, hover breakdown). No separate FIFA-style redesign was pursued.
+
+## Going live (2026-06-01)
+
+Hosted on **GitHub Pages** at **https://niancilyu-2.github.io/wc/**. Because the repo is public and `config.js` is gitignored, a deploy workflow (`.github/workflows/deploy-pages.yml`) **generates `config.js` at build time from repo secrets** — the anon key and admin code never live in the public repo. Pages source is set to "GitHub Actions"; every push to `main` redeploys.
+
+## Operations cheat-sheet
+
+- **Live site:** https://niancilyu-2.github.io/wc/ (auto-deploys on push to `main`).
+- **Repo secrets** (Settings → Secrets → Actions): `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `ADMIN_CODE`. The deploy injects all three into `config.js`; the sync uses the first two.
+- **Two workflows:** `deploy-pages.yml` (on push) and `sync-results.yml` (every 30 min, June 11–July 19 UTC, + manual `workflow_dispatch`).
+- **Entering results:** automatic via the sync once the tournament starts; manual fallback is `admin.html` (gated by `ADMIN_CODE`), which always wins over the sync.
+- **Local credentials:** copy `config.example.js` → `config.js` (gitignored) to run locally.
+- **Tests:** `npm test` (Vitest). **Lock date:** `LOCK_DATE_ISO` in `app.js` (June 11, 13:00 -06:00).
