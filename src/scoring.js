@@ -6,9 +6,9 @@ export const STAGE_POINTS = {
   wildcards: 1,
   r32:       2,
   r16:       4,
-  qf:        5,
+  qf:        6,
   sf:        8,
-  final:     10,
+  final:     12,
 };
 
 // Knockout match IDs grouped by stage (fixed for WC 2026).
@@ -24,8 +24,8 @@ export const STAGE_MATCHES = {
 
 export const PERFECT_TOTAL =
   24 /* groups */ + 8 /* wildcards */ +
-  32 /* r32 */ + 32 /* r16 */ + 20 /* qf */ + 16 /* sf */ + 10 /* final */;
-// 142
+  32 /* r32 */ + 32 /* r16 */ + 24 /* qf */ + 16 /* sf */ + 12 /* final */;
+// 148
 
 const KNOCKOUT_STAGES = ['r32', 'r16', 'qf', 'sf', 'final'];
 

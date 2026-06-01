@@ -66,18 +66,18 @@ describe('scoring engine', () => {
     expect(scorePlayer(undefined, undefined).total).toBe(0);
   });
 
-  it('awards 142 for a perfect bracket', () => {
+  it('awards 148 for a perfect bracket', () => {
     const picks = perfectPicksFor(FULLY_PLAYED_RESULTS);
     const s = scorePlayer(picks, FULLY_PLAYED_RESULTS);
     expect(s.total).toBe(PERFECT_TOTAL);
-    expect(s.total).toBe(142);
+    expect(s.total).toBe(148);
     expect(s.groups).toBe(24);
     expect(s.wildcards).toBe(8);
     expect(s.r32).toBe(32);
     expect(s.r16).toBe(32);
-    expect(s.qf).toBe(20);
+    expect(s.qf).toBe(24);
     expect(s.sf).toBe(16);
-    expect(s.final).toBe(10);
+    expect(s.final).toBe(12);
   });
 
   it('awards 0 for empty picks against a played tournament', () => {
@@ -189,12 +189,12 @@ describe('scoring engine', () => {
       groups: {
         A: { first: 'MEX', second: 'KOR', advances: true }, // 2 groups + 1 wildcard
       },
-      bracket: { M104: 'WIN_M104' }, // 10 final
+      bracket: { M104: 'WIN_M104' }, // 12 final
     };
     const s = scorePlayer(picks, FULLY_PLAYED_RESULTS);
     expect(s.groups).toBe(2);
     expect(s.wildcards).toBe(1);
-    expect(s.final).toBe(10);
-    expect(s.total).toBe(13);
+    expect(s.final).toBe(12);
+    expect(s.total).toBe(15);
   });
 });
