@@ -249,6 +249,8 @@ a.ticker-item:hover {
   .wordmark-lead,
   .wordmark-year { font-size: 1rem; }
   .wordmark-sub { display: none; }
+  /* Keep form fields at 16px so iOS Safari doesn't zoom in on focus. */
+  input, select, textarea { font-size: 16px; }
 }
 
 .site-nav {
