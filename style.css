@@ -80,23 +80,6 @@ button { font-family: inherit; }
   border-bottom: 2px solid var(--accent);
 }
 
-#site-header::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 80' fill='none' stroke='%236ea1ff' stroke-width='1' stroke-linecap='square'><path d='M0 6 H40 M0 14 H40 M40 6 V14 M40 10 H80'/><path d='M0 26 H40 M0 34 H40 M40 26 V34 M40 30 H80'/><path d='M0 46 H40 M0 54 H40 M40 46 V54 M40 50 H80'/><path d='M0 66 H40 M0 74 H40 M40 66 V74 M40 70 H80'/><path d='M80 10 V30 M80 20 H140'/><path d='M80 50 V70 M80 60 H140'/><path d='M140 20 V60 M140 40 H200'/><rect x='200' y='34' width='28' height='12'/></svg>");
-  background-repeat: no-repeat;
-  background-position: right -10px center;
-  background-size: auto 78%;
-  opacity: 0.11;
-  pointer-events: none;
-}
-
-#site-header > * {
-  position: relative;
-  z-index: 1;
-}
-
 #ticker-bar {
   overflow: hidden;
   background: var(--surface-2);
