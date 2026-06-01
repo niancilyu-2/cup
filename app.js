@@ -145,8 +145,14 @@ function snapshot(obj) {
 }
 
 function getStoredPlayer() {
-  const raw = localStorage.getItem(STORAGE_KEY_PLAYER);
-  return raw ? JSON.parse(raw) : null;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_PLAYER);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return (parsed && typeof parsed === 'object' && parsed.id) ? parsed : null;
+  } catch {
+    return null;
+  }
 }
 
 function setStoredPlayer(player) {
@@ -501,7 +507,15 @@ function teamForSlot(matchId, position) {
   const label = position === 'a' ? match.slot_a : match.slot_b;
   if (!label) return null;
   if (label.startsWith('W')) {
-    return state.picks.draft.bracket[`M${label.slice(1)}`] || null;
+    // Only propagate a winner that is still a participant of the source match,
+    // so changing an upstream group/wildcard pick doesn't leave a stale team
+    // advancing downstream.
+    const priorId = `M${label.slice(1)}`;
+    const winner = state.picks.draft.bracket[priorId];
+    if (!winner) return null;
+    const a = teamForSlot(priorId, 'a');
+    const b = teamForSlot(priorId, 'b');
+    return (winner === a || winner === b) ? winner : null;
   }
   if (label.startsWith('L')) {
     const priorId = `M${label.slice(1)}`;
@@ -544,7 +558,12 @@ function bracketMatches() {
 function isBracketComplete() {
   const ko = bracketMatches();
   if (!isWildcardsComplete() || !ko.length) return false;
-  return ko.every((m) => !!state.picks.draft.bracket[m.id]);
+  // A pick counts only if it is still a participant of its match; an upstream
+  // change can leave a stale pick that no longer belongs.
+  return ko.every((m) => {
+    const pick = state.picks.draft.bracket[m.id];
+    return pick && (pick === teamForSlot(m.id, 'a') || pick === teamForSlot(m.id, 'b'));
+  });
 }
 
 function scrollToSection(id) {
@@ -1341,10 +1360,11 @@ function autoPickBracket() {
     .sort((a, b) => parseInt(a.id.slice(1), 10) - parseInt(b.id.slice(1), 10));
   let changed = 0;
   for (const m of ordered) {
-    if (state.picks.draft.bracket[m.id]) continue;
     const teamA = teamForSlot(m.id, 'a');
     const teamB = teamForSlot(m.id, 'b');
     if (!teamA || !teamB) continue;
+    const cur = state.picks.draft.bracket[m.id];
+    if (cur === teamA || cur === teamB) continue; // already has a valid pick
     state.picks.draft.bracket[m.id] = Math.random() < 0.5 ? teamA : teamB;
     changed++;
   }

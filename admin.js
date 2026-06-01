@@ -322,8 +322,18 @@
     const winner_code = winnerField.value || null;
     const completed = completedField.checked;
 
+    for (const [label, val] of [['Team A', score_a], ['Team B', score_b]]) {
+      if (val != null && (!Number.isInteger(val) || val < 0)) {
+        return fail(status, `${label} score must be a whole number 0 or higher.`);
+      }
+    }
+
     const match = allMatches.find((m) => m.id === matchId);
     const isGroup = match?.stage === 'group';
+
+    if (isGroup && winner_code && score_a != null && score_b != null && score_a === score_b) {
+      return fail(status, 'Group draws have no winner — leave it blank.');
+    }
 
     if (completed) {
       if (score_a == null || score_b == null) {
