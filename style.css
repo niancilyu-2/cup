@@ -51,6 +51,8 @@ body {
   color: var(--text);
   font-family: var(--font-sans);
   font-size: 0.9375rem;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
   line-height: 1.5;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
@@ -233,6 +235,9 @@ a.ticker-item:hover {
   .wordmark-sub { display: none; }
   /* Keep form fields at 16px so iOS Safari doesn't zoom in on focus. */
   input, select, textarea { font-size: 16px; }
+  /* Tighten the news ticker on narrow screens. */
+  #ticker-bar { font-size: 0.62rem; letter-spacing: 0.1em; }
+  .ticker-track { padding: 0.45rem 0; gap: 0.6rem; }
 }
 
 .site-nav {
