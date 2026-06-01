@@ -1129,6 +1129,12 @@ body.is-picks-hidden #tiebreaker-section {
   justify-content: space-between;
 }
 
+.group-ranked-check {
+  color: var(--winner);
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
 .team-list {
   list-style: none;
   margin: 0;

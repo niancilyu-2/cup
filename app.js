@@ -731,6 +731,7 @@ function groupCardHTML(groupCode) {
     <div class="group-card" data-group-card="${groupCode}">
       <header class="group-card-header">
         <span>Group ${groupCode}</span>
+        ${hasGroupPick(groupCode) ? '<span class="group-ranked-check" title="Ranked" aria-label="Ranked">✓</span>' : ''}
       </header>
       <ul class="team-list">${rows}</ul>
     </div>`;
