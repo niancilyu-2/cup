@@ -4,35 +4,35 @@
  */
 
 :root {
-  /* Surfaces — deep pitch-green tiers, separated by raised tone not borders. */
-  --bg:            #0a130e;   /* page — near-black with a green cast */
-  --surface:       #121b15;   /* cards */
-  --surface-2:     #1b261d;   /* card-on-card / hover / striped band */
-  --surface-3:     #25322a;   /* deepest raised tone — hover on surface-2 */
+  /* Surfaces — three tiers separated by raised tone, not by borders. */
+  --bg:            #0c0d10;   /* page — true black with a touch of warmth */
+  --surface:       #16181d;   /* cards */
+  --surface-2:     #1e2128;   /* card-on-card / hover / striped band */
+  --surface-3:     #272a32;   /* deepest raised tone — hover on surface-2 */
 
   /* Borders — used sparingly, mostly for thin internal dividers */
-  --border:        #25322a;   /* near-invisible hairline */
-  --border-strong: #36473a;   /* visible divider */
+  --border:        #25282e;   /* near-invisible hairline */
+  --border-strong: #353841;   /* visible divider */
 
   /* Ink */
-  --text:        #e9ece6;
-  --text-muted:  #9aa89c;
-  --text-faint:  #6b766c;
+  --text:        #e8e8e8;
+  --text-muted:  #9a9d9c;
+  --text-faint:  #6c6f75;
 
-  /* Accent — broadcast gold, the colour of a chyron stripe */
-  --accent:      #f0c64a;
-  --accent-soft: rgba(240, 198, 74, 0.14);
-  --accent-ink:  #0a130e;
+  /* Accent — broadcast yellow, the colour of a chyron stripe */
+  --accent:      #f5c542;
+  --accent-soft: rgba(245, 197, 66, 0.14);
+  --accent-ink:  #0c0d10;
 
-  /* Functional states */
-  --winner:      #5bc46b;   /* brighter lime so it reads against the green base */
-  --winner-soft: rgba(91, 196, 107, 0.16);
+  /* Winner state — pitch green, calmer than tailwind neon */
+  --winner:      #3da55a;
+  --winner-soft: rgba(61, 165, 90, 0.16);
   --lose:        #d6553b;
   --lose-soft:   rgba(214, 85, 59, 0.14);
-  --live:        #e0473a;   /* in-progress match indicator (live scores page) */
-  --live-soft:   rgba(224, 71, 58, 0.12);
-  --banner:      #6fa9a1;   /* muted teal — calm categorical within the green family */
-  --banner-soft: rgba(111, 169, 161, 0.18);
+  --live:        #e0413a;   /* in-progress match indicator (live scores page) */
+  --live-soft:   rgba(224, 65, 58, 0.12);
+  --banner:      #6b8caf;   /* steel-blue — categorical, neither yellow nor green */
+  --banner-soft: rgba(107, 140, 175, 0.18);
 
   --radius: 4px;
   --gutter: 1.25rem;
@@ -2075,7 +2075,7 @@ body.is-picks-hidden #tiebreaker-section {
   gap: 0.3rem;
   color: var(--banner);
   text-decoration: none;
-  border-bottom: 1px solid rgba(111, 169, 161, 0.35);
+  border-bottom: 1px solid rgba(107, 140, 175, 0.35);
   padding-bottom: 1px;
   font-weight: 500;
   transition: border-color 0.12s ease;
