@@ -965,8 +965,9 @@ body.is-picks-hidden #tiebreaker-section {
   .pick-stepper .step-num { width: 22px; height: 22px; font-size: 0.75rem; }
   .pick-stepper .step-name { font-size: 0.75rem; }
 
-  /* Combined height is too tall to pin to the viewport, so the panel scrolls
-     with the page on mobile. Stepper above, actions below, hairline between. */
+  /* The stepper is too tall to pin alongside the actions on a phone, so the
+     stepper scrolls in flow while the Save/Submit bar is pinned to the bottom
+     of the viewport — always reachable without scrolling. */
   .pick-controls {
     position: static;
     flex-direction: column;
@@ -974,12 +975,23 @@ body.is-picks-hidden #tiebreaker-section {
     padding: 0.4rem 0.5rem;
   }
   .actions-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 60;
+    margin: 0;
     border-left: none;
     border-top: 1px solid var(--border-strong);
-    padding: 0.55rem 0 0.1rem;
-    margin-top: 0.45rem;
-    align-self: stretch;
+    background: var(--surface);
+    padding: 0.5rem 0.9rem;
+    gap: 0.5rem;
+    justify-content: center;
+    box-shadow: 0 -3px 14px rgba(0, 0, 0, 0.45);
   }
+  /* Clear space for the pinned bar (only the picks page has it). */
+  body.page-picks { padding-bottom: 5.5rem; }
+  body.page-picks #back-to-top { bottom: 5.5rem; }
 }
 
 /* Phone-width: collapse the stepper to numbered circles + count so all 4
