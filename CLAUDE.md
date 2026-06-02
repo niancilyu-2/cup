@@ -10,7 +10,7 @@ Guidance for Claude Code when working in this repo.
 - Supabase (Postgres) backend, accessed via the public anon key
 - GitHub Pages hosting
 - Self-signup (no auth); admin actions gated by a shared admin code in `config.js`
-- ESPN's undocumented WC scoreboard endpoint pulled every 30 min by a Supabase Edge Function; manual admin entry is the fallback
+- ESPN's undocumented WC scoreboard endpoint pulled every 30 min by a GitHub Actions cron (`scripts/sync-espn.js`, public anon key); manual admin entry is the fallback
 
 ## Tournament format (2026 only)
 
@@ -54,7 +54,7 @@ Perfect bracket = 148 points.
 - `index.html` — static shell (picks page; supports `?view=<player_id>` for read-only viewing of another player)
 - `app.js` — core logic (picks, lock, bracket cascade, view-only mode)
 - `leaderboard.html` / `leaderboard.js` — Supabase-backed standings; uses `src/scoring.js`
-- `livescores.html` / `livescores.js` — schedule + live scores, overlays MOCK_TOURNAMENT until Phase 4
+- `livescores.html` / `livescores.js` — schedule + live scores rendered from the `matches` table
 - `admin.html` / `admin.js` — admin-only results-entry page (not in nav); gated by ADMIN_CODE
 - `src/scoring.js` — pure scoring engine (tested in `tests/scoring.test.js`)
 - `style.css` — stadium-green chrome on a vector soccer-pitch background; white card surfaces; bracket connectors in deep green

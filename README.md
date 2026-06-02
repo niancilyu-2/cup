@@ -7,13 +7,13 @@ A pick'em bracket for ~10 friends to predict the 2026 FIFA World Cup. Live at Gi
 - Plain HTML/CSS/JS, no build step
 - Supabase (Postgres) for picks, results, and leaderboard
 - GitHub Pages for hosting
-- ESPN scoreboard endpoint pulled by a Supabase Edge Function every 30 min for auto-results; manual admin entry as fallback
+- ESPN scoreboard endpoint pulled every 30 min by a GitHub Actions cron (`scripts/sync-espn.js`) for auto-results; manual admin entry as fallback
 
 ## How it works
 
 Four pick steps, all open from day one, all locked at first kickoff (June 11, 2026, 1:00 PM Mexico City time):
 
-1. **Group ranks** — for each of the 12 groups, rank all 4 teams 1st–4th by tapping two teams to swap them. 1st and 2nd score group-stage points; your 3rd is eligible for wildcard selection.
+1. **Group ranks** — for each of the 12 groups, rank all 4 teams 1st–4th by dragging them into order (they start scrambled). 1st and 2nd score group-stage points; your 3rd is eligible for wildcard selection.
 2. **Wildcards** — pick exactly 8 of the 12 third-place teams to advance. The R32 matchups are looked up from FIFA's official Annexe C table; you don't place teams in slots yourself.
 3. **Knockout bracket** — click winners through R32 → R16 → QF → SF → Final, plus the 3rd-place match. R32 auto-populates from your group ranks + wildcards; downstream rounds auto-populate from your winners.
 4. **Tiebreaker** — predict your champion's average goals per game across the whole tournament. Your champion is whoever you pick to win the Final (no separate pick).
