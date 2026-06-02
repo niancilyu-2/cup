@@ -1111,7 +1111,7 @@ body.is-picks-hidden #tiebreaker-section {
 
 .group-card-header {
   padding: 0.6rem 0.9rem;
-  background: var(--banner-soft);
+  background: #0b1a3a;
   border-bottom: 1px solid var(--border);
   color: var(--text);
   font-weight: 600;
