@@ -12,7 +12,7 @@
 
   // Deterministic auto-avatar from the player id (stable across renames).
   function avatarUrl(id) {
-    return `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(id)}`;
+    return `https://api.dicebear.com/9.x/bottts/svg?seed=${encodeURIComponent(id)}`;
   }
 
   function render() {

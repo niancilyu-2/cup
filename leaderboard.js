@@ -11,7 +11,7 @@ const FINAL_MATCH_ID = 'M104';
 // FIFA 3-letter code → ISO 3166-1 alpha-2 (used by lipis/flag-icons).
 // Deterministic auto-avatar from the player id (stable across renames).
 function avatarUrl(id) {
-  return `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(id)}`;
+  return `https://api.dicebear.com/9.x/bottts/svg?seed=${encodeURIComponent(id)}`;
 }
 
 const FIFA_TO_ISO = {
