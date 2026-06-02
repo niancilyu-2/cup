@@ -32,6 +32,13 @@ jobs:
           window.SUPABASE_ANON_KEY = '${{ secrets.SUPABASE_ANON_KEY }}';
           window.ADMIN_CODE = '${{ secrets.ADMIN_CODE }}';
           EOF
+      - name: Cache-bust local assets with the commit SHA
+        run: |
+          V="${GITHUB_SHA::8}"
+          # Version local <script>/<link> refs in HTML (leaves CDN URLs alone).
+          sed -i -E "s/(src|href)=\"((app|leaderboard|livescores|admin|ticker|user-bar|back-to-top|config)\.js|style\.css)\"/\1=\"\2?v=$V\"/g" *.html
+          # Version relative ES-module imports so changed src/ files reload too.
+          sed -i -E "s#(from '(\.{1,2}/)[a-zA-Z0-9/_-]+\.js)'#\1?v=$V'#g" *.js src/*.js
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

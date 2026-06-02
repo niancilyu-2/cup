@@ -51,16 +51,27 @@ Perfect bracket = 148 points.
 
 ## Files
 
-- `index.html` — static shell (picks page; supports `?view=<player_id>` for read-only viewing of another player)
-- `app.js` — core logic (picks, lock, bracket cascade, view-only mode)
-- `leaderboard.html` / `leaderboard.js` — Supabase-backed standings; uses `src/scoring.js`
-- `livescores.html` / `livescores.js` — schedule + live scores rendered from the `matches` table
-- `admin.html` / `admin.js` — admin-only results-entry page (not in nav); gated by ADMIN_CODE
-- `src/scoring.js` — pure scoring engine (tested in `tests/scoring.test.js`)
-- `style.css` — stadium-green chrome on a vector soccer-pitch background; white card surfaces; bracket connectors in deep green
-- `schema.sql` — Supabase tables and seed data
-- `config.example.js` — credentials template (copy to `config.js`)
-- `config.js` — real credentials (gitignored)
+Pages (each loads `config.js`, `user-bar.js`, `back-to-top.js`):
+- `index.html` / `app.js` — picks page + core logic (signup/PIN, group ranks, wildcards, bracket cascade, tiebreaker, save/submit, lock, view-only via `?view=<player_id>`). ES module.
+- `leaderboard.html` / `leaderboard.js` — standings scored from real results. ES module.
+- `livescores.html` / `livescores.js` — schedule + live/final scores from the `matches` table.
+- `rules.html` — static rules & scoring (no Supabase).
+- `admin.html` / `admin.js` — results entry + PIN reset + player delete (not in nav); gated by ADMIN_CODE.
+- `ticker.js` — top news/facts ticker. `user-bar.js` — identity chip + switch + per-row rename in the switch list. `back-to-top.js`.
+
+Pure modules in `src/` (browser + Node; unit-tested in `tests/`):
+- `scoring.js` — per-stage scoring engine. `standings.js` — group table (FIFA tiebreakers) + best-8 thirds.
+- `results.js` — builds `{groupOutcomes, matchResults}` from match rows. `projection.js` — reachability + max-possible.
+- `cascade.js` — resolves knockout slot labels to team writes. `wildcards.js` / `wildcards-table.js` — Annexe C lookup.
+
+Results sync (`scripts/`, run by GitHub Actions, not served to the browser):
+- `sync-espn.js` — orchestrator. `espn-fetch.js` — ESPN fetch. `supabase-rest.js` — PostgREST writes (anon key).
+
+Other:
+- `.github/workflows/` — `deploy-pages.yml` (Pages deploy, injects `config.js` from secrets) + `sync-results.yml` (30-min cron, June 11–July 19 UTC).
+- `style.css` — editorial broadcast theme: true-black surfaces, single yellow accent, condensed display type, hairline chrome.
+- `schema.sql` — Supabase tables + RLS. `seed.sql` — teams/groups/matches seed data.
+- `config.example.js` — credentials template (copy to `config.js`, gitignored). `docs/superpowers/` — design spec + plan. `BUILD_STORY.md` — narrative log.
 
 ## Conventions
 

@@ -85,16 +85,6 @@ CREATE TABLE IF NOT EXISTS group_picks (
   PRIMARY KEY (player_id, group_code)
 );
 
--- R32 draft: which team the player puts in each of the 32 R32 slots.
--- Slot index 1..32 corresponds to position in the bracket.
-CREATE TABLE IF NOT EXISTS r32_draft (
-  player_id UUID NOT NULL REFERENCES players(id) ON DELETE CASCADE,
-  slot_index INT NOT NULL CHECK (slot_index BETWEEN 1 AND 32),
-  team_code TEXT NOT NULL REFERENCES teams(code),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  PRIMARY KEY (player_id, slot_index)
-);
-
 -- Bracket winner picks for every knockout match (R32 + R16 + QF + SF + 3rd + Final).
 -- For R32 matches, winner_code must be one of the two teams the player drafted
 -- into the relevant R32 slot pair (enforced app-side).
@@ -127,7 +117,6 @@ ALTER TABLE teams             ENABLE ROW LEVEL SECURITY;
 ALTER TABLE matches           ENABLE ROW LEVEL SECURITY;
 ALTER TABLE players           ENABLE ROW LEVEL SECURITY;
 ALTER TABLE group_picks       ENABLE ROW LEVEL SECURITY;
-ALTER TABLE r32_draft         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bracket_picks     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tiebreaker_picks  ENABLE ROW LEVEL SECURITY;
 
@@ -146,7 +135,6 @@ CREATE POLICY "players_delete"            ON players FOR DELETE USING (true);
 -- Picks: full read + write for anon (trust-based).
 -- App enforces "only your own picks" and "hidden until lock".
 CREATE POLICY "group_picks_all"       ON group_picks       FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "r32_draft_all"         ON r32_draft         FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "bracket_picks_all"     ON bracket_picks     FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "tiebreaker_picks_all"  ON tiebreaker_picks  FOR ALL USING (true) WITH CHECK (true);
 
