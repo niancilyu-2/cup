@@ -374,12 +374,10 @@ async function loadReferenceData() {
     (acc[t.group_code] ||= []).push(t);
     return acc;
   }, {});
+  // Randomize each group's starting order so the default ranking carries no
+  // seeding hint; players must actively rank. A saved order takes over once set.
   for (const code of Object.keys(state.teamsByGroup)) {
-    state.teamsByGroup[code].sort((a, b) => {
-      const pa = a.pot ?? 99, pb = b.pot ?? 99;
-      if (pa !== pb) return pa - pb;
-      return a.code.localeCompare(b.code);
-    });
+    state.teamsByGroup[code] = shuffled(state.teamsByGroup[code]);
   }
   state.teamsByCode = Object.fromEntries(teams.map((t) => [t.code, t]));
 }
