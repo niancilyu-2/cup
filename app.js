@@ -203,14 +203,19 @@ async function loadPlayers() {
   return data;
 }
 
-function showPlayerPicker() {
+function showPlayerPicker({ current = null } = {}) {
   return new Promise((resolve) => {
     const root = document.getElementById('modal-root');
+    // When already signed in, the picker can be dismissed to stay logged in.
+    const closeHTML = current
+      ? '<button type="button" class="modal-close" id="picker-close" aria-label="Close">✕</button>'
+      : '';
 
     const renderPickerList = (players) => {
       root.innerHTML = `
         <div class="modal-overlay">
           <div class="modal">
+            ${closeHTML}
             <h2>Login</h2>
             ${
               players.length
@@ -250,6 +255,13 @@ function showPlayerPicker() {
         });
       });
       document.getElementById('add-new-player').addEventListener('click', renderNewForm);
+      if (current) {
+        const dismiss = () => { root.innerHTML = ''; resolve(current); };
+        document.getElementById('picker-close')?.addEventListener('click', dismiss);
+        root.querySelector('.modal-overlay')?.addEventListener('click', (e) => {
+          if (e.target === e.currentTarget) dismiss();
+        });
+      }
     };
 
     const renderRenameForm = (player) => {
@@ -2186,11 +2198,24 @@ function startCountdownTicker() {
 // ---------- Init ----------
 
 async function init() {
-  const viewId = new URL(location.href).searchParams.get('view');
+  const url = new URL(location.href);
+  const viewId = url.searchParams.get('view');
+  const wantLogin = url.searchParams.has('login');
 
   let player = getStoredPlayer();
-  if (!player) player = await showPlayerPicker();
+  // Open the picker on first visit (no stored player) or when "switch" asked
+  // for it. When a player is already stored, the picker can be closed to keep
+  // them signed in.
+  if (!player || (wantLogin && !viewId)) {
+    player = await showPlayerPicker({ current: player });
+  }
   state.player = player;
+
+  // Drop the ?login flag so a refresh doesn't reopen the picker.
+  if (wantLogin) {
+    url.searchParams.delete('login');
+    history.replaceState(null, '', url.pathname + url.search + url.hash);
+  }
 
   window.renderUserBar?.();
   await Promise.all([loadReferenceData(), loadCurrentPlayer()]);

@@ -35,9 +35,9 @@
       <button id="switch-user" class="link-button" type="button">switch</button>
     `;
     document.getElementById('switch-user').addEventListener('click', () => {
-      localStorage.removeItem(KEY);
-      // Redirect to the picks page (directory root) so the player picker shows.
-      location.href = './';
+      // Open the login picker on the picks page WITHOUT clearing the session,
+      // so the user can close it and stay signed in as themselves.
+      location.href = './?login=1';
     });
   }
 

@@ -1784,12 +1784,27 @@ body.is-picks-hidden #tiebreaker-section {
 }
 
 .modal {
+  position: relative;
   background: var(--surface);
   border-radius: var(--radius);
   padding: 1.5rem;
   max-width: 420px;
   width: 90%;
 }
+
+.modal-close {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.7rem;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.25rem;
+}
+.modal-close:hover { color: var(--text); }
 
 .modal h2 {
   color: var(--text);
