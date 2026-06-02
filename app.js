@@ -184,12 +184,17 @@ function escHtml(s) {
 }
 const escAttr = escHtml;
 
+// Deterministic auto-avatar from the player id (stable across renames).
+function avatarUrl(id) {
+  return `https://api.dicebear.com/9.x/bottts/svg?seed=${encodeURIComponent(id)}`;
+}
+
 // ---------- Player picker (signup + switch) ----------
 
 async function loadPlayers() {
   const { data, error } = await supabase
     .from('players')
-    .select('id, name')
+    .select('id, name, groups_submitted_at, bracket_submitted_at')
     .order('name');
   if (error) {
     console.error('Failed to load players', error);
@@ -206,7 +211,7 @@ function showPlayerPicker() {
       root.innerHTML = `
         <div class="modal-overlay">
           <div class="modal">
-            <h2>Who are you?</h2>
+            <h2>Login</h2>
             ${
               players.length
                 ? `<p>Pick yourself from the list, or add a new player.</p>
@@ -215,8 +220,12 @@ function showPlayerPicker() {
                        .map(
                          (p) => `
                        <li class="player-row">
-                         <button type="button" class="player-pick" data-id="${p.id}" data-name="${escAttr(p.name)}">${escHtml(p.name)}</button>
-                         <button type="button" class="player-edit" data-id="${p.id}" data-name="${escAttr(p.name)}" title="Rename" aria-label="Rename ${escAttr(p.name)}">edit</button>
+                         <button type="button" class="player-pick" data-id="${p.id}" data-name="${escAttr(p.name)}">
+                           <img class="picker-avatar" src="${avatarUrl(p.id)}" alt="" />
+                           <span class="player-pick-name">${escHtml(p.name)}</span>
+                           ${(p.groups_submitted_at && p.bracket_submitted_at) ? '<span class="player-submitted" title="Submitted a complete bracket" aria-label="Submitted">✓</span>' : ''}
+                         </button>
+                         <button type="button" class="player-edit" data-id="${p.id}" data-name="${escAttr(p.name)}" title="Rename" aria-label="Rename ${escAttr(p.name)}">rename</button>
                        </li>`,
                        )
                        .join('')}

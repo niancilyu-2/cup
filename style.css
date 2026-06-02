@@ -1876,8 +1876,11 @@ body.is-picks-hidden #tiebreaker-section {
 
 .player-pick {
   width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
   text-align: left;
-  padding: 0.6rem 0.85rem;
+  padding: 0.5rem 0.85rem;
   background: var(--surface-2);
   border-radius: var(--radius);
   color: var(--text);
@@ -1890,6 +1893,27 @@ body.is-picks-hidden #tiebreaker-section {
 
 .player-pick:hover {
   background: var(--surface-3);
+}
+
+.picker-avatar {
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 50%;
+  background: var(--surface);
+  flex: 0 0 auto;
+}
+
+.player-pick-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.player-submitted {
+  flex: 0 0 auto;
+  color: var(--winner);
+  font-weight: 700;
 }
 
 .player-row {
