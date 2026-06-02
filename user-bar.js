@@ -10,6 +10,11 @@
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
+  // Deterministic auto-avatar from the player id (stable across renames).
+  function avatarUrl(id) {
+    return `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(id)}`;
+  }
+
   function render() {
     const bar = document.getElementById('user-bar');
     if (!bar) return;
@@ -24,10 +29,7 @@
     }
     bar.innerHTML = `
       <span class="user-id">
-        <svg class="user-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="8" cy="5.5" r="2.5" />
-          <path d="M3 14 C3 11 5 9.5 8 9.5 C11 9.5 13 11 13 14" />
-        </svg>
+        <img class="user-avatar" src="${avatarUrl(player.id)}" alt="" />
         <span class="user-name">${escapeHTML(player.name)}</span>
       </span>
       <button id="switch-user" class="link-button" type="button">switch</button>

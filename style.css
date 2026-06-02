@@ -282,9 +282,11 @@ a.ticker-item:hover {
   color: var(--accent);
 }
 
-.user-icon {
-  width: 14px;
-  height: 14px;
+.user-avatar {
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: var(--surface-2);
   flex: 0 0 auto;
 }
 
@@ -2230,11 +2232,20 @@ body.is-picks-hidden #tiebreaker-section {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--text);
-  width: 9rem;
-  max-width: 9rem;
+  width: 10.5rem;
+  max-width: 10.5rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.lb-avatar {
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 50%;
+  background: var(--surface-2);
+  vertical-align: middle;
+  margin-right: 0.45rem;
 }
 
 .lb-rank-medal {

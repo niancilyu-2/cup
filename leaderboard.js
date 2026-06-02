@@ -9,6 +9,11 @@ const STORAGE_KEY_PLAYER = 'wcbracket.player';
 const FINAL_MATCH_ID = 'M104';
 
 // FIFA 3-letter code → ISO 3166-1 alpha-2 (used by lipis/flag-icons).
+// Deterministic auto-avatar from the player id (stable across renames).
+function avatarUrl(id) {
+  return `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(id)}`;
+}
+
 const FIFA_TO_ISO = {
   MEX: 'mx', RSA: 'za', KOR: 'kr', CZE: 'cz',
   CAN: 'ca', BIH: 'ba', QAT: 'qa', SUI: 'ch',
@@ -251,6 +256,7 @@ function rowHTML(p, myNameLower) {
     <tr class="${classes.join(' ')}">
       <td class="lb-col-rank">${rankCellHTML(p.rank)}</td>
       <td class="lb-col-name">
+        <img class="lb-avatar" src="${avatarUrl(p.id)}" alt="" />
         <a class="lb-name-link" href="${viewHref}">${escapeHtml(p.name)}</a>${isMe ? ' <span class="lb-you-pill">you</span>' : ''}
       </td>
       <td class="lb-col-pts" tabindex="0" aria-label="${p.points} points — hover or focus for breakdown">
