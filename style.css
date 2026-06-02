@@ -1878,6 +1878,29 @@ body.is-picks-hidden #tiebreaker-section {
   background: var(--surface-3);
 }
 
+.player-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.4rem;
+}
+.player-row .player-pick { flex: 1; }
+
+.player-edit {
+  flex: 0 0 auto;
+  padding: 0 0.8rem;
+  background: var(--surface-2);
+  border: none;
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  font: inherit;
+  cursor: pointer;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+.player-edit:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
 .modal-divider {
   border: none;
   border-top: 1px solid var(--border);

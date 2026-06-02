@@ -177,6 +177,13 @@ function isValidPin(pin) {
   return typeof pin === 'string' && /^\d{4}$/.test(pin);
 }
 
+function escHtml(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+const escAttr = escHtml;
+
 // ---------- Player picker (signup + switch) ----------
 
 async function loadPlayers() {
@@ -207,7 +214,10 @@ function showPlayerPicker() {
                      ${players
                        .map(
                          (p) => `
-                       <li><button type="button" class="player-pick" data-id="${p.id}" data-name="${p.name}">${p.name}</button></li>`,
+                       <li class="player-row">
+                         <button type="button" class="player-pick" data-id="${p.id}" data-name="${escAttr(p.name)}">${escHtml(p.name)}</button>
+                         <button type="button" class="player-edit" data-id="${p.id}" data-name="${escAttr(p.name)}" title="Rename" aria-label="Rename ${escAttr(p.name)}">edit</button>
+                       </li>`,
                        )
                        .join('')}
                    </ul>
@@ -224,7 +234,72 @@ function showPlayerPicker() {
           renderPinPrompt(player);
         });
       });
+      root.querySelectorAll('.player-edit').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const player = { id: btn.dataset.id, name: btn.dataset.name };
+          renderRenameForm(player);
+        });
+      });
       document.getElementById('add-new-player').addEventListener('click', renderNewForm);
+    };
+
+    const renderRenameForm = (player) => {
+      root.innerHTML = `
+        <div class="modal-overlay">
+          <div class="modal">
+            <h2>Rename ${escHtml(player.name)}</h2>
+            <p>Enter a new display name and the 4-digit PIN to confirm.</p>
+            <form id="rename-form">
+              <input id="rename-name" type="text" maxlength="30" value="${escAttr(player.name)}" required autofocus />
+              <input id="rename-pin" type="password" inputmode="numeric" pattern="\\d{4}" maxlength="4" autocomplete="off" placeholder="4-digit PIN" required />
+              <button type="submit" class="btn-primary">Save</button>
+              <p id="rename-error" class="error" hidden></p>
+            </form>
+            <button type="button" class="link-button" id="rename-back">← back to list</button>
+          </div>
+        </div>
+      `;
+      const form = document.getElementById('rename-form');
+      const errorEl = document.getElementById('rename-error');
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        errorEl.hidden = true;
+        const name = document.getElementById('rename-name').value.trim();
+        const pin = document.getElementById('rename-pin').value.trim();
+        if (!name) { errorEl.textContent = 'Enter a name.'; errorEl.hidden = false; return; }
+        if (!isValidPin(pin)) { errorEl.textContent = 'PIN must be 4 digits.'; errorEl.hidden = false; return; }
+        if (name === player.name) { renderPickerList(await loadPlayers()); return; }
+        const { data, error } = await supabase
+          .from('players')
+          .select('pin_hash')
+          .eq('id', player.id)
+          .single();
+        if (error || !data) { errorEl.textContent = "Couldn't verify PIN. Try again."; errorEl.hidden = false; return; }
+        const provided = await hashPin(pin, player.id);
+        if (provided !== data.pin_hash) {
+          errorEl.textContent = 'Wrong PIN.';
+          errorEl.hidden = false;
+          document.getElementById('rename-pin').select();
+          return;
+        }
+        const { error: upErr } = await supabase
+          .from('players')
+          .update({ name })
+          .eq('id', player.id);
+        if (upErr) {
+          errorEl.textContent = upErr.code === '23505'
+            ? `"${name}" is already taken. Try another.`
+            : `Couldn't save: ${upErr.message}`;
+          errorEl.hidden = false;
+          return;
+        }
+        const stored = getStoredPlayer();
+        if (stored && stored.id === player.id) setStoredPlayer({ ...stored, name });
+        renderPickerList(await loadPlayers());
+      });
+      document.getElementById('rename-back').addEventListener('click', async () => {
+        renderPickerList(await loadPlayers());
+      });
     };
 
     const renderPinPrompt = (player) => {
