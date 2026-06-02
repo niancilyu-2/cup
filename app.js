@@ -368,8 +368,6 @@ async function loadReferenceData() {
       }
     }
   }
-  // Within each group, default order is by pot (1..4) then alphabetical so the
-  // top-seeded team starts at the top of the rank list.
   state.teamsByGroup = teams.reduce((acc, t) => {
     (acc[t.group_code] ||= []).push(t);
     return acc;
