@@ -34,9 +34,8 @@
     `;
     document.getElementById('switch-user').addEventListener('click', () => {
       localStorage.removeItem(KEY);
-      // Redirect to the picks page so the player picker shows. On index.html
-      // this is effectively a reload.
-      location.href = 'index.html';
+      // Redirect to the picks page (directory root) so the player picker shows.
+      location.href = './';
     });
   }
 

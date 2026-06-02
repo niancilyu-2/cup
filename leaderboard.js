@@ -232,7 +232,7 @@ function rowHTML(p, myNameLower) {
   const classes = ['lb-row'];
   if (isLeader) classes.push('lb-leader');
   if (isMe) classes.push('lb-me');
-  const viewHref = `index.html?view=${encodeURIComponent(p.id)}`;
+  const viewHref = `./?view=${encodeURIComponent(p.id)}`;
   const champOut = !!(p.champion && p.champion.eliminated);
   const champHTML = p.champion
     ? `<span class="fi fi-${flagCode(p.champion.code)} lb-flag${champOut ? ' is-out' : ''}" aria-hidden="true"></span>
