@@ -5,34 +5,38 @@
 
 :root {
   /* Surfaces — three tiers separated by raised tone, not by borders. */
-  --bg:            #0c0d10;   /* page — true black with a touch of warmth */
-  --surface:       #16181d;   /* cards */
-  --surface-2:     #1e2128;   /* card-on-card / hover / striped band */
-  --surface-3:     #272a32;   /* deepest raised tone — hover on surface-2 */
+  --bg:            #0b0e13;   /* page */
+  --surface:       #151a22;   /* cards */
+  --surface-2:     #1d2430;   /* card-on-card / hover / striped band */
+  --surface-3:     #263041;   /* deepest raised tone */
 
   /* Borders — used sparingly, mostly for thin internal dividers */
-  --border:        #25282e;   /* near-invisible hairline */
-  --border-strong: #353841;   /* visible divider */
+  --border:        #27303c;   /* near-invisible hairline */
+  --border-strong: #3a4656;   /* visible divider */
 
   /* Ink */
-  --text:        #e8e8e8;
-  --text-muted:  #9a9d9c;
-  --text-faint:  #6c6f75;
+  --text:        #eef3f8;
+  --text-muted:  #a6b0be;
+  --text-faint:  #707c8c;
 
   /* Accent — broadcast yellow, the colour of a chyron stripe */
-  --accent:      #f5c542;
-  --accent-soft: rgba(245, 197, 66, 0.14);
-  --accent-ink:  #0c0d10;
+  --accent:      #f2c94c;
+  --accent-soft: rgba(242, 201, 76, 0.12);
+  --accent-ink:  #0b0e13;
 
   /* Winner state — pitch green, calmer than tailwind neon */
-  --winner:      #3da55a;
-  --winner-soft: rgba(61, 165, 90, 0.16);
+  --winner:      #41b56a;
+  --winner-soft: rgba(65, 181, 106, 0.15);
   --lose:        #d6553b;
   --lose-soft:   rgba(214, 85, 59, 0.14);
   --live:        #e0413a;   /* in-progress match indicator (live scores page) */
   --live-soft:   rgba(224, 65, 58, 0.12);
-  --banner:      #6b8caf;   /* steel-blue — categorical, neither yellow nor green */
-  --banner-soft: rgba(107, 140, 175, 0.18);
+  --banner:      #8aa4c2;   /* steel-blue */
+  --banner-soft: rgba(138, 164, 194, 0.16);
+  --steel:       #9fb8d6;
+  --steel-soft:  rgba(159, 184, 214, 0.13);
+  --orange:      #ff9f43;
+  --orange-soft: rgba(255, 159, 67, 0.13);
 
   --radius: 4px;
   --gutter: 1.25rem;
@@ -67,6 +71,13 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+body.page-picks {
+  background:
+    linear-gradient(180deg, rgba(23, 38, 56, 0.74) 0%, rgba(11, 14, 19, 0) 390px),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.015) 0 1px, transparent 1px 72px),
+    var(--bg);
+}
+
 a {
   color: var(--accent);
   text-decoration: none;
@@ -90,8 +101,9 @@ button { font-family: inherit; }
 
 #ticker-bar {
   overflow: hidden;
-  background: var(--surface-2);
-  border-bottom: 1px solid var(--border);
+  background: #222936;
+  border-top: 1px solid rgba(159, 184, 214, 0.24);
+  border-bottom: 1px solid rgba(159, 184, 214, 0.24);
   font-size: 0.72rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -259,6 +271,7 @@ a.ticker-item:hover {
 .site-nav a.is-active {
   color: var(--accent);
   background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px rgba(242, 201, 76, 0.16);
 }
 
 .nav-icon {
@@ -413,12 +426,12 @@ main > * { min-width: 0; }
 
 #countdown-banner {
   background:
-    radial-gradient(ellipse at center, #1a1410 0%, #0a0805 70%, #060403 100%);
+    radial-gradient(ellipse at center, #141922 0%, #090b0f 72%, #050608 100%);
   padding: 1.85rem 1.5rem 1.6rem;
   text-align: center;
-  border-bottom: 1px solid #1a1410;
+  border-bottom: 1px solid rgba(159, 184, 214, 0.14);
   box-shadow:
-    inset 0 1px 0 rgba(255, 220, 150, 0.05),
+    inset 0 1px 0 rgba(159, 184, 214, 0.06),
     inset 0 -1px 0 rgba(0, 0, 0, 0.6);
 }
 
@@ -613,7 +626,7 @@ main > * { min-width: 0; }
   font-size: 0.62rem;
   text-transform: uppercase;
   letter-spacing: 0.26em;
-  color: #b08e4a;
+  color: var(--steel);
 }
 
 .countdown-entry-note {
@@ -817,7 +830,7 @@ main > * { min-width: 0; }
   font-size: 0.72rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #8a7548;
+  color: var(--steel);
 }
 
 .countdown-progress {
@@ -879,7 +892,7 @@ main > * { min-width: 0; }
   color: var(--accent-ink);
   border: 1px solid var(--accent);
 }
-.btn-primary:hover:not(:disabled) { background: #8db4ff; border-color: #8db4ff; }
+.btn-primary:hover:not(:disabled) { background: #ffd95f; border-color: #ffd95f; }
 .btn-primary:disabled {
   background: var(--surface-2);
   color: var(--text-faint);
@@ -889,10 +902,13 @@ main > * { min-width: 0; }
 
 .btn-secondary {
   background: transparent;
-  color: var(--accent);
-  border: 1px solid var(--border-strong);
+  color: var(--steel);
+  border: 1px solid rgba(159, 184, 214, 0.34);
 }
-.btn-secondary:hover:not(:disabled) { border-color: var(--accent); }
+.btn-secondary:hover:not(:disabled) {
+  background: var(--steel-soft);
+  border-color: var(--steel);
+}
 .btn-secondary:disabled {
   color: var(--text-faint);
   cursor: not-allowed;
@@ -938,16 +954,18 @@ main > * { min-width: 0; }
   align-items: stretch;
   gap: 0.5rem;
   padding: 0.5rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background:
+    linear-gradient(180deg, rgba(24, 30, 40, 0.96), rgba(15, 18, 24, 0.98));
+  border: 1px solid rgba(159, 184, 214, 0.2);
   border-radius: var(--radius);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.34);
 }
 
 #view-banner {
   margin-bottom: 0.75rem;
   padding: 0.7rem 1rem;
   background: var(--accent-soft);
-  border: 1px solid rgba(245, 197, 66, 0.55);
+  border: 1px solid rgba(242, 201, 76, 0.55);
   border-radius: var(--radius);
 }
 
@@ -988,7 +1006,7 @@ main > * { min-width: 0; }
   text-decoration: none;
   font-weight: 600;
   padding: 0.35rem 0.7rem;
-  border: 1px solid rgba(245, 197, 66, 0.55);
+  border: 1px solid rgba(242, 201, 76, 0.55);
   border-radius: var(--radius);
   background: transparent;
   transition: background-color 120ms ease;
@@ -996,7 +1014,7 @@ main > * { min-width: 0; }
 
 .view-banner-back:hover,
 .view-banner-back:focus-visible {
-  background: rgba(245, 197, 66, 0.18);
+  background: rgba(242, 201, 76, 0.18);
   outline: none;
 }
 
@@ -1053,14 +1071,14 @@ body.is-picks-hidden #tiebreaker-section {
   text-decoration: none;
   font-weight: 600;
   padding: 0.45rem 0.95rem;
-  border: 1px solid rgba(245, 197, 66, 0.55);
+  border: 1px solid rgba(242, 201, 76, 0.55);
   border-radius: var(--radius);
   transition: background-color 120ms ease;
 }
 
 .picks-hidden-back:hover,
 .picks-hidden-back:focus-visible {
-  background: rgba(245, 197, 66, 0.18);
+  background: rgba(242, 201, 76, 0.18);
   outline: none;
 }
 
@@ -1111,13 +1129,14 @@ body.is-picks-hidden #tiebreaker-section {
 .pick-stepper .step.is-complete .step-count { color: var(--winner); font-weight: 600; }
 
 .pick-stepper .step.is-current {
-  background: var(--accent-soft);
+  background: var(--steel-soft);
+  box-shadow: inset 0 0 0 1px rgba(159, 184, 214, 0.1);
 }
 .pick-stepper .step.is-current .step-num {
-  background: var(--accent);
-  color: var(--accent-ink);
+  background: var(--steel);
+  color: #091018;
 }
-.pick-stepper .step.is-current .step-name { color: var(--accent); }
+.pick-stepper .step.is-current .step-name { color: var(--steel); }
 
 .pick-stepper .step.is-locked .step-num { color: var(--text-faint); }
 .pick-stepper .step.is-locked .step-name,
@@ -1226,12 +1245,19 @@ body.is-picks-hidden #tiebreaker-section {
 .pick-section {
   scroll-margin-top: 1rem;
   padding: 1.5rem;
+  border: 1px solid rgba(159, 184, 214, 0.2);
   border-radius: var(--radius);
-  background: var(--surface);
+  background:
+    linear-gradient(180deg, rgba(24, 30, 40, 0.96), rgba(15, 18, 24, 0.98));
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.04),
-    0 2px 6px rgba(0, 0, 0, 0.5),
-    0 12px 28px rgba(0, 0, 0, 0.55);
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 10px 28px rgba(0, 0, 0, 0.42);
+}
+
+.pick-section .section-head {
+  border-bottom: 1px solid rgba(159, 184, 214, 0.13);
+  margin-bottom: 1rem;
+  padding-bottom: 0.9rem;
 }
 
 .pick-section .section-head h2 {
@@ -1252,8 +1278,8 @@ body.is-picks-hidden #tiebreaker-section {
   width: 26px;
   height: 26px;
   border-radius: var(--radius);
-  background: var(--surface-2);
-  color: var(--accent);
+  background: var(--steel-soft);
+  color: var(--steel);
   font-family: var(--font-mono);
   font-weight: 600;
   font-size: 0.8125rem;
@@ -1302,21 +1328,23 @@ body.is-picks-hidden #tiebreaker-section {
 }
 
 .group-card {
-  background: var(--surface-2);
+  background:
+    linear-gradient(180deg, rgba(32, 39, 51, 0.92), rgba(24, 29, 38, 0.98));
   border-radius: var(--radius);
   overflow: hidden;
   display: flex;
   flex-direction: column;
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.05),
-    0 1px 3px rgba(0, 0, 0, 0.4),
-    0 6px 14px rgba(0, 0, 0, 0.5);
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 8px 18px rgba(0, 0, 0, 0.36);
 }
 
 .group-card-header {
   padding: 0.6rem 0.9rem;
-  background: #0b1a3a;
-  border-bottom: 1px solid var(--border);
+  background:
+    linear-gradient(90deg, rgba(138, 164, 194, 0.18), rgba(10, 14, 20, 0.2)),
+    #101925;
+  border-bottom: 1px solid rgba(159, 184, 214, 0.14);
   color: var(--text);
   font-weight: 600;
   font-size: 0.8125rem;
@@ -1358,7 +1386,7 @@ body.is-picks-hidden #tiebreaker-section {
 }
 
 .team-row:hover {
-  background: var(--surface-3);
+  background: rgba(38, 48, 65, 0.82);
 }
 
 .team-row:active:not([aria-disabled="true"] *) {
@@ -1499,6 +1527,7 @@ body.is-picks-hidden #tiebreaker-section {
   grid-column: 1 / -1;
   padding: 1.25rem;
   background: var(--surface-2);
+  border: 1px solid rgba(159, 184, 214, 0.17);
   border-radius: var(--radius);
   color: var(--text-muted);
   text-align: center;
@@ -1509,7 +1538,9 @@ body.is-picks-hidden #tiebreaker-section {
   flex-direction: column;
   gap: 0.4rem;
   padding: 0.7rem 0.85rem 0.7rem 0.8rem;
-  background: var(--surface-2);
+  background:
+    linear-gradient(180deg, rgba(32, 39, 51, 0.92), rgba(24, 29, 38, 0.98));
+  border: 1px solid rgba(159, 184, 214, 0.17);
   border-left: 3px solid transparent;
   border-radius: var(--radius);
   color: var(--text);
@@ -1524,12 +1555,14 @@ body.is-picks-hidden #tiebreaker-section {
 }
 
 .wildcard-card:hover:not(:disabled) {
-  background: var(--surface-3);
+  background: rgba(38, 48, 65, 0.82);
 }
 
 .wildcard-card.is-active {
-  background: var(--winner-soft);
-  border-left-color: var(--winner);
+  background: var(--accent-soft);
+  border-color: rgba(242, 201, 76, 0.5);
+  border-left-color: var(--accent);
+  color: var(--accent);
 }
 
 .wildcard-card:disabled {
@@ -1574,7 +1607,7 @@ body.is-picks-hidden #tiebreaker-section {
 }
 
 .wildcard-card.is-active .wildcard-card-state {
-  color: var(--winner);
+  color: var(--accent);
   font-weight: 600;
 }
 
@@ -1712,9 +1745,9 @@ body.is-picks-hidden #tiebreaker-section {
   font-weight: 600;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--steel);
   padding: 0.5rem 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid rgba(159, 184, 214, 0.17);
   margin-bottom: 0.75rem;
   text-align: center;
 }
@@ -1781,11 +1814,16 @@ body.is-picks-hidden #tiebreaker-section {
 
 .bracket-match {
   position: relative;
-  background: var(--surface-2);
+  background:
+    linear-gradient(180deg, rgba(32, 39, 51, 0.92), rgba(24, 29, 38, 0.98));
+  border: 1px solid rgba(159, 184, 214, 0.17);
   border-radius: var(--radius);
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 8px 18px rgba(0, 0, 0, 0.34);
 }
 
 /* Horizontal stub from each match's right edge to the pair's vertical line. */
@@ -1848,7 +1886,7 @@ body.is-picks-hidden #tiebreaker-section {
 }
 
 .bracket-feed strong {
-  color: var(--accent);
+  color: var(--steel);
   font-weight: 600;
 }
 
@@ -1871,13 +1909,13 @@ body.is-picks-hidden #tiebreaker-section {
 .bracket-slot:first-of-type { border-top: none; }
 
 .bracket-slot:hover:not(.bracket-slot--readonly) {
-  background: var(--surface-3);
+  background: rgba(38, 48, 65, 0.82);
 }
 
 .bracket-slot--readonly { cursor: default; color: var(--text-muted); }
 
 .bracket-slot.is-winner {
-  background: var(--winner-soft);
+  background: var(--accent-soft);
   color: var(--text);
   font-weight: 600;
 }
@@ -1885,7 +1923,7 @@ body.is-picks-hidden #tiebreaker-section {
 .bracket-slot.is-winner::after {
   content: '✓';
   margin-left: auto;
-  color: var(--winner);
+  color: var(--accent);
   font-weight: 700;
   padding-left: 0.5rem;
 }
@@ -2367,7 +2405,7 @@ body.is-picks-hidden #tiebreaker-section {
 
 .lb-legend-item--primary {
   background: var(--accent-soft);
-  border-color: rgba(245, 197, 66, 0.45);
+  border-color: rgba(242, 201, 76, 0.45);
 }
 
 .lb-legend-key {
