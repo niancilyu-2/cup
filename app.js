@@ -1907,6 +1907,15 @@ function countdownCellsHTML(ms) {
     </div>`;
 }
 
+function participationNoteHTML() {
+  return `
+    <aside class="countdown-entry-note" aria-label="Participation note">
+      <span class="entry-note-kicker">Announcement</span>
+      <span class="entry-note-main">Venmo <strong>@nianci $10</strong> before kickoff to lock in your participation.</span>
+      <span class="entry-note-sub">Idle users will be deleted <time datetime="2026-06-11T09:00:00-04:00">9am ET June 11</time>.</span>
+    </aside>`;
+}
+
 function flipDigit(slot, newDigit) {
   const oldDigit = slot.dataset.digit;
   if (oldDigit === newDigit) return;
@@ -1948,6 +1957,16 @@ function tickCountdown() {
   const wasLocked = banner.classList.contains('is-locked');
   const nowLocked = remaining <= 0;
   if (wasLocked !== nowLocked) {
+    if (nowLocked) {
+      if (banner.classList.contains('is-locking')) return;
+      const note = banner.querySelector('.countdown-entry-note');
+      if (note) {
+        banner.classList.add('is-locking');
+        note.classList.add('is-spinning-off');
+        setTimeout(renderCountdownBanner, 700);
+        return;
+      }
+    }
     // Lock state flipped — banner structure differs, so do a full rebuild.
     renderCountdownBanner();
     return;
@@ -2007,7 +2026,10 @@ function renderCountdownBanner() {
   banner.classList.toggle('is-locked', locked);
   banner.innerHTML = `
     ${headline}
-    ${countdownCellsHTML(Math.max(0, remaining))}
+    <div class="countdown-stage">
+      ${countdownCellsHTML(Math.max(0, remaining))}
+      ${locked ? '' : participationNoteHTML()}
+    </div>
     <div class="countdown-when">${locked ? 'First kickoff: ' : ''}${whenStr}</div>
     ${progressLineHTML()}
   `;
