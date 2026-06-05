@@ -487,6 +487,8 @@ async function loadCurrentPlayer() {
     return;
   }
   state.player = { ...state.player, ...data };
+  setStoredPlayer({ id: state.player.id, name: state.player.name });
+  window.renderUserBar?.();
 }
 
 async function loadViewedPlayer(playerId) {

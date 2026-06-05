@@ -143,6 +143,7 @@
           <span class="admin-player-sub">${escapeHtml(status)} · joined ${escapeHtml(created)}</span>
         </div>
         <div class="admin-player-controls">
+          <button type="button" class="btn-secondary admin-player-rename">Rename</button>
           <button type="button" class="btn-secondary admin-player-reset">Reset PIN</button>
           <button type="button" class="btn-secondary admin-player-delete">Delete</button>
           <span class="admin-row-status" aria-live="polite"></span>
@@ -207,6 +208,8 @@
   function onClick(e) {
     const saveBtn = e.target.closest('.admin-save-btn');
     if (saveBtn) { saveRow(saveBtn.closest('.admin-row')); return; }
+    const renameBtn = e.target.closest('.admin-player-rename');
+    if (renameBtn) { renamePlayer(renameBtn.closest('.admin-player-row')); return; }
     const deleteBtn = e.target.closest('.admin-player-delete');
     if (deleteBtn) { deletePlayer(deleteBtn.closest('.admin-player-row')); return; }
     const resetBtn = e.target.closest('.admin-player-reset');
@@ -217,6 +220,66 @@
     const data = new TextEncoder().encode(String(pin) + String(playerId));
     const buf = await crypto.subtle.digest('SHA-256', data);
     return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  function syncStoredPlayerName(playerId, name) {
+    try {
+      const raw = localStorage.getItem('wcbracket.player');
+      const stored = raw ? JSON.parse(raw) : null;
+      if (!stored || stored.id !== playerId) return;
+      localStorage.setItem('wcbracket.player', JSON.stringify({ ...stored, name }));
+      if (typeof window.renderUserBar === 'function') window.renderUserBar();
+    } catch (_) {
+      // Non-critical: the database rename succeeded even if local header sync fails.
+    }
+  }
+
+  function playerErrorMessage(err) {
+    const msg = err?.message || String(err);
+    if (err?.code === '23505' || /duplicate key|unique/i.test(msg)) {
+      return 'That name is already taken.';
+    }
+    return msg;
+  }
+
+  async function renamePlayer(row) {
+    const playerId = row.dataset.playerId;
+    const player = allPlayers.find((p) => p.id === playerId);
+    if (!player) return;
+    const status = row.querySelector('.admin-row-status');
+    const rawName = window.prompt(`Rename "${player.name}" to:`, player.name);
+    if (rawName == null) return;
+    const name = rawName.trim().replace(/\s+/g, ' ');
+    if (!name) return fail(status, 'Name cannot be blank.');
+    if (name.length > 30) return fail(status, 'Name must be 30 characters or fewer.');
+    if (name === player.name) {
+      status.className = 'admin-row-status';
+      status.textContent = 'No change.';
+      setTimeout(() => { if (status.textContent === 'No change.') status.textContent = ''; }, 2000);
+      return;
+    }
+
+    status.className = 'admin-row-status';
+    status.textContent = 'Renaming...';
+    try {
+      const { data, error } = await supabase
+        .from('players')
+        .update({ name })
+        .eq('id', playerId)
+        .select('id, name')
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) throw new Error('No player row updated.');
+      player.name = data.name;
+      const nameEl = row.querySelector('.admin-player-name');
+      if (nameEl) nameEl.textContent = data.name;
+      syncStoredPlayerName(playerId, data.name);
+      status.classList.add('is-ok');
+      status.textContent = '✓ Renamed';
+      setTimeout(() => { if (status.textContent === '✓ Renamed') status.textContent = ''; }, 3000);
+    } catch (err) {
+      fail(status, playerErrorMessage(err));
+    }
   }
 
   async function resetPlayerPin(row) {

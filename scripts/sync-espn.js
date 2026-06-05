@@ -2,6 +2,8 @@
 // ABOUTME: Run by GitHub Actions every 30 min. Flags: --dry-run --fixture <p> --date <YYYYMMDD> --verbose.
 
 import { fetchEspnEvents } from './espn-fetch.js';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { normalizeEspnEvent } from '../src/espn-map.js';
 import { computeGroupStandings } from '../src/standings.js';
 import { computeCascadeWrites } from '../src/cascade.js';
@@ -122,7 +124,7 @@ async function main() {
   log(`Wrote ${scoreWrites.length} scores + ${cascadeWrites.length} cascade updates.`);
 }
 
-const invokedDirectly = process.argv[1] && import.meta.url === `file://${process.argv[1]}`;
+const invokedDirectly = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1]);
 if (invokedDirectly) {
   main().catch((e) => { console.error(e); process.exit(1); });
 }
