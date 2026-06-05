@@ -391,13 +391,22 @@ main > * { min-width: 0; }
   color: var(--text-faint);
   padding: 0.35rem 0.75rem;
   cursor: pointer;
-  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    color 140ms ease,
+    transform 140ms ease;
 }
 
 .section-toggle:hover,
 .section-toggle:focus-visible {
   border-color: var(--accent);
   color: var(--text);
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 6px 14px rgba(0, 0, 0, 0.2);
   outline: none;
 }
 
@@ -884,7 +893,13 @@ main > * { min-width: 0; }
   padding: 0.5rem 0.95rem;
   font-size: 0.875rem;
   line-height: 1.2;
-  transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    color 140ms ease,
+    opacity 140ms ease,
+    transform 140ms ease;
 }
 
 .btn-primary {
@@ -892,7 +907,14 @@ main > * { min-width: 0; }
   color: var(--accent-ink);
   border: 1px solid var(--accent);
 }
-.btn-primary:hover:not(:disabled) { background: #ffd95f; border-color: #ffd95f; }
+.btn-primary:hover:not(:disabled) {
+  background: #ffd95f;
+  border-color: #ffd95f;
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 7px 15px rgba(0, 0, 0, 0.25);
+}
 .btn-primary:disabled {
   background: var(--surface-2);
   color: var(--text-faint);
@@ -908,6 +930,10 @@ main > * { min-width: 0; }
 .btn-secondary:hover:not(:disabled) {
   background: var(--steel-soft);
   border-color: var(--steel);
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 6px 14px rgba(0, 0, 0, 0.2);
 }
 .btn-secondary:disabled {
   color: var(--text-faint);
@@ -924,10 +950,17 @@ main > * { min-width: 0; }
 }
 .btn-link:hover { color: var(--accent); }
 
+.btn-primary:active:not(:disabled),
+.btn-secondary:active:not(:disabled),
+.section-toggle:active {
+  transform: translateY(0);
+}
+
 /* Keyboard focus ring on any interactive element */
 :focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+  outline: 2px solid rgba(242, 201, 76, 0.78);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 5px rgba(242, 201, 76, 0.12);
 }
 
 .completed-badge {
@@ -1102,10 +1135,44 @@ body.is-picks-hidden #tiebreaker-section {
   background: transparent;
   color: var(--text);
   text-decoration: none;
-  transition: background-color 0.12s ease;
+  transition:
+    background-color 140ms ease,
+    box-shadow 140ms ease,
+    color 140ms ease,
+    opacity 140ms ease,
+    transform 140ms ease;
 }
 
-.pick-stepper .step:hover { background: var(--surface-2); }
+.pick-stepper .step:hover {
+  background: var(--surface-2);
+  transform: translateY(-1px);
+}
+
+.progress-light {
+  width: 0.44rem;
+  height: 0.44rem;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  background: var(--text-faint);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45);
+}
+
+.progress-light--done {
+  background: var(--winner);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.45),
+    0 0 8px rgba(65, 181, 106, 0.22);
+}
+
+.progress-light--current {
+  background: var(--steel);
+  animation: progress-light-pulse 3.2s ease-in-out infinite;
+}
+
+.progress-light--locked {
+  background: rgba(112, 124, 140, 0.72);
+  opacity: 0.58;
+}
 
 .pick-stepper .step-num {
   display: inline-flex;
@@ -1185,6 +1252,53 @@ body.is-picks-hidden #tiebreaker-section {
   opacity: 1;
 }
 
+@keyframes progress-light-pulse {
+  0%, 100% {
+    opacity: 0.82;
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.45),
+      0 0 7px rgba(159, 184, 214, 0.18);
+  }
+  50% {
+    opacity: 1;
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.45),
+      0 0 0 4px rgba(159, 184, 214, 0.045),
+      0 0 11px rgba(159, 184, 214, 0.28);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-light--current {
+    animation: none;
+  }
+
+  .btn-primary,
+  .btn-secondary,
+  .btn-link,
+  .section-toggle,
+  .pick-stepper .step,
+  .group-card,
+  .team-row,
+  .wildcard-card,
+  .bracket-slot,
+  .tiebreaker-label input[type="number"] {
+    transition: none;
+  }
+
+  .btn-primary:hover:not(:disabled),
+  .btn-secondary:hover:not(:disabled),
+  .section-toggle:hover,
+  .section-toggle:focus-visible,
+  .pick-stepper .step:hover,
+  .team-row:hover,
+  .wildcard-card:hover:not(:disabled),
+  .bracket-slot:hover:not(.bracket-slot--readonly),
+  .tiebreaker-label input[type="number"]:focus {
+    transform: none;
+  }
+}
+
 @media (max-width: 760px) {
   .pick-stepper .step { min-width: 130px; padding: 0.4rem 0.5rem; gap: 0.5rem; }
   .pick-stepper .step-num { width: 22px; height: 22px; font-size: 0.75rem; }
@@ -1230,6 +1344,7 @@ body.is-picks-hidden #tiebreaker-section {
     padding: 0.35rem 0.45rem;
     gap: 0.4rem;
   }
+  .progress-light { display: none; }
   .pick-stepper .step-name { display: none; }
   .pick-stepper .step-count { font-size: 0.7rem; }
   .pick-stepper .step-arrow svg { width: 11px; height: 11px; }
@@ -1399,6 +1514,15 @@ body.is-picks-hidden #tiebreaker-section {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.04),
     0 8px 18px rgba(0, 0, 0, 0.36);
+  transition:
+    box-shadow 140ms ease,
+    transform 140ms ease;
+}
+
+.group-card:hover {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.055),
+    0 10px 20px rgba(0, 0, 0, 0.38);
 }
 
 .group-card-header {
@@ -1442,13 +1566,17 @@ body.is-picks-hidden #tiebreaker-section {
   text-align: left;
   width: 100%;
   color: var(--text);
-  transition: background-color 0.12s ease;
+  transition:
+    background-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
   user-select: none;
   touch-action: manipulation;
 }
 
 .team-row:hover {
   background: rgba(38, 48, 65, 0.82);
+  transform: translateX(1px);
 }
 
 .team-row:active:not([aria-disabled="true"] *) {
@@ -1610,7 +1738,11 @@ body.is-picks-hidden #tiebreaker-section {
   font: inherit;
   cursor: pointer;
   text-align: left;
-  transition: background-color 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.05),
     0 1px 3px rgba(0, 0, 0, 0.4),
@@ -1619,6 +1751,7 @@ body.is-picks-hidden #tiebreaker-section {
 
 .wildcard-card:hover:not(:disabled) {
   background: rgba(38, 48, 65, 0.82);
+  transform: translateY(-1px);
 }
 
 .wildcard-card.is-active {
@@ -1740,12 +1873,17 @@ body.is-picks-hidden #tiebreaker-section {
   font: inherit;
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
 }
 
 .tiebreaker-label input[type="number"]:focus {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 2px rgba(110, 161, 255, 0.25);
+  transform: translateY(-1px);
 }
 
 .tiebreaker-label input[type="number"]:disabled { opacity: 0.6; }
@@ -1976,13 +2114,17 @@ body.is-picks-hidden #tiebreaker-section {
   color: var(--text);
   text-align: left;
   min-height: 38px;
-  transition: background-color 0.12s ease;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease,
+    transform 140ms ease;
 }
 
 .bracket-slot:first-of-type { border-top: none; }
 
 .bracket-slot:hover:not(.bracket-slot--readonly) {
   background: rgba(38, 48, 65, 0.82);
+  transform: translateX(1px);
 }
 
 .bracket-slot--readonly { cursor: default; color: var(--text-muted); }

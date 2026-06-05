@@ -2171,6 +2171,11 @@ function renderStepper() {
 
   const stepHTML = (n, href, name, done, total, st, countOverride) => {
     const numContent = st === 'is-complete' ? '✓' : n;
+    const progressLightClass = st === 'is-complete'
+      ? 'progress-light--done'
+      : st === 'is-current'
+        ? 'progress-light--current'
+        : 'progress-light--locked';
     let countText;
     if (countOverride != null) {
       countText = countOverride;
@@ -2183,6 +2188,7 @@ function renderStepper() {
     }
     return `
       <a href="${href}" class="step ${st}">
+        <span class="progress-light ${progressLightClass}" aria-hidden="true"></span>
         <span class="step-num">${numContent}</span>
         <div class="step-meta">
           <span class="step-name">${name}</span>
