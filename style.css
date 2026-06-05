@@ -1577,32 +1577,50 @@ body.is-picks-hidden #tiebreaker-section {
 }
 
 .group-card {
+  position: relative;
   background:
-    linear-gradient(180deg, rgba(32, 39, 51, 0.92), rgba(24, 29, 38, 0.98));
+    linear-gradient(180deg, rgba(31, 39, 53, 0.98), rgba(16, 21, 30, 0.99)),
+    #151a22;
+  border: 1px solid rgba(159, 184, 214, 0.22);
   border-radius: var(--radius);
   overflow: hidden;
   display: flex;
   flex-direction: column;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 8px 18px rgba(0, 0, 0, 0.36);
+    inset 0 1px 0 rgba(255, 255, 255, 0.055),
+    0 10px 22px rgba(0, 0, 0, 0.32);
   transition:
+    border-color 140ms ease,
     box-shadow 140ms ease,
     transform 140ms ease;
 }
 
+.group-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  background: linear-gradient(90deg, var(--winner), rgba(159, 184, 214, 0.42), transparent);
+  opacity: 0.82;
+  pointer-events: none;
+}
+
 .group-card:hover {
+  border-color: rgba(159, 184, 214, 0.36);
+  transform: translateY(-2px);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.055),
-    0 10px 20px rgba(0, 0, 0, 0.38);
+    inset 0 1px 0 rgba(255, 255, 255, 0.075),
+    0 15px 28px rgba(0, 0, 0, 0.42),
+    0 0 18px rgba(159, 184, 214, 0.07);
 }
 
 .group-card-header {
-  padding: 0.6rem 0.9rem;
+  min-height: 2.45rem;
+  padding: 0.56rem 0.68rem;
   background:
-    linear-gradient(90deg, rgba(138, 164, 194, 0.18), rgba(10, 14, 20, 0.2)),
+    linear-gradient(180deg, rgba(159, 184, 214, 0.16), rgba(10, 15, 22, 0.88)),
     #101925;
-  border-bottom: 1px solid rgba(159, 184, 214, 0.14);
+  border-bottom: 1px solid rgba(159, 184, 214, 0.22);
   color: var(--text);
   font-weight: 600;
   font-size: 0.8125rem;
@@ -1611,27 +1629,68 @@ body.is-picks-hidden #tiebreaker-section {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045);
+}
+
+.group-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.group-code-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.72rem;
+  height: 1.34rem;
+  padding: 0 0.4rem;
+  border: 1px solid rgba(65, 181, 106, 0.24);
+  border-radius: var(--radius);
+  background: rgba(65, 181, 106, 0.12);
+  color: var(--winner);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045);
+}
+
+.group-title-text {
+  color: var(--text);
 }
 
 .group-ranked-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.18rem;
+  height: 1.18rem;
+  border: 1px solid rgba(65, 181, 106, 0.24);
+  border-radius: 50%;
+  background: rgba(65, 181, 106, 0.13);
   color: var(--winner);
-  font-size: 0.95rem;
+  font-size: 0.72rem;
   line-height: 1;
+  box-shadow: 0 0 12px rgba(65, 181, 106, 0.12);
 }
 
 .team-list {
   list-style: none;
   margin: 0;
   padding: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.016), transparent 42%),
+    rgba(5, 8, 12, 0.1);
 }
 
 .team-row {
   display: grid;
-  grid-template-columns: 24px 26px minmax(0, 1fr) auto;
+  grid-template-columns: 24px 26px minmax(0, 1fr) auto 13px;
   align-items: center;
-  gap: 0.65rem;
-  padding: 0.55rem 0.85rem 0.55rem 0.95rem;
-  min-height: 44px;
+  gap: 0.58rem;
+  padding: 0.56rem 0.75rem;
+  min-height: 45px;
   background: transparent;
   cursor: grab;
   font: inherit;
@@ -1641,14 +1700,16 @@ body.is-picks-hidden #tiebreaker-section {
   transition:
     background-color 140ms ease,
     box-shadow 140ms ease,
-    transform 140ms ease;
+    transform 140ms ease,
+    filter 140ms ease;
   user-select: none;
   touch-action: manipulation;
 }
 
 .team-row:hover {
-  background: rgba(38, 48, 65, 0.82);
-  transform: translateX(1px);
+  background: rgba(159, 184, 214, 0.105);
+  transform: translateX(2px);
+  filter: brightness(1.04);
 }
 
 .team-row:active:not([aria-disabled="true"] *) {
@@ -1664,21 +1725,25 @@ body.is-picks-hidden #tiebreaker-section {
    winner-green for advancing (1st/2nd), pale navy for wildcard-eligible (3rd),
    faint gray for eliminated (4th). Per-row borders are gone; the stripe
    plus the rank chip carry the structure. */
-.team-list li:nth-child(1) .team-row { box-shadow: inset 2px 0 0 var(--winner); }
-.team-list li:nth-child(2) .team-row { box-shadow: inset 2px 0 0 var(--winner); }
-.team-list li:nth-child(3) .team-row { box-shadow: inset 2px 0 0 var(--accent); }
-.team-list li:nth-child(4) .team-row { box-shadow: inset 2px 0 0 var(--text-faint); }
+.team-list li:nth-child(1) .team-row { box-shadow: inset 3px 0 0 var(--winner); }
+.team-list li:nth-child(2) .team-row { box-shadow: inset 3px 0 0 var(--winner); }
+.team-list li:nth-child(3) .team-row { box-shadow: inset 3px 0 0 var(--accent); }
+.team-list li:nth-child(4) .team-row { box-shadow: inset 3px 0 0 var(--text-faint); }
 .team-list li:nth-child(4) .team-row .team-code { color: var(--text-muted); }
 .team-list li:nth-child(4) .team-row .fi {
   filter: saturate(0.5);
   opacity: 0.75;
 }
+.team-list li:nth-child(4) .team-row {
+  color: var(--text-muted);
+  background: rgba(8, 12, 18, 0.12);
+}
 
 /* Subtle divider between ranked rows so adjacent same-tier teams still scan
    as separate picks. */
-.team-list li:nth-child(1) .team-row { border-bottom: 1px solid var(--border); }
-.team-list li:nth-child(2) .team-row { border-bottom: 1px solid var(--border); }
-.team-list li:nth-child(3) .team-row { border-bottom: 1px solid var(--border); }
+.team-list li:nth-child(1) .team-row { border-bottom: 1px solid rgba(159, 184, 214, 0.15); }
+.team-list li:nth-child(2) .team-row { border-bottom: 1px solid rgba(159, 184, 214, 0.15); }
+.team-list li:nth-child(3) .team-row { border-bottom: 1px solid rgba(159, 184, 214, 0.15); }
 
 /* SortableJS hooks. ghost = the placeholder slot where the dragged row will
    land. drag = the floating mirror that follows the pointer. chosen = the
@@ -1696,6 +1761,30 @@ body.is-picks-hidden #tiebreaker-section {
 
 .team-row-chosen .team-row {
   background: var(--surface-3);
+}
+
+.drag-handle {
+  width: 13px;
+  height: 20px;
+  opacity: 0.52;
+  background-image: radial-gradient(circle, rgba(159, 184, 214, 0.72) 1px, transparent 1.25px);
+  background-size: 5px 5px;
+  background-position: 0 1px;
+  flex: 0 0 auto;
+  transition:
+    opacity 140ms ease,
+    filter 140ms ease,
+    transform 140ms ease;
+}
+
+.team-row:hover .drag-handle {
+  opacity: 0.95;
+  filter: drop-shadow(0 0 6px rgba(159, 184, 214, 0.26));
+  transform: translateY(-1px);
+}
+
+.team-item[aria-disabled="true"] .drag-handle {
+  opacity: 0.28;
 }
 
 /* Correctness marks shown next to picks once real (or mock) results are in. */
@@ -1743,6 +1832,7 @@ body.is-picks-hidden #tiebreaker-section {
   font-size: 0.7rem;
   background: var(--surface-3);
   color: var(--text-muted);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.035);
   transition: transform 0.12s ease;
 }
 
@@ -1970,6 +2060,11 @@ body.is-picks-hidden #tiebreaker-section {
 /* ---- Bracket ---- */
 
 #bracket {
+  --bracket-column-width: 205px;
+  --bracket-gap: clamp(1.8rem, 3.6vw, 3.2rem);
+  --bracket-gap-negative: clamp(-3.2rem, -3.6vw, -1.8rem);
+  --bracket-half-gap: clamp(0.9rem, 1.8vw, 1.6rem);
+  --bracket-half-gap-negative: clamp(-1.6rem, -1.8vw, -0.9rem);
   position: relative;
   overflow-x: auto;
   margin-top: 0.15rem;
@@ -2012,11 +2107,8 @@ body.is-picks-hidden #tiebreaker-section {
   margin-bottom: 0.4rem;
 }
 
-/* Wraps the bracket grid + the 3rd-place row so they share the same
-   wide content box. min-width: max-content here (rather than on the grid)
-   lets the 3rd-place row stretch to the full grid width, which is what
-   lets justify-content: flex-end pin the 3rd-place box under the Final
-   column instead of the viewport edge. */
+/* Wraps the bracket grid. min-width: max-content lets the bracket keep its
+   tournament-board geometry while #bracket provides horizontal scrolling. */
 .bracket-board {
   position: relative;
   display: flex;
@@ -2027,14 +2119,14 @@ body.is-picks-hidden #tiebreaker-section {
 
 .bracket-grid {
   display: flex;
-  gap: 1.8rem;
+  gap: var(--bracket-gap);
   padding: 0.15rem 0.05rem 0.7rem;
 }
 
 .bracket-column {
   display: flex;
   flex-direction: column;
-  min-width: 205px;
+  min-width: var(--bracket-column-width);
 }
 
 .bracket-column--final {
@@ -2042,11 +2134,15 @@ body.is-picks-hidden #tiebreaker-section {
 }
 
 @media (max-width: 600px) {
+  #bracket {
+    --bracket-column-width: 175px;
+    --bracket-gap: 1.4rem;
+    --bracket-gap-negative: -1.4rem;
+    --bracket-half-gap: 0.7rem;
+    --bracket-half-gap-negative: -0.7rem;
+  }
+
   .bracket-grid { gap: 1.4rem; }
-  .bracket-column { min-width: 175px; }
-  .bracket-column:not(.bracket-column--final) .bracket-pair::after { right: -0.7rem; }
-  .bracket-column:not(.bracket-column--final) .bracket-pair::before { right: -1.4rem; width: 0.7rem; }
-  .bracket-match::after { right: -0.7rem; width: 0.7rem; }
 }
 
 .bracket-column-header {
@@ -2110,7 +2206,7 @@ body.is-picks-hidden #tiebreaker-section {
 .bracket-column:not(.bracket-column--final) .bracket-pair::after {
   content: '';
   position: absolute;
-  right: -0.9rem;
+  right: var(--bracket-half-gap-negative);
   top: 25%;
   bottom: 25%;
   width: 1px;
@@ -2124,8 +2220,8 @@ body.is-picks-hidden #tiebreaker-section {
   content: '';
   position: absolute;
   top: 50%;
-  right: -1.8rem;
-  width: 0.9rem;
+  right: var(--bracket-gap-negative);
+  width: var(--bracket-half-gap);
   height: 1px;
   background: linear-gradient(90deg, rgba(159, 184, 214, 0.72), rgba(242, 201, 76, 0.38));
   box-shadow: 0 0 10px rgba(242, 201, 76, 0.16);
@@ -2161,8 +2257,8 @@ body.is-picks-hidden #tiebreaker-section {
   content: '';
   position: absolute;
   top: 50%;
-  right: -0.9rem;
-  width: 0.9rem;
+  right: var(--bracket-half-gap-negative);
+  width: var(--bracket-half-gap);
   height: 1px;
   background: linear-gradient(90deg, rgba(159, 184, 214, 0.72), rgba(242, 201, 76, 0.38));
   box-shadow: 0 0 10px rgba(242, 201, 76, 0.16);
@@ -2338,7 +2434,7 @@ body.is-picks-hidden #tiebreaker-section {
 .bracket-third-place {
   position: absolute;
   z-index: 2;
-  top: calc(50% + 5.25rem);
+  top: calc(50% + 7.35rem);
   left: 0;
   right: 0;
   display: flex;
@@ -2347,7 +2443,7 @@ body.is-picks-hidden #tiebreaker-section {
 
 @media (max-width: 600px) {
   .bracket-third-place {
-    top: calc(50% + 4.9rem);
+    top: calc(50% + 6.75rem);
   }
 }
 

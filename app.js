@@ -833,6 +833,7 @@ function groupCardHTML(groupCode) {
             ${flagHTML(code)}
             <span class="team-code">${code}</span>
             ${mark}
+            <span class="drag-handle" aria-hidden="true"></span>
           </div>
         </li>`;
     })
@@ -841,8 +842,11 @@ function groupCardHTML(groupCode) {
   return `
     <div class="group-card" data-group-card="${groupCode}">
       <header class="group-card-header">
-        <span>Group ${groupCode}</span>
-        ${hasGroupPick(groupCode) ? '<span class="group-ranked-check" title="Ranked" aria-label="Ranked">✓</span>' : ''}
+        <span class="group-title">
+          <span class="group-code-badge">${groupCode}</span>
+          <span class="group-title-text">Group ${groupCode}</span>
+        </span>
+        ${hasGroupPick(groupCode) ? '<span class="group-ranked-check" title="Ranked" aria-label="Ranked">&#10003;</span>' : ''}
       </header>
       <ul class="team-list">${rows}</ul>
     </div>`;
