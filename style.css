@@ -1970,13 +1970,32 @@ body.is-picks-hidden #tiebreaker-section {
 /* ---- Bracket ---- */
 
 #bracket {
+  position: relative;
   overflow-x: auto;
   margin-top: 0.15rem;
-  padding: 0.9rem 0.9rem 1rem;
-  border: 1px solid rgba(var(--section-accent-rgb), 0.14);
+  padding: 1.2rem;
+  border: 1px solid rgba(var(--section-accent-rgb), 0.24);
   border-radius: var(--radius);
-  background: rgba(8, 10, 14, 0.24);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+  background:
+    radial-gradient(ellipse at top center, rgba(242, 201, 76, 0.11), transparent 54%),
+    linear-gradient(180deg, rgba(21, 29, 41, 0.96), rgba(7, 10, 15, 0.96)),
+    #0b0e13;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    inset 0 0 0 1px rgba(159, 184, 214, 0.08),
+    0 18px 44px rgba(0, 0, 0, 0.34);
+}
+
+#bracket::before {
+  content: "";
+  position: absolute;
+  inset: 0.58rem;
+  border: 1px solid rgba(159, 184, 214, 0.16);
+  border-radius: var(--radius);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.025),
+    inset 0 0 26px rgba(159, 184, 214, 0.055);
+  pointer-events: none;
 }
 
 .bracket-locked-notice {
@@ -1999,21 +2018,23 @@ body.is-picks-hidden #tiebreaker-section {
    lets justify-content: flex-end pin the 3rd-place box under the Final
    column instead of the viewport edge. */
 .bracket-board {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-width: max-content;
+  padding: 0.35rem;
 }
 
 .bracket-grid {
   display: flex;
-  gap: 2.25rem;
-  padding-bottom: 0.5rem;
+  gap: 1.8rem;
+  padding: 0.15rem 0.05rem 0.7rem;
 }
 
 .bracket-column {
   display: flex;
   flex-direction: column;
-  min-width: 230px;
+  min-width: 205px;
 }
 
 @media (max-width: 600px) {
@@ -2021,6 +2042,7 @@ body.is-picks-hidden #tiebreaker-section {
   .bracket-column { min-width: 175px; }
   .bracket-column:not(.bracket-column--final) .bracket-pair::after { right: -0.7rem; }
   .bracket-column:not(.bracket-column--final) .bracket-pair::before { right: -1.4rem; width: 0.7rem; }
+  .bracket-match::after { right: -0.7rem; width: 0.7rem; }
 }
 
 .bracket-column-header {
@@ -2029,10 +2051,18 @@ body.is-picks-hidden #tiebreaker-section {
   font-weight: 600;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--steel);
-  padding: 0.5rem 0;
-  border-bottom: 1px solid rgba(159, 184, 214, 0.17);
-  margin-bottom: 0.75rem;
+  color: var(--text);
+  padding: 0.58rem 0.72rem;
+  border: 1px solid rgba(159, 184, 214, 0.2);
+  border-bottom-color: rgba(var(--section-accent-rgb), 0.3);
+  border-radius: var(--radius);
+  margin-bottom: 0.95rem;
+  background:
+    linear-gradient(180deg, rgba(159, 184, 214, 0.14), rgba(12, 18, 27, 0.9)),
+    #101822;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 8px 16px rgba(0, 0, 0, 0.22);
   text-align: center;
 }
 
@@ -2076,11 +2106,12 @@ body.is-picks-hidden #tiebreaker-section {
 .bracket-column:not(.bracket-column--final) .bracket-pair::after {
   content: '';
   position: absolute;
-  right: -1.125rem;
+  right: -0.9rem;
   top: 25%;
   bottom: 25%;
   width: 1px;
-  background: var(--border-strong);
+  background: linear-gradient(180deg, rgba(159, 184, 214, 0.72), rgba(242, 201, 76, 0.38));
+  box-shadow: 0 0 10px rgba(242, 201, 76, 0.16);
   pointer-events: none;
 }
 
@@ -2089,25 +2120,36 @@ body.is-picks-hidden #tiebreaker-section {
   content: '';
   position: absolute;
   top: 50%;
-  right: -2.25rem;
-  width: 1.125rem;
+  right: -1.8rem;
+  width: 0.9rem;
   height: 1px;
-  background: var(--border-strong);
+  background: linear-gradient(90deg, rgba(159, 184, 214, 0.72), rgba(242, 201, 76, 0.38));
+  box-shadow: 0 0 10px rgba(242, 201, 76, 0.16);
   pointer-events: none;
 }
 
 .bracket-match {
   position: relative;
   background:
-    linear-gradient(180deg, rgba(32, 39, 51, 0.92), rgba(24, 29, 38, 0.98));
-  border: 1px solid rgba(159, 184, 214, 0.17);
+    linear-gradient(180deg, rgba(34, 42, 56, 0.96), rgba(15, 20, 29, 0.99)),
+    #151a22;
+  border: 1px solid rgba(159, 184, 214, 0.22);
   border-radius: var(--radius);
   overflow: hidden;
   display: flex;
   flex-direction: column;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 8px 18px rgba(0, 0, 0, 0.34);
+    inset 0 1px 0 rgba(255, 255, 255, 0.055),
+    0 10px 22px rgba(0, 0, 0, 0.34);
+}
+
+.bracket-match:has(.bracket-slot.is-winner) {
+  border-color: rgba(var(--section-accent-rgb), 0.33);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 0 1px rgba(var(--section-accent-rgb), 0.08),
+    0 12px 24px rgba(0, 0, 0, 0.38),
+    0 0 22px rgba(var(--section-accent-rgb), 0.08);
 }
 
 /* Horizontal stub from each match's right edge to the pair's vertical line. */
@@ -2115,10 +2157,11 @@ body.is-picks-hidden #tiebreaker-section {
   content: '';
   position: absolute;
   top: 50%;
-  right: -1.125rem;
-  width: 1.125rem;
+  right: -0.9rem;
+  width: 0.9rem;
   height: 1px;
-  background: var(--border-strong);
+  background: linear-gradient(90deg, rgba(159, 184, 214, 0.72), rgba(242, 201, 76, 0.38));
+  box-shadow: 0 0 10px rgba(242, 201, 76, 0.16);
   z-index: 1;
 }
 
@@ -2130,7 +2173,9 @@ body.is-picks-hidden #tiebreaker-section {
   align-items: baseline;
   justify-content: space-between;
   gap: 0.5rem;
-  padding: 0.4rem 0.7rem 0.3rem;
+  padding: 0.46rem 0.72rem 0.34rem;
+  border-bottom: 1px solid rgba(159, 184, 214, 0.1);
+  background: rgba(8, 12, 18, 0.28);
 }
 
 .bracket-match-num {
@@ -2138,7 +2183,7 @@ body.is-picks-hidden #tiebreaker-section {
   font-size: 0.7rem;
   font-weight: 600;
   letter-spacing: 0.02em;
-  color: var(--text-muted);
+  color: var(--steel);
 }
 
 .bracket-match-when {
@@ -2161,7 +2206,8 @@ body.is-picks-hidden #tiebreaker-section {
 
 .bracket-feed {
   padding: 0.3rem 0.7rem;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid rgba(159, 184, 214, 0.12);
+  background: rgba(8, 12, 18, 0.18);
   font-family: var(--font-mono);
   font-size: 0.65rem;
   letter-spacing: 0.02em;
@@ -2203,13 +2249,26 @@ body.is-picks-hidden #tiebreaker-section {
 .bracket-slot--readonly { cursor: default; color: var(--text-muted); }
 
 .bracket-slot.is-winner {
-  background: var(--accent-soft);
+  background:
+    linear-gradient(90deg, rgba(242, 201, 76, 0.2), rgba(242, 201, 76, 0.055));
   color: var(--text);
   font-weight: 600;
+  box-shadow:
+    inset 3px 0 0 var(--accent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 0 18px rgba(242, 201, 76, 0.12);
+}
+
+.bracket-column--final .bracket-slot.is-winner {
+  background:
+    linear-gradient(90deg, rgba(65, 181, 106, 0.2), rgba(242, 201, 76, 0.12));
+  box-shadow:
+    inset 3px 0 0 var(--winner),
+    0 0 24px rgba(65, 181, 106, 0.14);
 }
 
 .bracket-slot.is-winner::after {
-  content: '✓';
+  content: none;
   margin-left: auto;
   color: var(--accent);
   font-weight: 700;
@@ -2217,8 +2276,8 @@ body.is-picks-hidden #tiebreaker-section {
 }
 
 /* When a mock/real result is known, recolor the user's picked slot to show
-   whether they nailed it. The base is-winner check (✓) gets overridden by
-   one of these so the marker reads as "verdict", not just "your pick". */
+   whether they nailed it. Normal picked winners use glow only; verdict icons
+   appear only once there is an actual result. */
 .bracket-slot.is-winner.is-correct {
   background: var(--winner-soft);
 }
@@ -2291,10 +2350,12 @@ body.is-picks-hidden #tiebreaker-section {
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--steel);
   padding: 0.5rem 0;
-  border-bottom: 1px solid var(--border);
+  border: 1px solid rgba(159, 184, 214, 0.18);
+  border-radius: var(--radius);
   margin: 0 0 0.75rem 0;
+  background: rgba(11, 14, 19, 0.3);
   text-align: center;
 }
 
