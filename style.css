@@ -1243,21 +1243,75 @@ body.is-picks-hidden #tiebreaker-section {
    classic dark-theme bevel trick — without a sliver of light at the top edge,
    pure black shadows alone don't register on this dark background. */
 .pick-section {
+  --section-accent-rgb: 159, 184, 214;
+  --section-accent: rgb(var(--section-accent-rgb));
+  position: relative;
   scroll-margin-top: 1rem;
   padding: 1.5rem;
-  border: 1px solid rgba(159, 184, 214, 0.2);
+  overflow: hidden;
+  border: 1px solid rgba(var(--section-accent-rgb), 0.28);
   border-radius: var(--radius);
   background:
-    linear-gradient(180deg, rgba(24, 30, 40, 0.96), rgba(15, 18, 24, 0.98));
+    linear-gradient(180deg, rgba(var(--section-accent-rgb), 0.11), rgba(24, 30, 40, 0.08) 36%, rgba(15, 18, 24, 0.98)),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.035), transparent 38%),
+    linear-gradient(180deg, rgba(24, 30, 40, 0.98), rgba(12, 15, 20, 0.99));
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 10px 28px rgba(0, 0, 0, 0.42);
+    inset 0 1px 0 rgba(255, 255, 255, 0.055),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.4),
+    0 14px 34px rgba(0, 0, 0, 0.42);
+}
+
+.pick-section::before {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: linear-gradient(180deg, rgba(var(--section-accent-rgb), 0.95), rgba(var(--section-accent-rgb), 0.18));
+  box-shadow: 0 0 18px rgba(var(--section-accent-rgb), 0.18);
+  pointer-events: none;
+}
+
+.pick-section::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.028), transparent 42%);
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+.pick-section--1 { --section-accent-rgb: 65, 181, 106; }
+.pick-section--2 { --section-accent-rgb: 159, 184, 214; }
+.pick-section--3 { --section-accent-rgb: 242, 201, 76; }
+.pick-section--4 { --section-accent-rgb: 255, 159, 67; }
+
+.pick-section .section-head,
+.pick-section .section-toolbar,
+.pick-section .section-body,
+.pick-section #bracket,
+.pick-section #tiebreaker {
+  position: relative;
+  z-index: 1;
 }
 
 .pick-section .section-head {
-  border-bottom: 1px solid rgba(159, 184, 214, 0.13);
-  margin-bottom: 1rem;
-  padding-bottom: 0.9rem;
+  align-items: center;
+  border-bottom: 1px solid rgba(var(--section-accent-rgb), 0.22);
+  margin: -0.2rem -0.2rem 1rem;
+  padding: 0 0.2rem 0.92rem;
+}
+
+.pick-section .section-head::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(var(--section-accent-rgb), 0.7), transparent 52%);
+  pointer-events: none;
 }
 
 .pick-section .section-head h2 {
@@ -1269,6 +1323,8 @@ body.is-picks-hidden #tiebreaker-section {
   font-weight: 600;
   letter-spacing: 0.03em;
   text-transform: uppercase;
+  color: var(--text);
+  text-shadow: 0 0 14px rgba(var(--section-accent-rgb), 0.08);
 }
 
 .step-badge {
@@ -1278,12 +1334,15 @@ body.is-picks-hidden #tiebreaker-section {
   width: 26px;
   height: 26px;
   border-radius: var(--radius);
-  background: var(--steel-soft);
-  color: var(--steel);
+  background: rgba(var(--section-accent-rgb), 0.14);
+  color: var(--section-accent);
   font-family: var(--font-mono);
   font-weight: 600;
   font-size: 0.8125rem;
   flex: 0 0 auto;
+  box-shadow:
+    inset 0 0 0 1px rgba(var(--section-accent-rgb), 0.14),
+    0 0 14px rgba(var(--section-accent-rgb), 0.08);
 }
 
 /* ---- Centered section heads (tiebreaker, leaderboard) ---- */
@@ -1303,6 +1362,8 @@ body.is-picks-hidden #tiebreaker-section {
   flex-wrap: wrap;
   gap: 0.5rem;
   margin-bottom: 1rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px dashed rgba(var(--section-accent-rgb), 0.18);
 }
 
 .section-toolbar:empty { display: none; }
@@ -1313,6 +1374,7 @@ body.is-picks-hidden #tiebreaker-section {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1rem;
+  padding-top: 0.05rem;
 }
 
 @media (max-width: 1000px) {
@@ -1521,6 +1583,7 @@ body.is-picks-hidden #tiebreaker-section {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 0.65rem;
+  padding-top: 0.05rem;
 }
 
 .wildcards-empty {
@@ -1627,9 +1690,11 @@ body.is-picks-hidden #tiebreaker-section {
 /* ---- Tiebreaker ---- */
 
 #tiebreaker {
-  background: var(--surface);
+  background: rgba(8, 10, 14, 0.26);
+  border: 1px solid rgba(var(--section-accent-rgb), 0.16);
   border-radius: var(--radius);
   padding: 1.25rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
 }
 
 .tiebreaker-champion {
@@ -1693,7 +1758,15 @@ body.is-picks-hidden #tiebreaker-section {
 
 /* ---- Bracket ---- */
 
-#bracket { overflow-x: auto; padding-bottom: 1rem; }
+#bracket {
+  overflow-x: auto;
+  margin-top: 0.15rem;
+  padding: 0.9rem 0.9rem 1rem;
+  border: 1px solid rgba(var(--section-accent-rgb), 0.14);
+  border-radius: var(--radius);
+  background: rgba(8, 10, 14, 0.24);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+}
 
 .bracket-locked-notice {
   background: var(--surface-2);
@@ -2924,6 +2997,12 @@ body.is-picks-hidden #tiebreaker-section {
   .countdown-when { font-size: 0.62rem; letter-spacing: 0.14em; }
   .actions-bar { padding: 0.6rem; }
   .pick-section { padding: 1.1rem; }
+  .pick-section::before { width: 3px; }
+  .pick-section .section-head {
+    margin: -0.05rem -0.05rem 0.85rem;
+    padding-bottom: 0.75rem;
+  }
+  #bracket { padding: 0.65rem; }
   #site-footer { padding: 1.25rem 1rem 1.75rem; }
 
   /* Tighter section header on phones — drop the long summary text in the
