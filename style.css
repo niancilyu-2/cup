@@ -2329,19 +2329,31 @@ body.is-picks-hidden #tiebreaker-section {
   font-style: italic;
 }
 
-/* 3rd-place sits in its own row below the bracket grid, right-aligned so
-   it lands under the Final column. flex-end works because .bracket-board
-   forces the row to be the full grid width. */
+/* 3rd-place sits under the Final column instead of after the full bracket
+   height, so it stays visible near the championship pick. */
 .bracket-third-place-row {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 1.5rem;
+  position: absolute;
+  z-index: 2;
+  top: calc(50% + 7rem);
+  right: 0.4rem;
+  margin-top: 0;
 }
 
 .bracket-third-place {
-  width: 230px;
+  width: 205px;
   display: flex;
   flex-direction: column;
+}
+
+@media (max-width: 600px) {
+  .bracket-third-place-row {
+    top: calc(50% + 6.4rem);
+    right: 0.35rem;
+  }
+
+  .bracket-third-place {
+    width: 175px;
+  }
 }
 
 .bracket-third-place h3 {
