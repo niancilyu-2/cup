@@ -1602,8 +1602,9 @@ body.is-picks-hidden #tiebreaker-section {
   opacity: 0.75;
 }
 
-/* Subtle divider between adjacent tiers (2-3 and 3-4 boundaries),
-   used in lieu of the per-row hairline. */
+/* Subtle divider between ranked rows so adjacent same-tier teams still scan
+   as separate picks. */
+.team-list li:nth-child(1) .team-row { border-bottom: 1px solid var(--border); }
 .team-list li:nth-child(2) .team-row { border-bottom: 1px solid var(--border); }
 .team-list li:nth-child(3) .team-row { border-bottom: 1px solid var(--border); }
 
