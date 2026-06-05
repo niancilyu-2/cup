@@ -1793,6 +1793,12 @@ function bracketColumnHTML(round) {
   // flex: 1 + space-around centering as every other column's pairs. That puts
   // M104 at body 50%, which is where the SF pair midpoint also lands.
   const isFinal = round.id === 'final';
+  const thirdMatch = isFinal ? state.matches.find((m) => m.stage === 'third') : null;
+  const thirdPlaceHTML = thirdMatch ? `
+        <div class="bracket-third-place">
+          <h3>3rd Place</h3>
+          ${matchCellHTML(thirdMatch.id)}
+        </div>` : '';
   return `
     <div class="bracket-column bracket-column--${round.id}">
       <header class="bracket-column-header">${round.label}</header>
@@ -1803,6 +1809,7 @@ function bracketColumnHTML(round) {
           </div>
         `).join('')}
       </div>
+      ${thirdPlaceHTML}
     </div>`;
 }
 
@@ -1824,21 +1831,12 @@ function renderBracket() {
     return;
   }
 
-  const thirdMatch = state.matches.find((m) => m.stage === 'third');
   state.bracketPairs = bracketPairOrder();
   root.innerHTML = `
     <div class="bracket-board">
       <div class="bracket-grid">
         ${KNOCKOUT_ROUNDS.map(bracketColumnHTML).join('')}
       </div>
-      ${thirdMatch ? `
-        <div class="bracket-third-place-row">
-          <div class="bracket-third-place">
-            <h3>3rd Place</h3>
-            ${matchCellHTML(thirdMatch.id)}
-          </div>
-        </div>
-      ` : ''}
     </div>
   `;
   renderBracketToolbar();

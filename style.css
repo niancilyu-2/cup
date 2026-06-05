@@ -2037,6 +2037,10 @@ body.is-picks-hidden #tiebreaker-section {
   min-width: 205px;
 }
 
+.bracket-column--final {
+  position: relative;
+}
+
 @media (max-width: 600px) {
   .bracket-grid { gap: 1.4rem; }
   .bracket-column { min-width: 175px; }
@@ -2259,7 +2263,7 @@ body.is-picks-hidden #tiebreaker-section {
     0 0 18px rgba(242, 201, 76, 0.12);
 }
 
-.bracket-column--final .bracket-slot.is-winner {
+.bracket-column--final .bracket-column-body .bracket-slot.is-winner {
   background:
     linear-gradient(90deg, rgba(65, 181, 106, 0.2), rgba(242, 201, 76, 0.12));
   box-shadow:
@@ -2329,30 +2333,21 @@ body.is-picks-hidden #tiebreaker-section {
   font-style: italic;
 }
 
-/* 3rd-place sits under the Final column instead of after the full bracket
-   height, so it stays visible near the championship pick. */
-.bracket-third-place-row {
+/* 3rd-place lives in the Final column, directly below the championship match
+   with enough air to read as its own placement game. */
+.bracket-third-place {
   position: absolute;
   z-index: 2;
-  top: calc(50% + 7rem);
-  right: 0.4rem;
-  margin-top: 0;
-}
-
-.bracket-third-place {
-  width: 205px;
+  top: calc(50% + 5.25rem);
+  left: 0;
+  right: 0;
   display: flex;
   flex-direction: column;
 }
 
 @media (max-width: 600px) {
-  .bracket-third-place-row {
-    top: calc(50% + 6.4rem);
-    right: 0.35rem;
-  }
-
   .bracket-third-place {
-    width: 175px;
+    top: calc(50% + 4.9rem);
   }
 }
 
