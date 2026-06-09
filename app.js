@@ -2266,26 +2266,33 @@ function bracketShareLayout() {
   };
 }
 
+const BRACKET_SHARE_WIDTH = 2000;
+const BRACKET_SHARE_HEIGHT = 1200;
+const BRACKET_SHARE_SCALE = 2;
+
 async function renderBracketShareCanvas() {
   if (document.fonts?.ready) {
     try { await document.fonts.ready; } catch (_) {}
   }
   const canvas = document.createElement('canvas');
-  canvas.width = 2000;
-  canvas.height = 1200;
+  canvas.width = BRACKET_SHARE_WIDTH * BRACKET_SHARE_SCALE;
+  canvas.height = BRACKET_SHARE_HEIGHT * BRACKET_SHARE_SCALE;
   const ctx = canvas.getContext('2d');
+  ctx.scale(BRACKET_SHARE_SCALE, BRACKET_SHARE_SCALE);
   const layout = bracketShareLayout();
   const rects = {};
   const matchW = 190;
   const matchH = 78;
   const finalW = 300;
   const finalH = 122;
+  const exportW = BRACKET_SHARE_WIDTH;
+  const exportH = BRACKET_SHARE_HEIGHT;
   const leftX = { r32: 30, r16: 225, qf: 420, sf: 615 };
   const rightX = {
-    r32: canvas.width - 30 - matchW,
-    r16: canvas.width - 225 - matchW,
-    qf: canvas.width - 420 - matchW,
-    sf: canvas.width - 615 - matchW,
+    r32: exportW - 30 - matchW,
+    r16: exportW - 225 - matchW,
+    qf: exportW - 420 - matchW,
+    sf: exportW - 615 - matchW,
   };
   const r32Y = Array.from({ length: 8 }, (_, i) => 240 + i * 105);
   const midpoints = (arr) => arr.reduce((out, _, i) => {
@@ -2309,14 +2316,14 @@ async function renderBracketShareCanvas() {
   placeSide(layout.left, leftX);
   placeSide(layout.right, rightX);
   rects[layout.final] = {
-    x: (canvas.width - finalW) / 2,
+    x: (exportW - finalW) / 2,
     y: y.sf[0] - finalH / 2,
     w: finalW,
     h: finalH,
   };
   if (layout.third) {
     rects[layout.third] = {
-      x: (canvas.width - finalW) / 2,
+      x: (exportW - finalW) / 2,
       y: y.sf[0] + 178,
       w: finalW,
       h: 90,
@@ -2325,24 +2332,24 @@ async function renderBracketShareCanvas() {
   const flagAssets = await loadExportFlagImages(collectExportTeamCodes(Object.keys(rects)));
 
   ctx.fillStyle = '#080b10';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  const bg = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  ctx.fillRect(0, 0, exportW, exportH);
+  const bg = ctx.createLinearGradient(0, 0, 0, exportH);
   bg.addColorStop(0, '#172131');
   bg.addColorStop(0.34, '#0b1018');
   bg.addColorStop(1, '#080b10');
   ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillRect(0, 0, exportW, exportH);
   const topWash = ctx.createLinearGradient(0, 0, 0, 190);
   topWash.addColorStop(0, 'rgba(10, 15, 23, 0.76)');
   topWash.addColorStop(0.7, 'rgba(10, 15, 23, 0.28)');
   topWash.addColorStop(1, 'rgba(10, 15, 23, 0)');
   ctx.fillStyle = topWash;
-  ctx.fillRect(0, 0, canvas.width, 190);
+  ctx.fillRect(0, 0, exportW, 190);
   ctx.strokeStyle = 'rgba(159, 184, 214, 0.12)';
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(0, 126);
-  ctx.lineTo(canvas.width, 126);
+  ctx.lineTo(exportW, 126);
   ctx.stroke();
 
   const playerName = state.viewedPlayer?.name || state.player?.name || 'My bracket';
@@ -2363,7 +2370,7 @@ async function renderBracketShareCanvas() {
   ctx.fillStyle = '#ff9f43';
   ctx.font = '600 27px Oswald, Inter, system-ui, sans-serif';
   ctx.textAlign = 'right';
-  drawFittedTextRight(ctx, playerName, canvas.width - 60, 80, 520);
+  drawFittedTextRight(ctx, playerName, exportW - 60, 80, 520);
   ctx.restore();
   ctx.textAlign = 'left';
 
@@ -2420,13 +2427,13 @@ async function renderBracketShareCanvas() {
     ctx.fillStyle = '#9fb8d6';
     ctx.font = '700 15px Inter, system-ui, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('3RD PLACE', canvas.width / 2, rects[layout.third].y - 18);
+    ctx.fillText('3RD PLACE', exportW / 2, rects[layout.third].y - 18);
     ctx.textAlign = 'left';
   }
 
   ctx.fillStyle = 'rgba(159, 184, 214, 0.18)';
-  ctx.fillRect(0, canvas.height - 70, canvas.width, 1);
-  drawExportSignature(ctx, canvas.width / 2, canvas.height - 32);
+  ctx.fillRect(0, exportH - 70, exportW, 1);
+  drawExportSignature(ctx, exportW / 2, exportH - 32);
   ctx.textAlign = 'left';
 
   return canvas;
