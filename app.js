@@ -1336,9 +1336,16 @@ function renderWildcardsToolbar() {
 function renderBracketToolbar() {
   const el = document.getElementById('bracket-toolbar');
   if (!el) return;
-  if (isEditingDisabled()) { el.innerHTML = ''; return; }
   const groupsReady = state.groups.every((g) => hasGroupPick(g.code));
   const wildcardsReady = advancingGroups().length === 8;
+  const canShare = groupsReady && wildcardsReady;
+  const shareTitle = canShare
+    ? 'Generate a symmetric bracket image to share or download'
+    : !groupsReady ? 'Rank all 12 groups before sharing your bracket'
+    : 'Pick 8 wildcards before sharing your bracket';
+  const shareIcon = '<svg class="share-bracket-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="3.5" r="2"/><circle cx="4" cy="8" r="2"/><circle cx="12" cy="12.5" r="2"/><path d="M5.7 7.1l4.6-2.4M5.7 8.9l4.6 2.4"/></svg>';
+  const shareButton = `<button type="button" class="btn-primary share-bracket-btn" id="share-bracket-btn" ${canShare ? '' : 'disabled'} title="${shareTitle}">${shareIcon}<span>Share bracket</span></button>`;
+  if (isEditingDisabled()) { el.innerHTML = shareButton; return; }
   const ko = bracketMatches();
   const hasUnpicked = ko.some((m) => !state.picks.draft.bracket[m.id]);
   const hasPicked = ko.some((m) => !!state.picks.draft.bracket[m.id]);
@@ -1352,6 +1359,7 @@ function renderBracketToolbar() {
     <button type="button" class="btn-secondary" id="auto-pick-bracket-btn" ${canAutoPick ? '' : 'disabled'} title="${title}">🎲 Auto pick</button>
     <button type="button" class="btn-link" id="clear-bracket-btn" ${hasPicked ? '' : 'disabled'}>🗑️ Clear my picks</button>
   `;
+  if (shareButton) el.insertAdjacentHTML('beforeend', shareButton);
 }
 
 function wireSectionToolbars() {
@@ -1364,6 +1372,8 @@ function wireSectionToolbars() {
     else if (e.target.id === 'clear-wildcards-btn') clearWildcardsOnly();
   });
   document.getElementById('bracket-toolbar').addEventListener('click', (e) => {
+    const shareBtn = e.target.closest('#share-bracket-btn');
+    if (shareBtn) { shareBracketImage(shareBtn); return; }
     if (e.target.id === 'auto-pick-bracket-btn') autoPickBracket();
     else if (e.target.id === 'clear-bracket-btn') clearBracketOnly();
   });
@@ -1791,6 +1801,679 @@ function bracketPairOrder() {
     out[stage] = pairs;
   }
   return out;
+}
+
+function matchFeedIds(matchId) {
+  const match = state.matches.find((m) => m.id === matchId);
+  if (!match) return [];
+  return [match.slot_a, match.slot_b]
+    .filter((slot) => slot && slot.startsWith('W'))
+    .map((slot) => `M${slot.slice(1)}`);
+}
+
+function bracketShareFilename() {
+  const name = (state.viewedPlayer?.name || state.player?.name || 'bracket')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '') || 'bracket';
+  return `world-cup-2026-${name}-bracket.png`;
+}
+
+function canvasBlob(canvas) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) resolve(blob);
+      else reject(new Error('Could not render bracket image.'));
+    }, 'image/png');
+  });
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function canCopyImageBlob() {
+  return !!(navigator.clipboard?.write && typeof ClipboardItem === 'function');
+}
+
+async function copyImageBlob(blob) {
+  if (!canCopyImageBlob()) throw new Error('Image clipboard is not supported.');
+  await navigator.clipboard.write([
+    new ClipboardItem({ [blob.type || 'image/png']: blob }),
+  ]);
+}
+
+function openShareDestination(destination) {
+  const text = encodeURIComponent("My World Cup '26 bracket");
+  const url = destination === 'whatsapp'
+    ? `https://wa.me/?text=${text}`
+    : 'https://www.instagram.com/';
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+
+function showBracketShareFallback({ blob, filename }) {
+  const root = document.getElementById('modal-root');
+  if (!root) {
+    downloadBlob(blob, filename);
+    return;
+  }
+  const canCopy = canCopyImageBlob();
+  root.innerHTML = `
+    <div class="modal-overlay share-fallback-overlay">
+      <div class="modal share-fallback-modal" role="dialog" aria-modal="true" aria-labelledby="share-fallback-title">
+        <div class="share-fallback-header">
+          <div>
+            <span class="share-fallback-kicker">Image ready</span>
+            <h2 id="share-fallback-title" class="share-fallback-title">Share bracket</h2>
+          </div>
+          <button class="share-fallback-close" type="button" aria-label="Close">x</button>
+        </div>
+        <div class="share-fallback-body">
+          <div class="share-fallback-card">
+            <div class="share-fallback-thumb" aria-hidden="true"></div>
+            <strong>Symmetric bracket PNG</strong>
+          </div>
+          <div class="share-fallback-actions">
+            <button type="button" class="btn-primary" id="share-download-image">Download image</button>
+            <button type="button" class="btn-secondary" id="share-copy-image" ${canCopy ? '' : 'disabled'} title="${canCopy ? '' : 'Copy image is not supported in this browser'}">Copy image</button>
+          </div>
+          <p class="share-fallback-social-title">Open social app</p>
+          <div class="share-fallback-socials">
+            <button type="button" class="share-fallback-social" id="share-open-whatsapp"><span class="share-fallback-social-mark">wa</span> WhatsApp</button>
+            <button type="button" class="share-fallback-social" id="share-open-instagram"><span class="share-fallback-social-mark">ig</span> Instagram</button>
+          </div>
+          <p class="share-fallback-status" id="share-fallback-status" aria-live="polite"></p>
+        </div>
+      </div>
+    </div>
+  `;
+
+  let onKeyDown = null;
+  const close = () => {
+    if (onKeyDown) document.removeEventListener('keydown', onKeyDown);
+    root.innerHTML = '';
+  };
+  root.querySelector('.share-fallback-close')?.addEventListener('click', close);
+  root.querySelector('.share-fallback-overlay')?.addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) close();
+  });
+  onKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      close();
+    }
+  };
+  document.addEventListener('keydown', onKeyDown);
+
+  const status = root.querySelector('#share-fallback-status');
+  root.querySelector('#share-download-image')?.addEventListener('click', () => {
+    downloadBlob(blob, filename);
+    if (status) status.textContent = 'Downloaded';
+  });
+  root.querySelector('#share-copy-image')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    const oldText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Copying...';
+    try {
+      await copyImageBlob(blob);
+      btn.textContent = 'Copied';
+      if (status) status.textContent = 'Copied';
+    } catch (err) {
+      console.error('Failed to copy bracket image', err);
+      btn.textContent = 'Copy failed';
+      if (status) status.textContent = 'Copy failed';
+    } finally {
+      setTimeout(() => {
+        btn.disabled = !canCopy;
+        btn.textContent = oldText;
+      }, 1400);
+    }
+  });
+  root.querySelector('#share-open-whatsapp')?.addEventListener('click', () => openShareDestination('whatsapp'));
+  root.querySelector('#share-open-instagram')?.addEventListener('click', () => openShareDestination('instagram'));
+}
+
+function roundRectPath(ctx, x, y, w, h, r) {
+  const radius = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.arcTo(x + w, y, x + w, y + h, radius);
+  ctx.arcTo(x + w, y + h, x, y + h, radius);
+  ctx.arcTo(x, y + h, x, y, radius);
+  ctx.arcTo(x, y, x + w, y, radius);
+  ctx.closePath();
+}
+
+function fillRoundRect(ctx, x, y, w, h, r, fill, stroke) {
+  roundRectPath(ctx, x, y, w, h, r);
+  ctx.fillStyle = fill;
+  ctx.fill();
+  if (stroke) {
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+}
+
+function drawFittedText(ctx, text, x, y, maxWidth) {
+  let out = String(text || '');
+  if (ctx.measureText(out).width <= maxWidth) {
+    ctx.fillText(out, x, y);
+    return;
+  }
+  while (out.length > 4 && ctx.measureText(`${out.slice(0, -1)}...`).width > maxWidth) {
+    out = out.slice(0, -1);
+  }
+  ctx.fillText(`${out.slice(0, -1)}...`, x, y);
+}
+
+function drawFittedTextRight(ctx, text, x, y, maxWidth) {
+  let out = String(text || '');
+  if (ctx.measureText(out).width <= maxWidth) {
+    ctx.fillText(out, x, y);
+    return;
+  }
+  while (out.length > 4 && ctx.measureText(`${out.slice(0, -1)}...`).width > maxWidth) {
+    out = out.slice(0, -1);
+  }
+  ctx.fillText(`${out.slice(0, -1)}...`, x, y);
+}
+
+function measureTrackedText(ctx, text, tracking) {
+  const chars = [...String(text || '')];
+  return chars.reduce((width, char, index) => (
+    width + ctx.measureText(char).width + (index < chars.length - 1 ? tracking : 0)
+  ), 0);
+}
+
+function drawTrackedText(ctx, text, x, y, tracking) {
+  let cursor = x;
+  [...String(text || '')].forEach((char) => {
+    ctx.fillText(char, cursor, y);
+    cursor += ctx.measureText(char).width + tracking;
+  });
+  return cursor - tracking;
+}
+
+function drawExportSignature(ctx, centerX, y) {
+  const nameFont = '600 14px Oswald, Inter, system-ui, sans-serif';
+  const dotFont = '700 14px Oswald, Inter, system-ui, sans-serif';
+  const tracking = 3;
+  const gap = 9;
+  const left = 'NIANCI';
+  const right = 'CLAUDE';
+  const dot = '\u00d7';
+
+  ctx.save();
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  ctx.font = nameFont;
+  const leftWidth = measureTrackedText(ctx, left, tracking);
+  const rightWidth = measureTrackedText(ctx, right, tracking);
+  ctx.font = dotFont;
+  const dotWidth = ctx.measureText(dot).width;
+  let cursor = centerX - (leftWidth + gap + dotWidth + gap + rightWidth) / 2;
+
+  ctx.font = nameFont;
+  ctx.fillStyle = '#a6b0be';
+  cursor = drawTrackedText(ctx, left, cursor, y, tracking) + gap;
+  ctx.font = dotFont;
+  ctx.fillStyle = '#f2c94c';
+  ctx.fillText(dot, cursor, y);
+  cursor += dotWidth + gap;
+  ctx.font = nameFont;
+  ctx.fillStyle = '#a6b0be';
+  drawTrackedText(ctx, right, cursor, y, tracking);
+  ctx.restore();
+}
+
+function drawExportTrophy(ctx, cx, cy, scale = 1) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(scale, scale);
+  ctx.lineWidth = 1.7;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  const gold = ctx.createLinearGradient(0, -14, 0, 20);
+  gold.addColorStop(0, '#fff1a8');
+  gold.addColorStop(0.42, '#f2c94c');
+  gold.addColorStop(1, '#bd7c18');
+
+  ctx.fillStyle = 'rgba(242, 201, 76, 0.16)';
+  ctx.beginPath();
+  ctx.ellipse(0, 1, 24, 20, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = 'rgba(255, 228, 128, 0.9)';
+  ctx.fillStyle = 'rgba(242, 201, 76, 0.12)';
+  ctx.beginPath();
+  ctx.moveTo(-12, -5);
+  ctx.bezierCurveTo(-21, -6, -21, 8, -9, 7);
+  ctx.lineTo(-8, 3);
+  ctx.bezierCurveTo(-15, 3, -15, -2, -11, -2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(12, -5);
+  ctx.bezierCurveTo(21, -6, 21, 8, 9, 7);
+  ctx.lineTo(8, 3);
+  ctx.bezierCurveTo(15, 3, 15, -2, 11, -2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = gold;
+  ctx.strokeStyle = '#ffe08a';
+  ctx.beginPath();
+  ctx.moveTo(-12, -10);
+  ctx.lineTo(12, -10);
+  ctx.bezierCurveTo(11, -1, 8, 6, 3, 9);
+  ctx.lineTo(-3, 9);
+  ctx.bezierCurveTo(-8, 6, -11, -1, -12, -10);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.moveTo(-5, -7);
+  ctx.bezierCurveTo(-4, -2, -3, 2, 0, 5);
+  ctx.stroke();
+
+  ctx.fillStyle = gold;
+  roundRectPath(ctx, -3, 8, 6, 8, 2);
+  ctx.fill();
+  ctx.strokeStyle = '#ffe08a';
+  ctx.stroke();
+  roundRectPath(ctx, -10, 15, 20, 4, 2);
+  ctx.fill();
+  ctx.stroke();
+  roundRectPath(ctx, -14, 20, 28, 4, 2);
+  ctx.fillStyle = '#d99a24';
+  ctx.fill();
+
+  ctx.fillStyle = '#fff1a8';
+  ctx.beginPath();
+  for (let i = 0; i < 10; i += 1) {
+    const angle = -Math.PI / 2 + i * Math.PI / 5;
+    const radius = i % 2 === 0 ? 3.2 : 1.4;
+    const px = Math.cos(angle) * radius;
+    const py = -17 + Math.sin(angle) * radius;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function exportFlagBadge(teamCode) {
+  const iso = FIFA_TO_ISO[teamCode];
+  if (!iso) return teamCode ? teamCode.slice(0, 2) : '';
+  return iso
+    .replace('gb-eng', 'ENG')
+    .replace('gb-sct', 'SCO')
+    .replace('-', '')
+    .slice(0, 3)
+    .toUpperCase();
+}
+
+function collectExportTeamCodes(matchIds) {
+  const out = new Set();
+  matchIds.forEach((id) => {
+    const teamA = teamForSlot(id, 'a');
+    const teamB = teamForSlot(id, 'b');
+    if (teamA) out.add(teamA);
+    if (teamB) out.add(teamB);
+  });
+  return out;
+}
+
+async function loadExportFlagImages(teamCodes) {
+  const images = new Map();
+  const urls = [];
+  await Promise.all([...teamCodes].map(async (teamCode) => {
+    const iso = FIFA_TO_ISO[teamCode];
+    if (!iso) return;
+    try {
+      const response = await fetch(`https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.2.3/flags/4x3/${iso}.svg`, { mode: 'cors' });
+      if (!response.ok) return;
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      urls.push(url);
+      const img = await new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = reject;
+        image.src = url;
+      });
+      images.set(teamCode, img);
+    } catch (_) {
+      // Flag images are nice-to-have; the export still works with text badges.
+    }
+  }));
+  return {
+    images,
+    cleanup: () => urls.forEach((url) => URL.revokeObjectURL(url)),
+  };
+}
+
+function drawExportFlag(ctx, teamCode, flagImages, x, y, w, h) {
+  const image = flagImages?.get(teamCode);
+  if (image) {
+    ctx.save();
+    roundRectPath(ctx, x, y, w, h, 3);
+    ctx.clip();
+    ctx.drawImage(image, x, y, w, h);
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
+    ctx.lineWidth = 1;
+    roundRectPath(ctx, x, y, w, h, 3);
+    ctx.stroke();
+    return;
+  }
+  fillRoundRect(ctx, x, y, w, h, 3, 'rgba(159, 184, 214, 0.16)', 'rgba(159, 184, 214, 0.28)');
+  ctx.font = '800 8px "JetBrains Mono", monospace';
+  ctx.fillStyle = '#d8e3ef';
+  ctx.textAlign = 'center';
+  ctx.fillText(exportFlagBadge(teamCode), x + w / 2, y + h / 2 + 3);
+  ctx.textAlign = 'left';
+}
+
+function drawExportMatch(ctx, matchId, rect, opts = {}) {
+  const match = state.matches.find((m) => m.id === matchId);
+  if (!match) return;
+  const teamA = teamForSlot(matchId, 'a');
+  const teamB = teamForSlot(matchId, 'b');
+  const winner = effectiveWinner(matchId, teamA, teamB);
+  const { x, y, w, h } = rect;
+  const isFinal = opts.isFinal;
+  const isThird = opts.isThird;
+  const flagImages = opts.flagImages;
+  const winnerAccent = '#41b56a';
+  const bg = isFinal ? 'rgba(21, 26, 34, 0.98)' : 'rgba(21, 26, 34, 0.92)';
+  const headerH = isFinal ? 30 : 24;
+  const rowGap = isFinal ? 4 : 3;
+  const rowTop = y + headerH + (isFinal ? 10 : 5);
+  const rowH = (h - headerH - rowGap - (isFinal ? 18 : 8)) / 2;
+  const teamFontSize = isFinal ? 24 : 16;
+
+  fillRoundRect(ctx, x, y, w, h, 10, bg, isFinal ? 'rgba(242, 201, 76, 0.72)' : 'rgba(159, 184, 214, 0.28)');
+  ctx.fillStyle = isFinal ? 'rgba(242, 201, 76, 0.12)' : 'rgba(159, 184, 214, 0.08)';
+  ctx.fillRect(x + 1, y + 1, w - 2, headerH - 2);
+
+  ctx.font = `600 ${isFinal ? 15 : 12}px "JetBrains Mono", monospace`;
+  ctx.fillStyle = isFinal ? '#f2c94c' : '#9fb8d6';
+  ctx.fillText(`#${matchId.slice(1)}`, x + 12, y + (isFinal ? 20 : 16));
+
+  const drawSlot = (team, rowIndex) => {
+    const selected = winner && winner === team;
+    const rowY = rowTop + rowIndex * (rowH + rowGap);
+    const textBaseline = rowY + rowH / 2 + teamFontSize * 0.36;
+    if (selected) {
+      ctx.save();
+      roundRectPath(ctx, x + 6, rowY, w - 12, rowH, isFinal ? 6 : 4);
+      ctx.clip();
+      ctx.fillStyle = 'rgba(65, 181, 106, 0.22)';
+      ctx.fillRect(x + 6, rowY, w - 12, rowH);
+      ctx.fillStyle = winnerAccent;
+      ctx.fillRect(x + 6, rowY, 5, rowH);
+      ctx.restore();
+    }
+    const hasTeam = !!team;
+    const flagW = isFinal ? 28 : 24;
+    const flagH = isFinal ? 20 : 18;
+    const flagX = x + 18;
+    const flagY = rowY + (rowH - flagH) / 2;
+    if (hasTeam) {
+      drawExportFlag(ctx, team, flagImages, flagX, flagY, flagW, flagH);
+    }
+    const textX = hasTeam ? x + (isFinal ? 58 : 50) : x + 18;
+    const textWidth = w - (hasTeam ? (isFinal ? 78 : 66) : 36);
+    ctx.font = `800 ${teamFontSize}px Inter, system-ui, sans-serif`;
+    ctx.fillStyle = selected ? '#ffffff' : '#eef3f8';
+    drawFittedText(ctx, team || 'TBD', textX, textBaseline, textWidth);
+  };
+
+  drawSlot(teamA, 0);
+  drawSlot(teamB, 1);
+}
+
+function bracketShareLayout() {
+  const order = bracketPairOrder();
+  const splitSide = (start, end) => ({
+    r32: order.r32.slice(start, end).flat(),
+    r16: order.r16.slice(start / 2, end / 2).flat(),
+    qf: (order.qf[start / 4] || []).slice(),
+    sf: [order.sf[0]?.[start / 4]].filter(Boolean),
+  });
+  return {
+    left: splitSide(0, 4),
+    right: splitSide(4, 8),
+    final: state.matches.find((m) => m.stage === 'final')?.id || FINAL_MATCH_ID,
+    third: state.matches.find((m) => m.stage === 'third')?.id || null,
+  };
+}
+
+async function renderBracketShareCanvas() {
+  if (document.fonts?.ready) {
+    try { await document.fonts.ready; } catch (_) {}
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width = 2000;
+  canvas.height = 1200;
+  const ctx = canvas.getContext('2d');
+  const layout = bracketShareLayout();
+  const rects = {};
+  const matchW = 190;
+  const matchH = 78;
+  const finalW = 300;
+  const finalH = 122;
+  const leftX = { r32: 30, r16: 225, qf: 420, sf: 615 };
+  const rightX = {
+    r32: canvas.width - 30 - matchW,
+    r16: canvas.width - 225 - matchW,
+    qf: canvas.width - 420 - matchW,
+    sf: canvas.width - 615 - matchW,
+  };
+  const r32Y = Array.from({ length: 8 }, (_, i) => 240 + i * 105);
+  const midpoints = (arr) => arr.reduce((out, _, i) => {
+    if (i % 2 === 0) out.push((arr[i] + arr[i + 1]) / 2);
+    return out;
+  }, []);
+  const y = {
+    r32: r32Y,
+    r16: midpoints(r32Y),
+    qf: midpoints(midpoints(r32Y)),
+    sf: midpoints(midpoints(midpoints(r32Y))),
+  };
+
+  const placeSide = (side, xMap) => {
+    for (const round of ['r32', 'r16', 'qf', 'sf']) {
+      side[round].forEach((id, i) => {
+        rects[id] = { x: xMap[round], y: y[round][i] - matchH / 2, w: matchW, h: matchH };
+      });
+    }
+  };
+  placeSide(layout.left, leftX);
+  placeSide(layout.right, rightX);
+  rects[layout.final] = {
+    x: (canvas.width - finalW) / 2,
+    y: y.sf[0] - finalH / 2,
+    w: finalW,
+    h: finalH,
+  };
+  if (layout.third) {
+    rects[layout.third] = {
+      x: (canvas.width - finalW) / 2,
+      y: y.sf[0] + 178,
+      w: finalW,
+      h: 90,
+    };
+  }
+  const flagAssets = await loadExportFlagImages(collectExportTeamCodes(Object.keys(rects)));
+
+  ctx.fillStyle = '#080b10';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const bg = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  bg.addColorStop(0, '#172131');
+  bg.addColorStop(0.34, '#0b1018');
+  bg.addColorStop(1, '#080b10');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const topWash = ctx.createLinearGradient(0, 0, 0, 190);
+  topWash.addColorStop(0, 'rgba(10, 15, 23, 0.76)');
+  topWash.addColorStop(0.7, 'rgba(10, 15, 23, 0.28)');
+  topWash.addColorStop(1, 'rgba(10, 15, 23, 0)');
+  ctx.fillStyle = topWash;
+  ctx.fillRect(0, 0, canvas.width, 190);
+  ctx.strokeStyle = 'rgba(159, 184, 214, 0.12)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, 126);
+  ctx.lineTo(canvas.width, 126);
+  ctx.stroke();
+
+  const playerName = state.viewedPlayer?.name || state.player?.name || 'My bracket';
+
+  ctx.save();
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+  ctx.shadowBlur = 14;
+  ctx.shadowOffsetY = 5;
+  ctx.fillStyle = '#f3f4f0';
+  ctx.font = '600 35px Oswald, Inter, system-ui, sans-serif';
+  drawTrackedText(ctx, 'KNOCKOUT BRACKET', 60, 80, 1.1);
+  ctx.restore();
+
+  ctx.save();
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.46)';
+  ctx.shadowBlur = 12;
+  ctx.shadowOffsetY = 4;
+  ctx.fillStyle = '#ff9f43';
+  ctx.font = '600 27px Oswald, Inter, system-ui, sans-serif';
+  ctx.textAlign = 'right';
+  drawFittedTextRight(ctx, playerName, canvas.width - 60, 80, 520);
+  ctx.restore();
+  ctx.textAlign = 'left';
+
+  const roundLabels = [
+    ['ROUND OF 32', leftX.r32, matchW], ['ROUND OF 16', leftX.r16, matchW], ['QF', leftX.qf, matchW], ['SF', leftX.sf, matchW],
+    ['FINAL', rects[layout.final].x, finalW],
+    ['SF', rightX.sf, matchW], ['QF', rightX.qf, matchW], ['ROUND OF 16', rightX.r16, matchW], ['ROUND OF 32', rightX.r32, matchW],
+  ];
+  ctx.font = '700 14px Inter, system-ui, sans-serif';
+  ctx.fillStyle = '#9fb8d6';
+  ctx.textAlign = 'center';
+  for (const [label, xPos, labelW] of roundLabels) {
+    ctx.fillText(label, xPos + labelW / 2, 188);
+  }
+  ctx.textAlign = 'left';
+
+  function drawConnector(fromId, toId) {
+    const a = rects[fromId];
+    const b = rects[toId];
+    if (!a || !b) return;
+    const leftSide = a.x < b.x;
+    const startX = leftSide ? a.x + a.w : a.x;
+    const endX = leftSide ? b.x : b.x + b.w;
+    const startY = a.y + a.h / 2;
+    const endY = b.y + b.h / 2;
+    const midX = (startX + endX) / 2;
+    ctx.strokeStyle = 'rgba(159, 184, 214, 0.34)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
+    ctx.lineTo(midX, startY);
+    ctx.lineTo(midX, endY);
+    ctx.lineTo(endX, endY);
+    ctx.stroke();
+  }
+
+  for (const side of [layout.left, layout.right]) {
+    [...side.r16, ...side.qf, ...side.sf].forEach((id) => {
+      matchFeedIds(id).forEach((feedId) => drawConnector(feedId, id));
+    });
+  }
+  matchFeedIds(layout.final).forEach((feedId) => drawConnector(feedId, layout.final));
+
+  Object.entries(rects).forEach(([id, rect]) => {
+    drawExportMatch(ctx, id, rect, { isFinal: id === layout.final, isThird: id === layout.third, flagImages: flagAssets.images });
+  });
+  const finalRect = rects[layout.final];
+  if (finalRect) {
+    drawExportTrophy(ctx, finalRect.x + finalRect.w / 2, finalRect.y - 28, 1.08);
+  }
+  flagAssets.cleanup();
+
+  if (layout.third) {
+    ctx.fillStyle = '#9fb8d6';
+    ctx.font = '700 15px Inter, system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('3RD PLACE', canvas.width / 2, rects[layout.third].y - 18);
+    ctx.textAlign = 'left';
+  }
+
+  ctx.fillStyle = 'rgba(159, 184, 214, 0.18)';
+  ctx.fillRect(0, canvas.height - 70, canvas.width, 1);
+  drawExportSignature(ctx, canvas.width / 2, canvas.height - 32);
+  ctx.textAlign = 'left';
+
+  return canvas;
+}
+
+async function shareBracketImage(button) {
+  const oldHTML = button.innerHTML;
+  button.disabled = true;
+  button.textContent = 'Rendering...';
+  try {
+    const canvas = await renderBracketShareCanvas();
+    const blob = await canvasBlob(canvas);
+    const filename = bracketShareFilename();
+    const title = "World Cup '26 bracket";
+    const text = 'My World Cup bracket picks';
+    const canFileShare = typeof File === 'function' && navigator.canShare && navigator.share;
+    if (canFileShare) {
+      const file = new File([blob], filename, { type: 'image/png' });
+      const data = { files: [file], title, text };
+      if (navigator.canShare(data)) {
+        try {
+          await navigator.share(data);
+          button.textContent = 'Shared';
+        } catch (err) {
+          if (err?.name === 'AbortError') {
+            button.innerHTML = oldHTML;
+            return;
+          }
+          showBracketShareFallback({ blob, filename });
+          button.textContent = 'Ready';
+          return;
+        }
+        if (button.textContent === 'Shared') return;
+      }
+    }
+    showBracketShareFallback({ blob, filename });
+    button.textContent = 'Ready';
+  } catch (err) {
+    console.error('Failed to share bracket image', err);
+    alert('Could not generate the bracket image. Please try again.');
+    button.innerHTML = oldHTML;
+  } finally {
+    setTimeout(() => {
+      button.disabled = false;
+      button.innerHTML = oldHTML;
+    }, 1800);
+  }
 }
 
 function bracketColumnHTML(round) {

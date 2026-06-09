@@ -1552,6 +1552,7 @@ body.is-picks-hidden #tiebreaker-section {
 .section-toolbar {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.5rem;
   margin-bottom: 1rem;
   padding-bottom: 0.9rem;
@@ -1559,6 +1560,51 @@ body.is-picks-hidden #tiebreaker-section {
 }
 
 .section-toolbar:empty { display: none; }
+
+.section-toolbar .share-bracket-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  margin-left: auto;
+  border-color: rgba(255, 159, 67, 0.74);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 8px 18px rgba(0, 0, 0, 0.26),
+    0 0 18px rgba(255, 159, 67, 0.16);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.section-toolbar .share-bracket-icon {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+}
+
+.section-toolbar .share-bracket-btn:hover:not(:disabled) {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    0 10px 22px rgba(0, 0, 0, 0.3),
+    0 0 24px rgba(255, 159, 67, 0.22);
+}
+
+.section-toolbar .share-bracket-btn:disabled {
+  background:
+    linear-gradient(180deg, rgba(255, 159, 67, 0.14), rgba(27, 34, 45, 0.95));
+  color: rgba(255, 217, 147, 0.68);
+  border-color: rgba(255, 159, 67, 0.28);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 6px 14px rgba(0, 0, 0, 0.18);
+}
+
+@media (max-width: 600px) {
+  .section-toolbar .share-bracket-btn {
+    flex: 1 1 100%;
+    margin-left: 0;
+  }
+}
 
 /* ---- Group cards (tap-to-swap rank) ---- */
 
@@ -2489,6 +2535,207 @@ body.is-picks-hidden #tiebreaker-section {
   padding: 1.5rem;
   max-width: 420px;
   width: 90%;
+}
+
+.share-fallback-overlay {
+  background:
+    radial-gradient(circle at 50% 24%, rgba(159, 184, 214, 0.14), transparent 32rem),
+    rgba(0, 0, 0, 0.76);
+  padding: 1rem;
+}
+
+.share-fallback-modal {
+  width: min(94vw, 520px);
+  max-width: 520px;
+  padding: 0;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(28, 36, 49, 0.98), rgba(12, 16, 23, 0.99));
+  border: 1px solid rgba(159, 184, 214, 0.32);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 24px 80px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(242, 201, 76, 0.12);
+}
+
+.share-fallback-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: start;
+  padding: 1.15rem 1.2rem 1rem;
+  border-bottom: 1px solid rgba(159, 184, 214, 0.16);
+  background:
+    linear-gradient(90deg, rgba(242, 201, 76, 0.12), transparent 55%),
+    rgba(255, 255, 255, 0.025);
+}
+
+.share-fallback-kicker {
+  display: block;
+  margin-bottom: 0.2rem;
+  font: 700 0.72rem var(--font-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.share-fallback-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.share-fallback-close {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  border: 1px solid rgba(159, 184, 214, 0.22);
+  background: rgba(8, 11, 16, 0.45);
+  color: var(--text-muted);
+  font: 700 1rem var(--font-sans);
+  cursor: pointer;
+}
+
+.share-fallback-close:hover {
+  color: var(--text);
+  border-color: rgba(159, 184, 214, 0.42);
+}
+
+.share-fallback-body {
+  padding: 1rem 1.2rem 1.2rem;
+}
+
+.share-fallback-card {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 0.85rem;
+  align-items: center;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  border: 1px solid rgba(159, 184, 214, 0.2);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(180deg, rgba(159, 184, 214, 0.08), rgba(8, 11, 16, 0.2)),
+    rgba(14, 19, 28, 0.72);
+}
+
+.share-fallback-thumb {
+  aspect-ratio: 4 / 3;
+  border-radius: 6px;
+  border: 1px solid rgba(242, 201, 76, 0.38);
+  background:
+    linear-gradient(90deg, transparent 46%, rgba(242, 201, 76, 0.7) 47%, rgba(242, 201, 76, 0.7) 49%, transparent 50%),
+    linear-gradient(180deg, rgba(31, 41, 57, 0.98), rgba(6, 9, 14, 0.98));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 8px 16px rgba(0, 0, 0, 0.24);
+  position: relative;
+}
+
+.share-fallback-thumb::before,
+.share-fallback-thumb::after {
+  content: "";
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  height: 1px;
+  background: rgba(159, 184, 214, 0.4);
+}
+
+.share-fallback-thumb::before { top: 34%; }
+.share-fallback-thumb::after { bottom: 34%; }
+
+.share-fallback-card strong {
+  color: var(--text);
+  font-size: 0.98rem;
+}
+
+.share-fallback-actions,
+.share-fallback-socials {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.share-fallback-actions {
+  margin-bottom: 1rem;
+}
+
+.share-fallback-actions .btn-primary,
+.share-fallback-actions .btn-secondary {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 2.5rem;
+  text-align: center;
+}
+
+.share-fallback-social-title {
+  margin: 0 0 0.55rem;
+  color: var(--steel);
+  font: 700 0.74rem var(--font-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.share-fallback-social {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 2.4rem;
+  border: 1px solid rgba(159, 184, 214, 0.26);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.025);
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.share-fallback-social:hover {
+  border-color: rgba(255, 159, 67, 0.45);
+  background: rgba(255, 159, 67, 0.07);
+}
+
+.share-fallback-social-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 999px;
+  background: rgba(159, 184, 214, 0.14);
+  color: var(--accent);
+  font: 800 0.7rem var(--font-mono);
+}
+
+.share-fallback-status {
+  min-height: 1rem;
+  margin: 0.75rem 0 0;
+  color: var(--accent);
+  font: 700 0.72rem var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 600px) {
+  .share-fallback-header,
+  .share-fallback-body {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .share-fallback-card {
+    grid-template-columns: 80px minmax(0, 1fr);
+  }
+
+  .share-fallback-actions,
+  .share-fallback-socials {
+    grid-template-columns: 1fr;
+  }
 }
 
 .modal-close {
