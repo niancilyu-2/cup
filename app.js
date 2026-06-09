@@ -2034,90 +2034,6 @@ function drawExportSignature(ctx, centerX, y) {
   ctx.restore();
 }
 
-function drawExportTrophy(ctx, cx, cy, scale = 1) {
-  ctx.save();
-  ctx.translate(cx, cy);
-  ctx.scale(scale, scale);
-  ctx.lineWidth = 1.7;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-
-  const gold = ctx.createLinearGradient(0, -14, 0, 20);
-  gold.addColorStop(0, '#fff1a8');
-  gold.addColorStop(0.42, '#f2c94c');
-  gold.addColorStop(1, '#bd7c18');
-
-  ctx.fillStyle = 'rgba(242, 201, 76, 0.16)';
-  ctx.beginPath();
-  ctx.ellipse(0, 1, 24, 20, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.strokeStyle = 'rgba(255, 228, 128, 0.9)';
-  ctx.fillStyle = 'rgba(242, 201, 76, 0.12)';
-  ctx.beginPath();
-  ctx.moveTo(-12, -5);
-  ctx.bezierCurveTo(-21, -6, -21, 8, -9, 7);
-  ctx.lineTo(-8, 3);
-  ctx.bezierCurveTo(-15, 3, -15, -2, -11, -2);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(12, -5);
-  ctx.bezierCurveTo(21, -6, 21, 8, 9, 7);
-  ctx.lineTo(8, 3);
-  ctx.bezierCurveTo(15, 3, 15, -2, 11, -2);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-
-  ctx.fillStyle = gold;
-  ctx.strokeStyle = '#ffe08a';
-  ctx.beginPath();
-  ctx.moveTo(-12, -10);
-  ctx.lineTo(12, -10);
-  ctx.bezierCurveTo(11, -1, 8, 6, 3, 9);
-  ctx.lineTo(-3, 9);
-  ctx.bezierCurveTo(-8, 6, -11, -1, -12, -10);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
-  ctx.lineWidth = 1.2;
-  ctx.beginPath();
-  ctx.moveTo(-5, -7);
-  ctx.bezierCurveTo(-4, -2, -3, 2, 0, 5);
-  ctx.stroke();
-
-  ctx.fillStyle = gold;
-  roundRectPath(ctx, -3, 8, 6, 8, 2);
-  ctx.fill();
-  ctx.strokeStyle = '#ffe08a';
-  ctx.stroke();
-  roundRectPath(ctx, -10, 15, 20, 4, 2);
-  ctx.fill();
-  ctx.stroke();
-  roundRectPath(ctx, -14, 20, 28, 4, 2);
-  ctx.fillStyle = '#d99a24';
-  ctx.fill();
-
-  ctx.fillStyle = '#fff1a8';
-  ctx.beginPath();
-  for (let i = 0; i < 10; i += 1) {
-    const angle = -Math.PI / 2 + i * Math.PI / 5;
-    const radius = i % 2 === 0 ? 3.2 : 1.4;
-    const px = Math.cos(angle) * radius;
-    const py = -17 + Math.sin(angle) * radius;
-    if (i === 0) ctx.moveTo(px, py);
-    else ctx.lineTo(px, py);
-  }
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.restore();
-}
-
 function exportFlagBadge(teamCode) {
   const iso = FIFA_TO_ISO[teamCode];
   if (!iso) return teamCode ? teamCode.slice(0, 2) : '';
@@ -2212,10 +2128,6 @@ function drawExportMatch(ctx, matchId, rect, opts = {}) {
   fillRoundRect(ctx, x, y, w, h, 10, bg, isFinal ? 'rgba(242, 201, 76, 0.72)' : 'rgba(159, 184, 214, 0.28)');
   ctx.fillStyle = isFinal ? 'rgba(242, 201, 76, 0.12)' : 'rgba(159, 184, 214, 0.08)';
   ctx.fillRect(x + 1, y + 1, w - 2, headerH - 2);
-
-  ctx.font = `600 ${isFinal ? 15 : 12}px "JetBrains Mono", monospace`;
-  ctx.fillStyle = isFinal ? '#f2c94c' : '#9fb8d6';
-  ctx.fillText(`#${matchId.slice(1)}`, x + 12, y + (isFinal ? 20 : 16));
 
   const drawSlot = (team, rowIndex) => {
     const selected = winner && winner === team;
@@ -2420,10 +2332,6 @@ async function renderBracketShareCanvas() {
   Object.entries(rects).forEach(([id, rect]) => {
     drawExportMatch(ctx, id, rect, { isFinal: id === layout.final, isThird: id === layout.third, flagImages: flagAssets.images });
   });
-  const finalRect = rects[layout.final];
-  if (finalRect) {
-    drawExportTrophy(ctx, finalRect.x + finalRect.w / 2, finalRect.y - 28, 1.08);
-  }
   flagAssets.cleanup();
 
   if (layout.third) {
