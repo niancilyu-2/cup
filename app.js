@@ -2359,8 +2359,11 @@ async function renderBracketShareCanvas() {
   ctx.shadowBlur = 14;
   ctx.shadowOffsetY = 5;
   ctx.fillStyle = '#f3f4f0';
-  ctx.font = '600 35px Oswald, Inter, system-ui, sans-serif';
-  drawTrackedText(ctx, 'KNOCKOUT BRACKET', 60, 80, 1.1);
+  ctx.font = '600 30px Oswald, Inter, system-ui, sans-serif';
+  const exportTitle = '2026 WORLD CUP KNOCKOUT BRACKET';
+  const exportTitleTracking = 0.9;
+  const exportTitleWidth = measureTrackedText(ctx, exportTitle, exportTitleTracking);
+  drawTrackedText(ctx, exportTitle, (exportW - exportTitleWidth) / 2, 80, exportTitleTracking);
   ctx.restore();
 
   ctx.save();
@@ -2435,6 +2438,17 @@ async function renderBracketShareCanvas() {
   ctx.fillRect(0, exportH - 70, exportW, 1);
   drawExportSignature(ctx, exportW / 2, exportH - 32);
   ctx.textAlign = 'left';
+
+  ctx.save();
+  roundRectPath(ctx, 18, 18, exportW - 36, exportH - 36, 18);
+  ctx.strokeStyle = 'rgba(159, 184, 214, 0.18)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  roundRectPath(ctx, 24, 24, exportW - 48, exportH - 48, 14);
+  ctx.strokeStyle = 'rgba(255, 159, 67, 0.08)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.restore();
 
   return canvas;
 }
