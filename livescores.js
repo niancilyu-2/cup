@@ -153,8 +153,8 @@
         ? `All ${matches.length} done`
         : `${completed}/${matches.length} done`;
       return `
-        <section class="ls-section ls-section--group" data-group="${code}">
-          <button type="button" class="ls-toggle" aria-expanded="false">
+        <section class="ls-section ls-section--group is-expanded" data-group="${code}">
+          <button type="button" class="ls-toggle" aria-expanded="true">
             <span class="ls-toggle-title">Group ${code}</span>
             <span class="ls-toggle-meta">${summary}</span>
             <span class="ls-toggle-caret" aria-hidden="true">▾</span>
