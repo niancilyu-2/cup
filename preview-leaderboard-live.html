@@ -1,0 +1,689 @@
+<!--
+ABOUTME: Static mockup for the post-kickoff leaderboard state.
+ABOUTME: Preview-only page; uses hard-coded sample rows for design review.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>%E2%9A%BD</text></svg>" />
+  <title>Leaderboard Preview &middot; 2026 World Cup Bracket Challenge</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.2.3/css/flag-icons.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=Oswald:wght@400;500;600;700&family=Share+Tech+Mono&display=swap">
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    body.leaderboard-preview {
+      background:
+        radial-gradient(circle at 16% 0%, rgba(138, 164, 194, 0.15), transparent 32rem),
+        linear-gradient(180deg, rgba(23, 38, 56, 0.75) 0%, rgba(11, 14, 19, 0) 390px),
+        var(--bg);
+    }
+
+    .lb-preview-main {
+      width: min(1220px, calc(100% - 2rem));
+      margin: 0 auto;
+      padding: clamp(1.25rem, 3vw, 2.25rem) 0 4rem;
+    }
+
+    .lb-preview-hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 1rem;
+      align-items: end;
+      margin-bottom: 1rem;
+    }
+
+    .lb-preview-hero h2 {
+      margin: 0;
+      font-family: var(--font-board);
+      font-size: clamp(2.35rem, 5vw, 4.4rem);
+      font-weight: 900;
+      line-height: 0.9;
+      letter-spacing: 0.025em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+
+    .lb-preview-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.42rem;
+      margin-bottom: 0.45rem;
+      color: var(--orange);
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .lb-preview-light {
+      width: 0.52rem;
+      height: 0.52rem;
+      border-radius: 999px;
+      background: var(--winner);
+      box-shadow: 0 0 0 4px rgba(65, 181, 106, 0.12), 0 0 18px rgba(65, 181, 106, 0.42);
+    }
+
+    .lb-preview-note {
+      max-width: 32rem;
+      margin: 0.55rem 0 0;
+      color: var(--text-muted);
+      font-size: 0.92rem;
+    }
+
+    .lb-live-strip {
+      display: grid;
+      grid-template-columns: minmax(15rem, 1.35fr) minmax(0, 1fr);
+      gap: 0.75rem;
+      padding: 0.8rem;
+      border: 1px solid rgba(159, 184, 214, 0.22);
+      border-radius: 8px;
+      background:
+        linear-gradient(180deg, rgba(159, 184, 214, 0.09), rgba(159, 184, 214, 0)),
+        rgba(17, 24, 34, 0.92);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045);
+    }
+
+    .lb-live-stat {
+      min-width: 0;
+      padding: 0.68rem 0.75rem;
+      border: 1px solid rgba(159, 184, 214, 0.15);
+      border-radius: 6px;
+      background: rgba(11, 14, 19, 0.28);
+    }
+
+    .lb-live-stat span,
+    .lb-podium-label {
+      display: block;
+      color: var(--text-muted);
+      font-family: var(--font-display);
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .lb-live-stat strong {
+      display: block;
+      margin-top: 0.18rem;
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 1rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .lb-progress-track {
+      height: 0.5rem;
+      overflow: hidden;
+      margin-top: 0.55rem;
+      border: 1px solid rgba(159, 184, 214, 0.18);
+      border-radius: 999px;
+      background: rgba(6, 9, 14, 0.55);
+    }
+
+    .lb-progress-track span {
+      display: block;
+      width: 17.3%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--winner), var(--accent));
+      box-shadow: 0 0 14px rgba(242, 201, 76, 0.16);
+    }
+
+    .lb-podium {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr 1fr;
+      gap: 0.75rem;
+      margin: 1rem 0;
+    }
+
+    .lb-podium-card {
+      position: relative;
+      overflow: hidden;
+      display: grid;
+      gap: 0.6rem;
+      padding: 1rem;
+      border: 1px solid rgba(159, 184, 214, 0.2);
+      border-radius: 8px;
+      background:
+        linear-gradient(135deg, rgba(159, 184, 214, 0.1), rgba(11, 14, 19, 0.18)),
+        var(--surface);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.045),
+        0 14px 32px rgba(0, 0, 0, 0.18);
+    }
+
+    .lb-podium-card--gold {
+      border-color: rgba(242, 201, 76, 0.36);
+      background:
+        linear-gradient(135deg, rgba(242, 201, 76, 0.14), rgba(65, 181, 106, 0.08)),
+        var(--surface);
+    }
+
+    .lb-podium-card--silver {
+      border-color: rgba(196, 200, 207, 0.32);
+      background:
+        linear-gradient(135deg, rgba(196, 200, 207, 0.12), rgba(159, 184, 214, 0.06)),
+        var(--surface);
+    }
+
+    .lb-podium-card--bronze {
+      border-color: rgba(201, 126, 63, 0.34);
+      background:
+        linear-gradient(135deg, rgba(201, 126, 63, 0.12), rgba(255, 159, 67, 0.05)),
+        var(--surface);
+    }
+
+    .lb-podium-rank {
+      position: absolute;
+      top: 0.65rem;
+      right: 0.75rem;
+      display: grid;
+      place-items: center;
+      width: 2.25rem;
+      height: 2.25rem;
+      border: 1px solid currentColor;
+      border-radius: 999px;
+      font-family: var(--font-board);
+      font-size: 1.35rem;
+      font-weight: 900;
+      line-height: 1;
+      opacity: 0.9;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.18),
+        0 0 18px rgba(0, 0, 0, 0.16);
+    }
+
+    .lb-podium-rank--gold {
+      color: #f5c542;
+      background: rgba(242, 201, 76, 0.13);
+    }
+
+    .lb-podium-rank--silver {
+      color: #c4c8cf;
+      background: rgba(196, 200, 207, 0.12);
+    }
+
+    .lb-podium-rank--bronze {
+      color: #c97e3f;
+      background: rgba(201, 126, 63, 0.13);
+    }
+
+    .lb-podium-player {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      min-width: 0;
+      padding-right: 2rem;
+    }
+
+    .lb-podium-avatar {
+      width: 2rem;
+      height: 2rem;
+      border-radius: 999px;
+      background:
+        linear-gradient(135deg, rgba(242, 201, 76, 0.72), rgba(159, 184, 214, 0.55)),
+        var(--surface-2);
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
+      flex: 0 0 auto;
+      object-fit: cover;
+    }
+
+    .lb-podium-name {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+
+    .lb-podium-score {
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 1.35rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .lb-preview-board {
+      overflow: hidden;
+      border: 1px solid rgba(159, 184, 214, 0.22);
+      border-radius: 8px;
+      background:
+        linear-gradient(180deg, rgba(159, 184, 214, 0.07), rgba(159, 184, 214, 0)),
+        var(--surface);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.045),
+        0 14px 32px rgba(0, 0, 0, 0.18);
+    }
+
+    .lb-preview-board-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.95rem 1rem;
+      border-bottom: 1px solid rgba(159, 184, 214, 0.16);
+    }
+
+    .lb-preview-board-head h3 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: 1.02rem;
+      font-weight: 700;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+    }
+
+    .lb-preview-board-head span {
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-align: right;
+    }
+
+    .lb-preview-table-wrap {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    .lb-preview-footnote {
+      padding: 0.72rem 1rem 0.85rem;
+      border-top: 1px solid rgba(159, 184, 214, 0.13);
+      color: var(--text-muted);
+      font-size: 0.78rem;
+    }
+
+    .lb-preview-footnote strong {
+      color: var(--text);
+      font-family: var(--font-display);
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .lb-preview-table {
+      width: 100%;
+      min-width: 940px;
+      border-collapse: collapse;
+    }
+
+    .lb-preview-table th,
+    .lb-preview-table td {
+      padding: 0.75rem 0.8rem;
+      border-bottom: 1px solid rgba(159, 184, 214, 0.13);
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    .lb-preview-table th {
+      color: var(--text-muted);
+      font-family: var(--font-display);
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .lb-preview-table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .lb-preview-table tbody tr:nth-child(even) {
+      background: rgba(159, 184, 214, 0.04);
+    }
+
+    .lb-preview-table tbody tr:first-child {
+      background: rgba(242, 201, 76, 0.08);
+    }
+
+    .lb-preview-rank,
+    .lb-preview-pts,
+    .lb-preview-acc,
+    .lb-preview-max,
+    .lb-preview-tb {
+      text-align: right !important;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .lb-preview-rank-badge {
+      display: inline-grid;
+      place-items: center;
+      width: 1.55rem;
+      height: 1.55rem;
+      border: 1px solid currentColor;
+      border-radius: 999px;
+      font-family: var(--font-board);
+      font-size: 0.95rem;
+      font-weight: 900;
+      line-height: 1;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    }
+
+    .lb-preview-rank-badge--gold {
+      color: #f5c542;
+      background: rgba(242, 201, 76, 0.12);
+    }
+
+    .lb-preview-rank-badge--silver {
+      color: #c4c8cf;
+      background: rgba(196, 200, 207, 0.11);
+    }
+
+    .lb-preview-rank-badge--bronze {
+      color: #c97e3f;
+      background: rgba(201, 126, 63, 0.12);
+    }
+
+    .lb-preview-pts {
+      color: var(--accent);
+      font-size: 1.08rem;
+      font-weight: 800;
+    }
+
+    .lb-preview-player {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      min-width: 0;
+      color: var(--text);
+      font-family: var(--font-display);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-decoration: none;
+    }
+
+    .lb-preview-player:hover {
+      color: var(--accent);
+      text-decoration: underline;
+      text-underline-offset: 0.22em;
+    }
+
+    .lb-preview-player .lb-podium-avatar {
+      width: 1.35rem;
+      height: 1.35rem;
+    }
+
+    .lb-stage-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.28rem;
+    }
+
+    .lb-stage-chip {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 0.22rem;
+      min-height: 1.45rem;
+      padding: 0.16rem 0.42rem;
+      border: 1px solid rgba(159, 184, 214, 0.16);
+      border-radius: 999px;
+      background: rgba(11, 14, 19, 0.28);
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .lb-stage-chip strong {
+      color: var(--text);
+    }
+
+    .lb-stage-chip.is-stage-leader {
+      border-color: rgba(242, 201, 76, 0.38);
+      background: rgba(242, 201, 76, 0.1);
+      color: var(--accent);
+    }
+
+    .lb-preview-champ {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      white-space: nowrap;
+    }
+
+    .lb-preview-champ .fi {
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+    }
+
+    @media (max-width: 860px) {
+      .lb-preview-hero,
+      .lb-live-strip,
+      .lb-podium {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .lb-preview-main {
+        width: min(100% - 1rem, 1220px);
+      }
+
+      .lb-preview-board-head {
+        display: grid;
+      }
+
+      .lb-preview-board-head span {
+        text-align: left;
+      }
+    }
+  </style>
+</head>
+<body class="leaderboard-preview">
+  <header id="site-header">
+    <h1 class="wordmark">
+      <a class="wordmark-link" href="./">
+        <svg class="wordmark-mark" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10 5 H22 V13 C22 16.5 19.3 19 16 19 C12.7 19 10 16.5 10 13 Z" />
+          <path d="M10 7 C6 7.3 6 12.5 10 13.2" />
+          <path d="M22 7 C26 7.3 26 12.5 22 13.2" />
+          <path d="M16 19 V23.5" />
+          <path d="M12 23.5 H20" />
+          <path d="M10 26 H22" />
+        </svg>
+        <span class="wordmark-text">
+          <span class="wordmark-top">
+            <span class="wordmark-lead">World Cup</span>
+            <span class="wordmark-year">&rsquo;26</span>
+          </span>
+          <span class="wordmark-sub">Bracket Challenge</span>
+        </span>
+      </a>
+    </h1>
+    <nav class="site-nav">
+      <a href="./">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="8" cy="8" r="6" />
+          <path d="M5 8 L7 10 L11 6" />
+        </svg>
+        My picks
+      </a>
+      <a href="leaderboard.html" class="is-active">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="1" y="8" width="4" height="7" />
+          <rect x="6" y="4" width="4" height="11" />
+          <rect x="11" y="10" width="4" height="5" />
+        </svg>
+        Leaderboard
+      </a>
+      <a href="rules.html">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="3" width="10" height="12" rx="1" />
+          <path d="M6 2 H10 V4 H6 Z" />
+          <path d="M6 8 H11" />
+          <path d="M6 11 H11" />
+        </svg>
+        Rules &amp; scoring
+      </a>
+      <a href="livescores.html">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="8" cy="8" r="5.5" />
+          <path d="M8 5 L9.4 7 L8 9 L6.6 7 Z" />
+          <path d="M8 5 V3" />
+          <path d="M8 9 V13" />
+          <path d="M6.6 7 L4 7.5" />
+          <path d="M9.4 7 L12 7.5" />
+        </svg>
+        Live scores
+      </a>
+    </nav>
+    <div id="user-bar"></div>
+  </header>
+
+  <section id="ticker-bar" aria-label="Tournament facts">
+    <div class="ticker-track">
+      <span class="ticker-item">Leaderboard preview</span>
+      <span class="ticker-sep">/</span>
+      <span class="ticker-item">Sample live state</span>
+      <span class="ticker-sep">/</span>
+      <span class="ticker-item">Points decide the pool</span>
+      <span class="ticker-sep">/</span>
+      <span class="ticker-item">Max score tracks remaining upside</span>
+      <span class="ticker-sep">/</span>
+      <span class="ticker-item">Names open read-only picks</span>
+      <span class="ticker-sep">/</span>
+      <span class="ticker-item">Leaderboard preview</span>
+    </div>
+  </section>
+
+  <main class="lb-preview-main">
+    <section class="lb-preview-hero">
+      <div>
+        <div class="lb-preview-kicker"><span class="lb-preview-light" aria-hidden="true"></span> Live</div>
+        <h2>Leaderboard</h2>
+      </div>
+      <div class="lb-live-strip" aria-label="Leaderboard live summary">
+        <div class="lb-live-stat"><span>Matches completed</span><strong>18 / 104</strong><div class="lb-progress-track" aria-hidden="true"><span></span></div></div>
+        <div class="lb-live-stat"><span>Last update</span><strong>2:11 PM ET</strong></div>
+      </div>
+    </section>
+
+    <section class="lb-podium" aria-label="Top three players">
+      <article class="lb-podium-card lb-podium-card--gold">
+        <span class="lb-podium-rank lb-podium-rank--gold" title="Gold">1</span>
+        <span class="lb-podium-label">Current leader</span>
+        <div class="lb-podium-player">
+          <img class="lb-podium-avatar" src="https://api.dicebear.com/9.x/bottts/svg?seed=mock-nianci" alt="" />
+          <span class="lb-podium-name">Nianci</span>
+        </div>
+        <div class="lb-podium-score">47 pts</div>
+      </article>
+      <article class="lb-podium-card lb-podium-card--silver">
+        <span class="lb-podium-rank lb-podium-rank--silver" title="Silver">2</span>
+        <span class="lb-podium-label">Chasing</span>
+        <div class="lb-podium-player">
+          <img class="lb-podium-avatar" src="https://api.dicebear.com/9.x/bottts/svg?seed=mock-claude" alt="" />
+          <span class="lb-podium-name">Claude</span>
+        </div>
+        <div class="lb-podium-score">45 pts</div>
+      </article>
+      <article class="lb-podium-card lb-podium-card--bronze">
+        <span class="lb-podium-rank lb-podium-rank--bronze" title="Bronze">3</span>
+        <span class="lb-podium-label">On the podium</span>
+        <div class="lb-podium-player">
+          <img class="lb-podium-avatar" src="https://api.dicebear.com/9.x/bottts/svg?seed=mock-maya" alt="" />
+          <span class="lb-podium-name">Maya</span>
+        </div>
+        <div class="lb-podium-score">42 pts</div>
+      </article>
+    </section>
+
+    <section class="lb-preview-board">
+      <div class="lb-preview-board-head">
+        <h3>Full table</h3>
+      </div>
+      <div class="lb-preview-table-wrap">
+        <table class="lb-preview-table">
+          <thead>
+            <tr>
+              <th class="lb-preview-rank">#</th>
+              <th>Player</th>
+              <th>Stage points</th>
+              <th class="lb-preview-pts">Pts</th>
+              <th class="lb-preview-acc">Acc</th>
+              <th class="lb-preview-max">Max possible</th>
+              <th>Champion</th>
+              <th class="lb-preview-tb">Tiebreaker</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="lb-preview-rank"><span class="lb-preview-rank-badge lb-preview-rank-badge--gold" title="Gold">1</span></td>
+              <td><a class="lb-preview-player" href="./?view=mock-nianci"><img class="lb-podium-avatar" src="https://api.dicebear.com/9.x/bottts/svg?seed=mock-nianci" alt="" />Nianci</a></td>
+              <td><div class="lb-stage-chips"><span class="lb-stage-chip">G <strong>9x2=18</strong></span><span class="lb-stage-chip">WC <strong>5x1=5</strong></span><span class="lb-stage-chip">R32 <strong>8x2=16</strong></span><span class="lb-stage-chip is-stage-leader" title="Category leader: R16">R16 <strong>2x4=8</strong></span></div></td>
+              <td class="lb-preview-pts">47</td>
+              <td class="lb-preview-acc">68%</td>
+              <td class="lb-preview-max">143 / 148</td>
+              <td><span class="lb-preview-champ"><span class="fi fi-br" aria-hidden="true"></span>BRA</span></td>
+              <td class="lb-preview-tb">2.25 g/g</td>
+            </tr>
+            <tr>
+              <td class="lb-preview-rank"><span class="lb-preview-rank-badge lb-preview-rank-badge--silver" title="Silver">2</span></td>
+              <td><a class="lb-preview-player" href="./?view=mock-claude"><img class="lb-podium-avatar" src="https://api.dicebear.com/9.x/bottts/svg?seed=mock-claude" alt="" />Claude</a></td>
+              <td><div class="lb-stage-chips"><span class="lb-stage-chip is-stage-leader" title="Category leader: Group Stage">G <strong>10x2=20</strong></span><span class="lb-stage-chip">WC <strong>5x1=5</strong></span><span class="lb-stage-chip">R32 <strong>8x2=16</strong></span><span class="lb-stage-chip">R16 <strong>1x4=4</strong></span></div></td>
+              <td class="lb-preview-pts">45</td>
+              <td class="lb-preview-acc">65%</td>
+              <td class="lb-preview-max">141 / 148</td>
+              <td><span class="lb-preview-champ"><span class="fi fi-ar" aria-hidden="true"></span>ARG</span></td>
+              <td class="lb-preview-tb">2.10 g/g</td>
+            </tr>
+            <tr>
+              <td class="lb-preview-rank"><span class="lb-preview-rank-badge lb-preview-rank-badge--bronze" title="Bronze">3</span></td>
+              <td><a class="lb-preview-player" href="./?view=mock-maya"><img class="lb-podium-avatar" src="https://api.dicebear.com/9.x/bottts/svg?seed=mock-maya" alt="" />Maya</a></td>
+              <td><div class="lb-stage-chips"><span class="lb-stage-chip">G <strong>7x2=14</strong></span><span class="lb-stage-chip is-stage-leader" title="Category leader: Wildcards">WC <strong>6x1=6</strong></span><span class="lb-stage-chip is-stage-leader" title="Category leader: R32">R32 <strong>9x2=18</strong></span><span class="lb-stage-chip">R16 <strong>1x4=4</strong></span></div></td>
+              <td class="lb-preview-pts">42</td>
+              <td class="lb-preview-acc">61%</td>
+              <td class="lb-preview-max">138 / 148</td>
+              <td><span class="lb-preview-champ"><span class="fi fi-fr" aria-hidden="true"></span>FRA</span></td>
+              <td class="lb-preview-tb">2.42 g/g</td>
+            </tr>
+            <tr>
+              <td class="lb-preview-rank">4</td>
+              <td><a class="lb-preview-player" href="./?view=mock-test-user-1"><img class="lb-podium-avatar" src="https://api.dicebear.com/9.x/bottts/svg?seed=mock-test-user-1" alt="" />Test User 1</a></td>
+              <td><div class="lb-stage-chips"><span class="lb-stage-chip">G <strong>9x2=18</strong></span><span class="lb-stage-chip">WC <strong>5x1=5</strong></span><span class="lb-stage-chip">R32 <strong>6x2=12</strong></span><span class="lb-stage-chip">R16 <strong>1x4=4</strong></span></div></td>
+              <td class="lb-preview-pts">39</td>
+              <td class="lb-preview-acc">57%</td>
+              <td class="lb-preview-max">136 / 148</td>
+              <td><span class="lb-preview-champ"><span class="fi fi-jp" aria-hidden="true"></span>JPN</span></td>
+              <td class="lb-preview-tb">1.88 g/g</td>
+            </tr>
+            <tr>
+              <td class="lb-preview-rank">5</td>
+              <td><a class="lb-preview-player" href="./?view=mock-alex"><img class="lb-podium-avatar" src="https://api.dicebear.com/9.x/bottts/svg?seed=mock-alex" alt="" />Alex</a></td>
+              <td><div class="lb-stage-chips"><span class="lb-stage-chip">G <strong>7x2=14</strong></span><span class="lb-stage-chip">WC <strong>4x1=4</strong></span><span class="lb-stage-chip">R32 <strong>7x2=14</strong></span><span class="lb-stage-chip">R16 <strong>1x4=4</strong></span></div></td>
+              <td class="lb-preview-pts">36</td>
+              <td class="lb-preview-acc">52%</td>
+              <td class="lb-preview-max">130 / 148</td>
+              <td><span class="lb-preview-champ"><span class="fi fi-pt" aria-hidden="true"></span>POR</span></td>
+              <td class="lb-preview-tb">2.36 g/g</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="lb-preview-footnote"><strong>Acc</strong> is unweighted overall accuracy: correct decided picks divided by all decided picks so far.</div>
+    </section>
+  </main>
+
+  <footer id="site-footer">
+    <a class="admin-footer-link" href="admin.html">admin</a>
+    <div class="sig">
+      Nianci <span class="sig-dot">&times;</span> Claude
+    </div>
+  </footer>
+
+  <script src="user-bar.js" defer></script>
+  <script src="back-to-top.js" defer></script>
+</body>
+</html>
