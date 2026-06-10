@@ -247,10 +247,10 @@
   function formatKickoff(iso) {
     if (!iso) return '';
     const d = new Date(iso);
-    return d.toLocaleString('en-US', {
+    return `${d.toLocaleString('en-US', {
       weekday: 'short', month: 'short', day: 'numeric',
       hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York',
-    });
+    })} ET`;
   }
 
   function groupBy(arr, key) {

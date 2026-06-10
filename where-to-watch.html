@@ -1,0 +1,258 @@
+<!--
+ABOUTME: Boston-area watch guide for World Cup viewing locations.
+ABOUTME: Static page linked from the main site navigation.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>%E2%9A%BD</text></svg>" />
+  <title>Where to Watch &middot; 2026 World Cup Bracket Challenge</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.2.3/css/flag-icons.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Oswald:wght@400;500;600;700&family=Share+Tech+Mono&display=swap">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="page-watch">
+  <header id="site-header">
+    <h1 class="wordmark">
+      <a class="wordmark-link" href="./">
+        <svg class="wordmark-mark" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10 5 H22 V13 C22 16.5 19.3 19 16 19 C12.7 19 10 16.5 10 13 Z" />
+          <path d="M10 7 C6 7.3 6 12.5 10 13.2" />
+          <path d="M22 7 C26 7.3 26 12.5 22 13.2" />
+          <path d="M16 19 V23.5" />
+          <path d="M12 23.5 H20" />
+          <path d="M10 26 H22" />
+        </svg>
+        <span class="wordmark-text">
+          <span class="wordmark-top">
+            <span class="wordmark-lead">World Cup</span>
+            <span class="wordmark-year">&rsquo;26</span>
+          </span>
+          <span class="wordmark-sub">Bracket Challenge</span>
+        </span>
+      </a>
+    </h1>
+    <nav class="site-nav">
+      <a href="./">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="8" cy="8" r="6" />
+          <path d="M5 8 L7 10 L11 6" />
+        </svg>
+        My picks
+      </a>
+      <a href="leaderboard.html">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="1" y="8" width="4" height="7" />
+          <rect x="6" y="4" width="4" height="11" />
+          <rect x="11" y="10" width="4" height="5" />
+        </svg>
+        Leaderboard
+      </a>
+      <a href="where-to-watch.html" class="is-active">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M8 14s4-4.3 4-7a4 4 0 0 0-8 0c0 2.7 4 7 4 7Z" />
+          <circle cx="8" cy="7" r="1.35" />
+        </svg>
+        Where to watch
+      </a>
+      <a href="rules.html">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="3" width="10" height="12" rx="1" />
+          <path d="M6 2 H10 V4 H6 Z" />
+          <path d="M6 8 H11" />
+          <path d="M6 11 H11" />
+        </svg>
+        Rules &amp; scoring
+      </a>
+      <a href="livescores.html">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="8" cy="8" r="5.5" />
+          <path d="M8 5 L9.4 7 L8 9 L6.6 7 Z" />
+          <path d="M8 5 V3" />
+          <path d="M8 9 V13" />
+          <path d="M6.6 7 L4 7.5" />
+          <path d="M9.4 7 L12 7.5" />
+        </svg>
+        Live scores
+      </a>
+    </nav>
+    <div id="user-bar"></div>
+  </header>
+
+  <section id="ticker-bar" aria-label="Tournament facts">
+    <div class="ticker-track" id="ticker-track"></div>
+  </section>
+
+  <main class="watch-main">
+    <section class="watch-hero">
+      <div>
+        <div class="watch-kicker">Boston-area watch guide</div>
+        <h2>Where to Watch</h2>
+      </div>
+      <p>Public watch parties, fan zones, bars, restaurants, food halls and nightlife venues showing World Cup matches around Boston.</p>
+    </section>
+
+    <section class="watch-section watch-section--blue">
+      <div class="watch-section-head">
+        <h3>Public / Official / Community Watch Parties</h3>
+        <span>16 listings</span>
+      </div>
+      <div class="watch-grid">
+        <article class="watch-card">
+          <span class="watch-num">1</span>
+          <h4>FIFA Fan Festival&trade; Boston at City Hall Plaza</h4>
+          <p class="watch-place">City Hall Square / City Hall Plaza, Boston</p>
+          <p>Free all-ages fan festival, June 12-27, with live broadcasts of multiple Group Stage matches, games, music, live entertainment, local vendors, football-themed activities, food/drinks and cultural programming. Registration required; access limited to 5,000 fans at a time.</p>
+        </article>
+        <article class="watch-card">
+          <span class="watch-num">2</span>
+          <h4>Boston Fan Zone at The Lawn on D</h4>
+          <p class="watch-place">420 D St, Boston</p>
+          <p>Free fan zone from June 13-July 9 with live broadcasts, music, food, culture and community programming.</p>
+        </article>
+        <article class="watch-card">
+          <span class="watch-num">3</span>
+          <h4>Fenway FC at The Green at 401 Park</h4>
+          <p class="watch-place">401 Park Dr, Boston</p>
+          <p>Free outdoor watch parties, June 12-July 19, including Team USA watch parties, large LED screen, outdoor seating, soccer-themed games, activations, food/drinks, retail pop-ups and family-friendly programming.</p>
+        </article>
+        <article class="watch-card">
+          <span class="watch-num">4</span>
+          <h4>Mayor Wu's Watch Party: Spain vs. Cabo Verde</h4>
+          <p class="watch-place">Town Field, 1565 Dorchester Ave, Dorchester</p>
+          <p>Free city watch party for Spain vs. Cabo Verde, June 15 at 1 p.m.; large screen, live music, family activities, face painting, food vendors and community programming.</p>
+        </article>
+        <article class="watch-card">
+          <span class="watch-num">5</span>
+          <h4>Mayor Wu's Watch Party: Brazil vs. Haiti</h4>
+          <p class="watch-place">Parkman Bandstand, Boston Common, 139 Tremont St, Boston</p>
+          <p>Free city watch party for Brazil vs. Haiti, June 19 at 9 p.m.; large screen, music, food vendors and family-friendly activities.</p>
+        </article>
+        <article class="watch-card">
+          <span class="watch-num">6</span>
+          <h4>Mayor Wu's Watch Party: Colombia vs. Portugal</h4>
+          <p class="watch-place">East Boston Memorial Stadium, 143 Porter St, East Boston</p>
+          <p>Free city watch party for Colombia vs. Portugal, June 27 at 7:30 p.m.; large screen, live music, activities, food vendors and community programming.</p>
+        </article>
+        <article class="watch-card">
+          <span class="watch-num">7</span>
+          <h4>Cambridge United - Where the World Comes Together</h4>
+          <p class="watch-place">Central Square, Harvard Square / Brattle St, Inman Square, MIT Open Space / Kendall Square, Donnelly Field and Cambridge Crossing</p>
+          <p>Seven free outdoor Cambridge watch events, including Haiti vs. Scotland, Iraq vs. Norway, Scotland vs. Morocco, England vs. Ghana, Norway vs. France, a Round of 32 match and a Quarter-final.</p>
+        </article>
+        <article class="watch-card">
+          <span class="watch-num">8</span>
+          <h4>Kulture Festival</h4>
+          <p class="watch-place">420 D St, Seaport District, Boston</p>
+          <p>Haitian community celebration with performances, comedy, music, food and a screening of Haiti vs. Scotland.</p>
+        </article>
+        <article class="watch-card">
+          <span class="watch-num">9</span>
+          <h4>Haiti vs. Scotland Watch Party at MCEC</h4>
+          <p class="watch-place">415 Summer St, Boston</p>
+          <p>Haiti vs. Scotland watch party with soccer, music, food and celebration led by Boston's Haitian and Scottish communities.</p>
+        </article>
+        <article class="watch-card">
+          <span class="watch-num">10</span>
+          <h4>Mattapan World Cup: Family Fun Day</h4>
+          <p class="watch-place">Hunt-Almont Playground, 40 Almont St, Mattapan</p>
+          <p>Free Haiti-focused family celebration with live DJs, food/drinks, local vendors, games for all ages, culture and community pride.</p>
+        </article>
+        <article class="watch-card">
+          <span class="watch-num">11</span>
+          <h4>Home Ground at The Haven</h4>
+          <p class="watch-place">284 Amory St, Jamaica Plain</p>
+          <p>Three-day Scotland-focused football festival, June 12-14, celebrating Scottish supporter culture; streams Scotland matches live with live music, food trucks, whisky tastings and more.</p>
+        </article>
+        <article class="watch-card">
+          <span class="watch-num">12</span>
+          <h4>Scotland House Boston at The Anchor</h4>
+          <p class="watch-place">The Anchor Boston, Charlestown Navy Yard / Shipyard Park, Boston</p>
+          <p>Scotland House hub with Scotland-focused party days, match viewing, food/drink and fan culture programming.</p>
+        </article>
+        <article class="watch-card">
+          <span class="watch-num">13</span>
+          <h4>Revere Field of Play Watch Parties</h4>
+          <p class="watch-place">Various locations, Revere</p>
+          <p>Free outdoor Revere watch-party series starting with Canada vs. Bosnia and USA vs. Paraguay, plus later events in neighborhoods/business districts with food trucks, local vendors and family-friendly surprises.</p>
+        </article>
+        <article class="watch-card">
+          <span class="watch-num">14</span>
+          <h4>Fiesta de Futbol Watch Parties</h4>
+          <p class="watch-place">Chelsea Square, Chelsea</p>
+          <p>Chelsea community watch parties with large-screen match broadcasts, live music, local food vendors, community soccer programming and cultural celebrations.</p>
+        </article>
+        <article class="watch-card">
+          <span class="watch-num">15</span>
+          <h4>MetroWest Regional Fan Zone - Marlborough</h4>
+          <p class="watch-place">Kelleher Field, Marlborough</p>
+          <p>Opening-weekend fan zone, June 11-13, showing multiple matches including Mexico vs. South Africa, with rain-or-shine festival programming.</p>
+        </article>
+        <article class="watch-card">
+          <span class="watch-num">16</span>
+          <h4>MetroWest Regional Fan Zone - Franklin</h4>
+          <p class="watch-place">Franklin Town Common and Hayward Manor, Franklin</p>
+          <p>June 24-25 fan zone featuring Switzerland vs. Canada, Scotland vs. Brazil, Ecuador vs. Germany and Tunisia vs. Netherlands, plus vendors, music and activities.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="watch-section watch-section--red">
+      <div class="watch-section-head">
+        <h3>Bars, Restaurants, Food Halls &amp; Nightlife Venues</h3>
+        <span>31 listings</span>
+      </div>
+      <div class="watch-venue-grid">
+        <article class="watch-venue"><span>1</span><strong>High Street Place: Boston's House of Soccer</strong><em>100 High St, Boston</em></article>
+        <article class="watch-venue"><span>2</span><strong>Pride House Boston at SPY Bar + Cosmica</strong><em>40 Berkeley St, South End, Boston</em></article>
+        <article class="watch-venue"><span>3</span><strong>The Tall Ship</strong><em>1 Pier Dr, East Boston</em></article>
+        <article class="watch-venue"><span>4</span><strong>Game On</strong><em>82 Lansdowne St, Boston</em></article>
+        <article class="watch-venue"><span>5</span><strong>The Greatest Bar</strong><em>262 Friend St, Boston</em></article>
+        <article class="watch-venue"><span>6</span><strong>The Black Rose / Boston's Soccer Hub</strong><em>9 Faneuil Hall Marketplace, Boston</em></article>
+        <article class="watch-venue"><span>7</span><strong>Caffe dello Sport</strong><em>308 Hanover St, Boston; 973 Saratoga St, E. Boston</em></article>
+        <article class="watch-venue"><span>8</span><strong>LongCross Bar &amp; Kitchen</strong><em>Medford area; check venue for exact address</em></article>
+        <article class="watch-venue"><span>9</span><strong>Bambara Kitchen &amp; Bar</strong><em>25 Edwin H. Land Blvd, Cambridge</em></article>
+        <article class="watch-venue"><span>10</span><strong>CanalSide Food + Drink at CambridgeSide</strong><em>100 Cambridgeside Place, Cambridge</em></article>
+        <article class="watch-venue"><span>11</span><strong>Batifol</strong><em>291 Third St, Cambridge</em></article>
+        <article class="watch-venue"><span>12</span><strong>La Sihn</strong><em>1193 Cambridge St, Cambridge</em></article>
+        <article class="watch-venue"><span>13</span><strong>Lamplighter Brewing Co.</strong><em>284 Broadway, Cambridge; 110 N First St, Cambridge Crossing</em></article>
+        <article class="watch-venue"><span>14</span><strong>The Charles Hotel / Noir Bar Lobby</strong><em>1 Bennett St, Harvard Square, Cambridge</em></article>
+        <article class="watch-venue"><span>15</span><strong>The Liberty Hotel Boston</strong><em>215 Charles St, Boston</em></article>
+        <article class="watch-venue"><span>16</span><strong>Cisco Brewers Seaport</strong><em>Seaport, Boston</em></article>
+        <article class="watch-venue"><span>17</span><strong>Lansdowne / Summer of Soccer</strong><em>Meet Boston lists 355 Congress St, Boston</em></article>
+        <article class="watch-venue"><span>18</span><strong>Kings Dining &amp; Entertainment Boston - Seaport</strong><em>Seaport, Boston</em></article>
+        <article class="watch-venue"><span>19</span><strong>Lucky Strike Somerville</strong><em>Somerville</em></article>
+        <article class="watch-venue"><span>20</span><strong>SOLiha</strong><em>Fenway, Boston</em></article>
+        <article class="watch-venue"><span>21</span><strong>Rochambeau</strong><em>900 Boylston St, Boston</em></article>
+        <article class="watch-venue"><span>22</span><strong>Bostonia Public House</strong><em>131 State St, Boston</em></article>
+        <article class="watch-venue"><span>23</span><strong>Warehouse Kitchen + Sports Bar</strong><em>40 Broad St, Boston</em></article>
+        <article class="watch-venue"><span>24</span><strong>The Merchant Kitchen &amp; Drinks</strong><em>60 Franklin St, Boston</em></article>
+        <article class="watch-venue"><span>25</span><strong>Merengue Restaurant</strong><em>156 Blue Hill Ave, Roxbury</em></article>
+        <article class="watch-venue"><span>26</span><strong>Roundhead Brewing</strong><em>1 Westinghouse Plaza, Hyde Park</em></article>
+        <article class="watch-venue"><span>27</span><strong>Ducali Pizzeria</strong><em>289 Causeway St, North End, Boston</em></article>
+        <article class="watch-venue"><span>28</span><strong>La Hacienda</strong><em>150 Meridian St, East Boston</em></article>
+        <article class="watch-venue"><span>29</span><strong>Suya Joint Restaurant</strong><em>185 Dudley St, Roxbury</em></article>
+        <article class="watch-venue"><span>30</span><strong>The Substation</strong><em>4228 Washington St, Roslindale</em></article>
+        <article class="watch-venue"><span>31</span><strong>Dani's Queer Bar</strong><em>909 Boylston St, Back Bay, Boston</em></article>
+      </div>
+    </section>
+
+    <p class="watch-note">Details can change; check with the venue or event host before heading out.</p>
+  </main>
+
+  <footer id="site-footer">
+    <a class="admin-footer-link" href="admin.html">admin</a>
+    <div class="sig">
+      Nianci <span class="sig-dot">&times;</span> Claude
+    </div>
+  </footer>
+
+  <script src="ticker.js" defer></script>
+  <script src="user-bar.js" defer></script>
+  <script src="back-to-top.js" defer></script>
+</body>
+</html>
