@@ -1850,6 +1850,18 @@ async function copyImageBlob(blob) {
   ]);
 }
 
+function shareFileData(blob, filename, title, text) {
+  if (typeof File !== 'function') return null;
+  const file = new File([blob], filename, { type: blob.type || 'image/png' });
+  return { files: [file], title, text };
+}
+
+function canNativeShareImage(blob, filename, title, text) {
+  if (typeof navigator.share !== 'function' || typeof navigator.canShare !== 'function') return false;
+  const data = shareFileData(blob, filename, title, text);
+  return !!(data && navigator.canShare(data));
+}
+
 function openShareDestination(destination) {
   const text = encodeURIComponent("My World Cup '26 bracket");
   const url = destination === 'whatsapp'
@@ -1858,13 +1870,14 @@ function openShareDestination(destination) {
   window.open(url, '_blank', 'noopener,noreferrer');
 }
 
-function showBracketShareFallback({ blob, filename }) {
+function showBracketShareFallback({ blob, filename, title = "World Cup '26 bracket", text = 'My World Cup bracket picks' }) {
   const root = document.getElementById('modal-root');
   if (!root) {
     downloadBlob(blob, filename);
     return;
   }
   const canCopy = canCopyImageBlob();
+  const canNativeShare = canNativeShareImage(blob, filename, title, text);
   root.innerHTML = `
     <div class="modal-overlay share-fallback-overlay">
       <div class="modal share-fallback-modal" role="dialog" aria-modal="true" aria-labelledby="share-fallback-title">
@@ -1881,7 +1894,8 @@ function showBracketShareFallback({ blob, filename }) {
             <strong>Symmetric bracket PNG</strong>
           </div>
           <div class="share-fallback-actions">
-            <button type="button" class="btn-primary" id="share-download-image">Download image</button>
+            <button type="button" class="btn-primary" id="share-download-image">Download bracket image</button>
+            ${canNativeShare ? '<button type="button" class="btn-secondary" id="share-native-image">Share image</button>' : ''}
             <button type="button" class="btn-secondary" id="share-copy-image" ${canCopy ? '' : 'disabled'} title="${canCopy ? '' : 'Copy image is not supported in this browser'}">Copy image</button>
           </div>
           <p class="share-fallback-social-title">Open social app</p>
@@ -1915,6 +1929,32 @@ function showBracketShareFallback({ blob, filename }) {
   root.querySelector('#share-download-image')?.addEventListener('click', () => {
     downloadBlob(blob, filename);
     if (status) status.textContent = 'Downloaded';
+  });
+  root.querySelector('#share-native-image')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    const oldText = btn.textContent;
+    const data = shareFileData(blob, filename, title, text);
+    if (!data) return;
+    btn.disabled = true;
+    btn.textContent = 'Sharing...';
+    try {
+      await navigator.share(data);
+      btn.textContent = 'Shared';
+      if (status) status.textContent = 'Shared';
+    } catch (err) {
+      if (err?.name !== 'AbortError') {
+        console.error('Failed to share bracket image', err);
+        btn.textContent = 'Share failed';
+        if (status) status.textContent = 'Share failed';
+      } else {
+        btn.textContent = oldText;
+      }
+    } finally {
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.textContent = oldText;
+      }, 1400);
+    }
   });
   root.querySelector('#share-copy-image')?.addEventListener('click', async (e) => {
     const btn = e.currentTarget;
@@ -2371,27 +2411,7 @@ async function shareBracketImage(button) {
     const filename = bracketShareFilename();
     const title = "World Cup '26 bracket";
     const text = 'My World Cup bracket picks';
-    const canFileShare = typeof File === 'function' && navigator.canShare && navigator.share;
-    if (canFileShare) {
-      const file = new File([blob], filename, { type: 'image/png' });
-      const data = { files: [file], title, text };
-      if (navigator.canShare(data)) {
-        try {
-          await navigator.share(data);
-          button.textContent = 'Shared';
-        } catch (err) {
-          if (err?.name === 'AbortError') {
-            button.innerHTML = oldHTML;
-            return;
-          }
-          showBracketShareFallback({ blob, filename });
-          button.textContent = 'Ready';
-          return;
-        }
-        if (button.textContent === 'Shared') return;
-      }
-    }
-    showBracketShareFallback({ blob, filename });
+    showBracketShareFallback({ blob, filename, title, text });
     button.textContent = 'Ready';
   } catch (err) {
     console.error('Failed to share bracket image', err);
