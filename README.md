@@ -2,6 +2,8 @@
 
 A pick'em bracket for ~10 friends to predict the 2026 FIFA World Cup. Live at GitHub Pages, no login, no app store.
 
+For the readable build/change history, see [BUILD_STORY.md](BUILD_STORY.md).
+
 ## Stack
 
 - Plain HTML/CSS/JS, no build step

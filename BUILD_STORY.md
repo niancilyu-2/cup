@@ -93,6 +93,17 @@ Effectively delivered across earlier work and confirmed done: the editorial broa
 
 Hosted on **GitHub Pages** at **https://niancilyu-2.github.io/wc/**. Because the repo is public and `config.js` is gitignored, a deploy workflow (`.github/workflows/deploy-pages.yml`) **generates `config.js` at build time from repo secrets** — the anon key and admin code never live in the public repo. Pages source is set to "GitHub Actions"; every push to `main` redeploys.
 
+## Phase 6 — Final pre-kickoff polish (2026-06-09 → 2026-06-10)
+
+This was the last broad UI and rules pass before kickoff. The goal was not to change game mechanics; it was to make the experience feel less stiff, improve sharing, and make the rules page more useful.
+
+- **Countdown announcement** — added a slate scoreboard-style announcement beside the countdown: Venmo `@nianci` $10 before kickoff to lock participation; idle users are removed at 9am ET on June 11. The card keeps the clock centered, has corner nails/shadow, lightly floats, and spins off once kickoff happens.
+- **My Picks visual refresh** — moved the app toward cooler broadcast tones, refreshed section surfaces, added restrained hover/focus motion, polished group cards without changing their ranking mechanics, restored group row dividers, and refined the top nav/ticker so the header feels less flat.
+- **Bracket polish** — improved the bracket board surface, removed confusing pre-result check marks, moved the 3rd-place match below the Final, gave it more breathing room, and kept the asymmetric on-page bracket after testing and rejecting the symmetric layout for being too cramped.
+- **Share bracket export** — added a more visible **Share bracket** button and a high-resolution generated PNG export. The shared image uses a symmetric bracket layout independent of the on-page bracket, includes flags, username, a centered `2026 World Cup knockout bracket` title, a faint border, green winner highlights, and the site footer signature. Fallback sharing is local-only: download/copy/share image with WhatsApp/Instagram guidance, no Supabase upload.
+- **Admin and mobile fixes** — added admin-side username editing, tightened mobile nav alignment, and performed mobile spillover checks around the newly polished pages.
+- **Rules & scoring upgrade** — widened the rules page and added the **What is a good score?** section under scoring. It documents a Monte Carlo simulation using one highly informed fake tournament result and 12,000 simulated player brackets per knowledge level, with scenario cards, score distributions, direct stage impact, cascade leverage, and a yellow `not likely` callout beside the perfect-score row.
+
 ## Operations cheat-sheet
 
 - **Live site:** https://niancilyu-2.github.io/wc/ (auto-deploys on push to `main`).
