@@ -93,6 +93,15 @@ Effectively delivered across earlier work and confirmed done: the editorial broa
 
 Hosted on **GitHub Pages** at **https://niancilyu-2.github.io/wc/**. Because the repo is public and `config.js` is gitignored, a deploy workflow (`.github/workflows/deploy-pages.yml`) **generates `config.js` at build time from repo secrets** — the anon key and admin code never live in the public repo. Pages source is set to "GitHub Actions"; every push to `main` redeploys.
 
+## Phase 5b — Post-launch identity and mobile hardening (2026-06-01 → 2026-06-09)
+
+After the site was live, a smaller hardening pass made the app safer and easier to use on phones without changing the pool mechanics.
+
+- **Player identity** — added PIN-gated self-rename, moved rename into the switch-user list, added generated robot avatars, and polished the login/switcher surfaces so players can recognize their own row quickly.
+- **Mobile usability** — pinned the Save/Submit bar near the bottom on phones, fixed mobile ticker/font-boost behavior, prevented iOS focus zoom on inputs, and tightened mobile header/nav handling.
+- **Fairness and launch hygiene** — scrambled each group's default order so initial rankings do not imply seeding, added the $10 winner-take-all / forgot-PIN rules notes, switched links to directory-root URLs, and cache-busted deployed assets.
+- **Visual cleanup** — removed the soccer-ball cursor, trimmed the header background graphic, and backed out a stadium-green palette experiment that fought the established broadcast look.
+
 ## Phase 6 — Final pre-kickoff polish (2026-06-09 → 2026-06-10)
 
 This was the last broad UI and rules pass before kickoff. The goal was not to change game mechanics; it was to make the experience feel less stiff, improve sharing, and make the rules page more useful.
