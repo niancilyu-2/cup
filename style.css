@@ -4232,10 +4232,19 @@ body.page-leaderboard {
   text-align: right;
 }
 
+/* Desktop: no inner scroll pane — the page expands and the sticky header
+   pins to the viewport. (Any overflow value but visible would turn this into
+   a scroll container and break viewport-sticky.) Narrow screens trade the
+   sticky header for horizontal scrolling, applied in the media query below. */
 .lb-table-wrap {
   width: 100%;
-  max-height: min(36rem, 72vh);
-  overflow: auto;
+  overflow: visible;
+}
+
+@media (max-width: 1000px) {
+  .lb-table-wrap {
+    overflow-x: auto;
+  }
 }
 
 .lb-board-foot {

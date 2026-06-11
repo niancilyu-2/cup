@@ -293,10 +293,10 @@ function render(rows, myNameLower, hasResults, champStats, matches) {
     return;
   }
 
-  // Stage chips: show only stages where someone has scored; the per-stage
-  // max marks the leader chip(s) — ties all get the highlight.
-  const visibleStages = BREAKDOWN_ROWS.map((r) => r.key)
-    .filter((key) => rows.some((p) => (p.breakdown[key] || 0) > 0));
+  // Stage chips: every stage always shows (0×w=0 until it scores); the
+  // per-stage max marks the leader chip(s) — ties all get the highlight,
+  // nobody is highlighted while the max is still 0.
+  const visibleStages = BREAKDOWN_ROWS.map((r) => r.key);
   const leadersByStage = {};
   for (const key of visibleStages) {
     leadersByStage[key] = Math.max(...rows.map((p) => p.breakdown[key] || 0));
@@ -338,7 +338,6 @@ const STAGE_CHIP_LABEL = {
 };
 
 function stageChipsHTML(p, visibleStages, leadersByStage) {
-  if (!visibleStages.length) return '<span class="lb-tb-empty">—</span>';
   const chips = visibleStages.map((key) => {
     const pts = STAGE_POINTS[key];
     const subtotal = p.breakdown[key] || 0;
