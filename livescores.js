@@ -29,32 +29,145 @@
   };
   const KNOCKOUT_STAGES = ['r32', 'r16', 'qf', 'sf', 'third', 'final'];
 
+  // Picks are private until the lock; the per-match "Picks" panels only load
+  // and render after this instant (same as app.js and the DB RLS freeze).
+  const LOCK_DATE_ISO = '2026-06-11T13:00:00-06:00';
+
   init();
 
   async function init() {
     try {
-      const [teamsRes, matchesRes] = await Promise.all([
+      const locked = new Date() >= new Date(LOCK_DATE_ISO);
+      const queries = [
         supabase.from('teams').select('*').order('code'),
         supabase.from('matches').select('*').order('kickoff_at'),
-      ]);
+      ];
+      if (locked) {
+        queries.push(
+          supabase.from('players').select('id, name'),
+          supabase.from('group_picks').select('player_id, group_code, first_code, second_code'),
+          supabase.from('bracket_picks').select('player_id, match_id, winner_code'),
+        );
+      }
+      const [teamsRes, matchesRes, playersRes, groupRes, brktRes] = await Promise.all(queries);
       if (teamsRes.error) throw teamsRes.error;
       if (matchesRes.error) throw matchesRes.error;
       const teamByCode = Object.fromEntries(teamsRes.data.map((t) => [t.code, t]));
-      render(matchesRes.data, teamByCode);
+      // Pick data is an enhancement — render the schedule even if it failed.
+      let picksCtx = null;
+      if (locked && playersRes && !playersRes.error && !groupRes.error && !brktRes.error) {
+        picksCtx = buildPicksCtx(playersRes.data, groupRes.data, brktRes.data);
+      }
+      render(matchesRes.data, teamByCode, picksCtx);
     } catch (err) {
       root.innerHTML = `<div class="ls-error">Couldn't load matches. ${escapeHtml(err.message || String(err))}</div>`;
     }
   }
 
-  function render(matches, teamByCode) {
+  // ---------- Who picked who ----------
+
+  function buildPicksCtx(players, groupRows, bracketRows) {
+    const nameById = Object.fromEntries(players.map((p) => [p.id, p.name]));
+    // group -> team -> { first: [names picking them group winner], topTwo: count }
+    const groupBackers = {};
+    for (const r of groupRows) {
+      const name = nameById[r.player_id];
+      if (!name) continue;
+      const g = (groupBackers[r.group_code] ||= {});
+      if (r.first_code) {
+        const e = (g[r.first_code] ||= { first: [], topTwo: 0 });
+        e.first.push(name);
+        e.topTwo++;
+      }
+      if (r.second_code) {
+        const e = (g[r.second_code] ||= { first: [], topTwo: 0 });
+        e.topTwo++;
+      }
+    }
+    // matchId -> team -> [names who picked that team to win the match]
+    const matchPicks = {};
+    for (const r of bracketRows) {
+      const name = nameById[r.player_id];
+      if (!name) continue;
+      ((matchPicks[r.match_id] ||= {})[r.winner_code] ||= []).push(name);
+    }
+    return { groupBackers, matchPicks };
+  }
+
+  function namesHTML(names, cap = 8) {
+    if (!names.length) return '<span class="ls-picks-nobody">nobody</span>';
+    const sorted = names.slice().sort((a, b) => a.localeCompare(b));
+    const shown = sorted.slice(0, cap).map(escapeHtml).join(', ');
+    const extra = sorted.length - cap;
+    return extra > 0 ? `${shown} <span class="ls-picks-more">+${extra} more</span>` : shown;
+  }
+
+  function picksLineHTML(code, detailHTML) {
+    return `
+      <div class="ls-picks-line">
+        <span class="ls-picks-team"><span class="fi fi-${flagCode(code)}" aria-hidden="true"></span> ${escapeHtml(code)}</span>
+        <span class="ls-picks-detail">${detailHTML}</span>
+      </div>`;
+  }
+
+  function picksPanelHTML(match, ctx) {
+    if (!ctx) return '';
+    if (match.stage === 'group') {
+      const g = ctx.groupBackers[match.group_code] || {};
+      const lines = [match.team_a_code, match.team_b_code].filter(Boolean).map((code) => {
+        const e = g[code] || { first: [], topTwo: 0 };
+        return picksLineHTML(code,
+          `group winner: ${namesHTML(e.first)} <span class="ls-picks-sep">·</span> top two: ${e.topTwo}`);
+      });
+      return lines.join('');
+    }
+    // Knockout: real per-match winner picks.
+    const byCode = ctx.matchPicks[match.id] || {};
+    const real = [match.team_a_code, match.team_b_code].filter(Boolean);
+    const lines = [];
+    if (real.length === 2) {
+      for (const code of real) {
+        const names = byCode[code] || [];
+        lines.push(picksLineHTML(code, `${names.length} backing: ${namesHTML(names)}`));
+      }
+      const stray = Object.entries(byCode)
+        .filter(([code]) => !real.includes(code))
+        .reduce((sum, [, names]) => sum + names.length, 0);
+      if (stray) {
+        lines.push(`<div class="ls-picks-foot">${stray} picked ${stray === 1 ? 'a team' : 'teams'} no longer in this match</div>`);
+      }
+    } else {
+      // Teams not yet decided: show the pool's most-picked winners for this slot.
+      const entries = Object.entries(byCode)
+        .map(([code, names]) => ({ code, names }))
+        .sort((a, b) => b.names.length - a.names.length || a.code.localeCompare(b.code));
+      for (const e of entries.slice(0, 4)) {
+        lines.push(picksLineHTML(e.code, `${e.names.length}: ${namesHTML(e.names, 6)}`));
+      }
+      const rest = entries.slice(4).reduce((sum, e) => sum + e.names.length, 0);
+      if (rest) lines.push(`<div class="ls-picks-foot">+${rest} more picks</div>`);
+      if (!entries.length) lines.push('<div class="ls-picks-foot">No picks for this match.</div>');
+    }
+    return lines.join('');
+  }
+
+  function picksToggleHTML(match, ctx) {
+    const panel = picksPanelHTML(match, ctx);
+    if (!panel) return '';
+    return `
+      <button type="button" class="ls-picks-toggle" aria-expanded="false">Picks <span class="ls-picks-caret" aria-hidden="true">▾</span></button>
+      <div class="ls-picks-panel" hidden>${panel}</div>`;
+  }
+
+  function render(matches, teamByCode, picksCtx) {
     const matchesByStage = groupBy(matches, 'stage');
     const matchesByGroup = groupBy(matchesByStage.group || [], 'group_code');
 
-    const liveBlockHTML = renderLiveBlock(matches, teamByCode);
+    const liveBlockHTML = renderLiveBlock(matches, teamByCode, picksCtx);
     const knockoutsHTML = KNOCKOUT_STAGES
-      .map((stage) => renderStageSection(stage, STAGE_LABEL[stage], matchesByStage[stage] || [], teamByCode))
+      .map((stage) => renderStageSection(stage, STAGE_LABEL[stage], matchesByStage[stage] || [], teamByCode, picksCtx))
       .join('');
-    const groupsHTML = renderGroupStage(matchesByGroup, teamByCode);
+    const groupsHTML = renderGroupStage(matchesByGroup, teamByCode, picksCtx);
 
     root.innerHTML = `
       ${liveBlockHTML}
@@ -66,6 +179,15 @@
     `;
 
     root.addEventListener('click', (e) => {
+      const pickBtn = e.target.closest('.ls-picks-toggle');
+      if (pickBtn) {
+        const panel = pickBtn.nextElementSibling;
+        const open = panel.hidden;
+        panel.hidden = !open;
+        pickBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        pickBtn.classList.toggle('is-open', open);
+        return;
+      }
       const toggle = e.target.closest('.ls-toggle');
       if (!toggle) return;
       const section = toggle.closest('.ls-section');
@@ -85,10 +207,10 @@
     return matches.filter((m) => statusFor(m) === 'live');
   }
 
-  function renderLiveBlock(matches, teamByCode) {
+  function renderLiveBlock(matches, teamByCode, picksCtx) {
     const lives = liveMatches(matches);
     if (!lives.length) return '';
-    const cards = lives.map((m) => renderLiveCard(m, teamByCode)).join('');
+    const cards = lives.map((m) => renderLiveCard(m, teamByCode, picksCtx)).join('');
     const countLabel = lives.length === 1 ? '1 match' : `${lives.length} matches`;
     return `
       <section class="ls-live-block">
@@ -101,7 +223,7 @@
       </section>`;
   }
 
-  function renderLiveCard(match, teamByCode) {
+  function renderLiveCard(match, teamByCode, picksCtx) {
     const teamA = teamByCode[match.team_a_code];
     const teamB = teamByCode[match.team_b_code];
     const sa = match.score_a ?? 0;
@@ -121,10 +243,11 @@
           </div>
           <div class="ls-live-team ls-live-team--right">${liveTeamHTML(teamB)}</div>
         </div>
+        ${picksToggleHTML(match, picksCtx)}
       </section>`;
   }
 
-  function renderStageSection(stage, label, matches, teamByCode) {
+  function renderStageSection(stage, label, matches, teamByCode, picksCtx) {
     const ordered = matches.slice().sort((a, b) => new Date(a.kickoff_at) - new Date(b.kickoff_at));
     const completed = ordered.filter((m) => statusFor(m) === 'final').length;
     const summary = ordered.length
@@ -138,12 +261,12 @@
           <span class="ls-toggle-caret" aria-hidden="true">▾</span>
         </button>
         <div class="ls-section-body">
-          ${ordered.map((m) => matchRowHTML(m, teamByCode)).join('')}
+          ${ordered.map((m) => matchRowHTML(m, teamByCode, picksCtx)).join('')}
         </div>
       </section>`;
   }
 
-  function renderGroupStage(matchesByGroup, teamByCode) {
+  function renderGroupStage(matchesByGroup, teamByCode, picksCtx) {
     const groups = Object.keys(matchesByGroup).sort();
     if (!groups.length) return '';
     const sections = groups.map((code) => {
@@ -160,7 +283,7 @@
             <span class="ls-toggle-caret" aria-hidden="true">▾</span>
           </button>
           <div class="ls-section-body">
-            ${matches.map((m) => matchRowHTML(m, teamByCode)).join('')}
+            ${matches.map((m) => matchRowHTML(m, teamByCode, picksCtx)).join('')}
           </div>
         </section>`;
     }).join('');
@@ -171,7 +294,7 @@
       </section>`;
   }
 
-  function matchRowHTML(match, teamByCode) {
+  function matchRowHTML(match, teamByCode, picksCtx) {
     const teamACode = match.team_a_code;
     const teamBCode = match.team_b_code;
     const teamA = teamACode ? teamByCode[teamACode] : null;
@@ -218,6 +341,7 @@
           ${teamLine(teamB, teamBCode, 'b')}
         </div>
         <div class="ls-match-venue">${escapeHtml(venueShort(match.venue))}</div>
+        ${picksToggleHTML(match, picksCtx)}
       </div>`;
   }
 

@@ -5785,6 +5785,98 @@ body.page-leaderboard {
   }
 }
 
+/* ---- Live scores: who-picked-who panels (post-lock only) ---- */
+
+.ls-picks-toggle {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.15rem;
+  padding: 0.18rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font: 700 0.64rem var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 120ms ease, border-color 120ms ease;
+}
+
+.ls-picks-toggle:hover,
+.ls-picks-toggle:focus-visible {
+  color: var(--accent);
+  border-color: rgba(242, 201, 76, 0.45);
+  outline: none;
+}
+
+.ls-picks-toggle .ls-picks-caret {
+  transition: transform 140ms ease;
+}
+
+.ls-picks-toggle.is-open .ls-picks-caret {
+  transform: rotate(180deg);
+}
+
+.ls-picks-panel {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.4rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 4px);
+  background: rgba(11, 14, 19, 0.32);
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  text-align: left;
+}
+
+.ls-picks-line {
+  display: grid;
+  grid-template-columns: 4.2rem minmax(0, 1fr);
+  gap: 0.55rem;
+  align-items: baseline;
+}
+
+.ls-picks-team {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.72rem;
+}
+
+.ls-picks-detail {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ls-picks-sep {
+  color: var(--text-faint);
+  padding: 0 0.15rem;
+}
+
+.ls-picks-nobody,
+.ls-picks-more,
+.ls-picks-foot {
+  color: var(--text-faint);
+}
+
+.ls-picks-foot {
+  font-size: 0.7rem;
+}
+
+@media (max-width: 600px) {
+  .ls-picks-line {
+    grid-template-columns: 1fr;
+    gap: 0.1rem;
+  }
+}
+
 /* =======================================================================
    POOL STATS (pool-stats.html) — aggregate pick trends, post-lock only.
    All classes are pulse-prefixed; unprefixed mockup names collided with
