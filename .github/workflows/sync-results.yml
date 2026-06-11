@@ -1,13 +1,15 @@
-# ABOUTME: Polls ESPN every 30 min during the tournament and syncs results to Supabase.
+# ABOUTME: Polls ESPN every ~15 min during the tournament and syncs results to Supabase.
 # ABOUTME: Manual runs via workflow_dispatch (optionally with --dry-run by editing the step).
 name: Sync results
 
 # Dormant until kickoff: only fires during the tournament window (UTC dates).
 # June 11-30 and July 1-19, 2026. workflow_dispatch stays available for manual runs.
+# Off-peak minutes on purpose: GitHub heavily throttles scheduled runs at
+# :00/:30 — the old */30 schedule fired only every ~4 hours in practice.
 on:
   schedule:
-    - cron: '*/30 * 11-30 6 *'
-    - cron: '*/30 * 1-19 7 *'
+    - cron: '7,22,37,52 * 11-30 6 *'
+    - cron: '7,22,37,52 * 1-19 7 *'
   workflow_dispatch:
 
 # Avoid overlapping runs if one is slow.
