@@ -228,7 +228,7 @@ function showPlayerPicker({ current = null } = {}) {
             <h2>Login</h2>
             ${
               players.length
-                ? `<p>Pick yourself from the list, or add a new player.</p>
+                ? `<p>Pick yourself, or add a new player.</p>
                    <ul class="player-list">
                      ${players
                        .map(

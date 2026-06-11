@@ -1672,6 +1672,7 @@ body.page-watch {
 }
 
 .watch-section-head h3 {
+  min-width: 0;
   margin: 0;
   font-family: var(--font-display);
   font-size: 1.05rem;
@@ -1736,6 +1737,7 @@ body.page-watch {
 
 .watch-card h4,
 .watch-venue strong {
+  min-width: 0;
   margin: 0;
   color: var(--text);
   font-family: var(--font-display);
@@ -1744,6 +1746,7 @@ body.page-watch {
   letter-spacing: 0.025em;
   line-height: 1.24;
   text-transform: none;
+  overflow-wrap: anywhere;
 }
 
 .watch-place,
@@ -1851,7 +1854,29 @@ body.page-watch {
   }
 
   .watch-section-head h3 {
+    max-width: 16.5rem;
     font-size: 0.94rem;
+    letter-spacing: 0.04em;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .watch-card h4,
+  .watch-venue strong {
+    max-width: 16.5rem;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .watch-card h4 .watch-game {
+    display: block;
+  }
+
+  .watch-place,
+  .watch-card p:not(.watch-place) {
+    max-width: 16.5rem;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   .watch-card {
@@ -1861,6 +1886,18 @@ body.page-watch {
 
   .watch-num {
     grid-row: auto;
+  }
+}
+
+@media (max-width: 360px) {
+  .watch-section-head h3,
+  .watch-card h4,
+  .watch-place,
+  .watch-card p:not(.watch-place),
+  .watch-venue strong,
+  .watch-venue em {
+    width: 100%;
+    max-width: 16.5rem;
   }
 }
 
@@ -3096,6 +3133,8 @@ body.page-watch {
 .modal p {
   color: var(--text);
   margin-bottom: 1rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .modal input[type="text"],
@@ -3185,6 +3224,9 @@ body.page-watch {
   margin-bottom: 0.75rem;
   color: var(--text-muted);
   font-size: 0.9rem;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .player-picker-modal .player-list {
@@ -3335,7 +3377,7 @@ body.page-watch {
 
 @media (max-width: 560px) {
   .player-picker-modal {
-    width: min(94vw, 420px);
+    width: calc(100vw - 1rem);
     max-height: 88vh;
     padding: 1rem;
   }
