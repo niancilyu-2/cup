@@ -9,6 +9,10 @@ import { flagCode, avatarUrl, escapeHtml, bucketPicks, emptyPicks } from './src/
 const STORAGE_KEY_PLAYER = 'wcbracket.player';
 const FINAL_MATCH_ID = 'M104';
 const THIRD_PLACE_MATCH_ID = 'M103'; // played but never scored — see scoring.js
+// Same instant as app.js's lock and the DB RLS freeze (2026-06-11 19:00 UTC).
+// The board reveals champion picks + tiebreakers, so it must stay hidden
+// until the lock — but from lock onward it shows even before any result.
+const LOCK_DATE_ISO = '2026-06-11T13:00:00-06:00';
 
 // One row per scoring stage. The hover popover shows the per-stage calculation
 // (correct picks × points each = subtotal).
@@ -73,10 +77,13 @@ async function init() {
       if (b.points !== a.points) return b.points - a.points;
       const da = tbDist(a);
       const db = tbDist(b);
-      if (da == null && db == null) return 0;
-      if (da == null) return 1; // no tiebreaker entered sorts below
-      if (db == null) return -1;
-      return da - db;
+      if (da != null || db != null) {
+        if (da == null) return 1; // no tiebreaker entered sorts below
+        if (db == null) return -1;
+        if (da !== db) return da - db;
+      }
+      // Display-only determinism for full ties (rank sharing is unaffected).
+      return a.name.localeCompare(b.name);
     });
     // Standard competition ranking: genuinely tied rows share a rank (1,2,2,4)
     // instead of getting arbitrary distinct ranks from the sort order.
@@ -183,10 +190,12 @@ function heroHTML(liveStripHTML) {
     </section>`;
 }
 
-// "Last update" = the freshest matches.updated_at (results sync bumps it).
+// "Last update" = the freshest updated_at among matches with result activity
+// (the sync bumps it on score writes); seed timestamps don't count.
 function latestUpdateLabel(matches) {
   let max = null;
   for (const m of matches) {
+    if (!m.completed && m.score_a == null && m.score_b == null) continue;
     if (m.updated_at && (!max || m.updated_at > max)) max = m.updated_at;
   }
   if (!max) return '&mdash;';
@@ -218,13 +227,14 @@ const PODIUM_LABEL = { 1: 'Current leader', 2: 'Chasing', 3: 'On the podium' };
 
 // Top three table rows. Variant/label key off each row's (possibly shared)
 // rank, never the array index — a points+tiebreaker tie can mean two golds.
-function podiumHTML(rows) {
+function podiumHTML(rows, hasResults) {
   const cards = rows.slice(0, 3).map((p) => {
     const variant = PODIUM_VARIANT[p.rank] || 'bronze';
+    const label = hasResults ? (PODIUM_LABEL[p.rank] || 'On the podium') : 'Tied at kickoff';
     return `
       <article class="lb-podium-card lb-podium-card--${variant}">
-        <span class="lb-podium-rank lb-podium-rank--${variant}">${p.rank}</span>
-        <span class="lb-podium-label">${PODIUM_LABEL[p.rank] || 'On the podium'}</span>
+        <span class="lb-podium-rank lb-podium-rank--${variant}">${hasResults ? p.rank : '–'}</span>
+        <span class="lb-podium-label">${label}</span>
         <div class="lb-podium-player">
           <img class="lb-podium-avatar" src="${avatarUrl(p.id)}" alt="" />
           <span class="lb-podium-name">${escapeHtml(p.name)}</span>
@@ -272,7 +282,10 @@ function render(rows, myNameLower, hasResults, champStats, matches) {
     return;
   }
 
-  if (!hasResults) {
+  // Pre-lock the board stays hidden — it reveals champion picks and
+  // tiebreakers, which are private until first kickoff. From lock onward the
+  // full design renders even before any result lands (zeros + dashes).
+  if (new Date() < new Date(LOCK_DATE_ISO)) {
     root.innerHTML = `
       ${heroHTML('')}
       <div class="lb-empty">The leaderboard goes live when the first match kicks off on June&nbsp;11. Check back once results start coming in.</div>
@@ -291,7 +304,7 @@ function render(rows, myNameLower, hasResults, champStats, matches) {
 
   root.innerHTML = `
     ${heroHTML(liveStripHTML(matches))}
-    ${podiumHTML(rows)}
+    ${podiumHTML(rows, hasResults)}
     <section class="lb-board">
       <div class="lb-board-head">
         <h3>Full table</h3>
@@ -312,7 +325,7 @@ function render(rows, myNameLower, hasResults, champStats, matches) {
             </tr>
           </thead>
           <tbody>
-            ${rows.map((p) => rowHTML(p, myNameLower, visibleStages, leadersByStage)).join('')}
+            ${rows.map((p) => rowHTML(p, myNameLower, visibleStages, leadersByStage, hasResults)).join('')}
           </tbody>
         </table>
       </div>
@@ -339,8 +352,9 @@ function stageChipsHTML(p, visibleStages, leadersByStage) {
   return `<div class="lb-stage-chips">${chips.join('')}</div>`;
 }
 
-function rowHTML(p, myNameLower, visibleStages, leadersByStage) {
-  const isLeader = p.rank === 1;
+function rowHTML(p, myNameLower, visibleStages, leadersByStage, hasResults) {
+  // Before any result, every row is rank 1 — no leader tint, no gold badges.
+  const isLeader = hasResults && p.rank === 1;
   const isMe = myNameLower && p.name.toLowerCase() === myNameLower;
   const classes = ['lb-row'];
   if (isLeader) classes.push('lb-leader');
@@ -362,7 +376,7 @@ function rowHTML(p, myNameLower, visibleStages, leadersByStage) {
 
   return `
     <tr class="${classes.join(' ')}">
-      <td class="lb-col-rank">${rankCellHTML(p.rank)}</td>
+      <td class="lb-col-rank">${hasResults ? rankCellHTML(p.rank) : '<span class="lb-rank-num">—</span>'}</td>
       <td class="lb-col-name">
         <img class="lb-avatar" src="${avatarUrl(p.id)}" alt="" />
         <a class="lb-name-link" href="${viewHref}">${escapeHtml(p.name)}</a>${isMe ? ' <span class="lb-you-pill">you</span>' : ''}
