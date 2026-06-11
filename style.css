@@ -5870,10 +5870,88 @@ body.page-leaderboard {
   font-size: 0.7rem;
 }
 
+/* Group-match panel: head-to-head ranking share with hover/tap detail. */
+.ls-h2h {
+  display: grid;
+  gap: 0.32rem;
+  outline: none;
+}
+
+.ls-h2h-stat strong {
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+}
+
+.ls-h2h-bar {
+  height: 0.5rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(159, 184, 214, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(159, 184, 214, 0.16);
+}
+
+.ls-h2h-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--winner), var(--accent));
+}
+
+.ls-h2h-caption {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-faint);
+}
+
+.ls-h2h-detail {
+  display: none;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin-top: 0.25rem;
+  padding-top: 0.45rem;
+  border-top: 1px dashed var(--border);
+}
+
+.ls-h2h:hover .ls-h2h-detail,
+.ls-h2h:focus .ls-h2h-detail,
+.ls-h2h:focus-within .ls-h2h-detail {
+  display: grid;
+}
+
+.ls-h2h-team {
+  min-width: 0;
+  display: grid;
+  gap: 0.3rem;
+  align-content: start;
+}
+
+.ls-h2h-places {
+  display: grid;
+  gap: 0.16rem;
+}
+
+.ls-h2h-place {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.ls-h2h-place strong {
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  margin-right: 0.25rem;
+}
+
 @media (max-width: 600px) {
   .ls-picks-line {
     grid-template-columns: 1fr;
     gap: 0.1rem;
+  }
+  .ls-h2h-detail {
+    grid-template-columns: 1fr;
   }
 }
 

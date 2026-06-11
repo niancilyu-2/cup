@@ -45,7 +45,7 @@
       if (locked) {
         queries.push(
           supabase.from('players').select('id, name'),
-          supabase.from('group_picks').select('player_id, group_code, first_code, second_code'),
+          supabase.from('group_picks').select('player_id, group_code, first_code, second_code, third_code'),
           supabase.from('bracket_picks').select('player_id, match_id, winner_code'),
         );
       }
@@ -56,7 +56,7 @@
       // Pick data is an enhancement — render the schedule even if it failed.
       let picksCtx = null;
       if (locked && playersRes && !playersRes.error && !groupRes.error && !brktRes.error) {
-        picksCtx = buildPicksCtx(playersRes.data, groupRes.data, brktRes.data);
+        picksCtx = buildPicksCtx(playersRes.data, groupRes.data, brktRes.data, teamsRes.data);
       }
       render(matchesRes.data, teamByCode, picksCtx);
     } catch (err) {
@@ -66,23 +66,23 @@
 
   // ---------- Who picked who ----------
 
-  function buildPicksCtx(players, groupRows, bracketRows) {
+  function buildPicksCtx(players, groupRows, bracketRows, teams) {
     const nameById = Object.fromEntries(players.map((p) => [p.id, p.name]));
-    // group -> team -> { first: [names picking them group winner], topTwo: count }
-    const groupBackers = {};
+    const teamsByGroup = {};
+    for (const t of teams) (teamsByGroup[t.group_code] ||= []).push(t.code);
+    // group -> [{ name, place: { teamCode: 1..4 } }] for every complete valid
+    // ranking; the 4th place is the implied leftover team.
+    const groupPlacements = {};
     for (const r of groupRows) {
       const name = nameById[r.player_id];
-      if (!name) continue;
-      const g = (groupBackers[r.group_code] ||= {});
-      if (r.first_code) {
-        const e = (g[r.first_code] ||= { first: [], topTwo: 0 });
-        e.first.push(name);
-        e.topTwo++;
-      }
-      if (r.second_code) {
-        const e = (g[r.second_code] ||= { first: [], topTwo: 0 });
-        e.topTwo++;
-      }
+      const members = teamsByGroup[r.group_code] || [];
+      if (!name || !r.first_code || !r.second_code || !r.third_code) continue;
+      const trio = [r.first_code, r.second_code, r.third_code];
+      if (new Set(trio).size !== 3 || !trio.every((c) => members.includes(c))) continue;
+      const fourth = members.find((c) => !trio.includes(c));
+      if (!fourth) continue;
+      const place = { [r.first_code]: 1, [r.second_code]: 2, [r.third_code]: 3, [fourth]: 4 };
+      (groupPlacements[r.group_code] ||= []).push({ name, place });
     }
     // matchId -> team -> [names who picked that team to win the match]
     const matchPicks = {};
@@ -91,8 +91,10 @@
       if (!name) continue;
       ((matchPicks[r.match_id] ||= {})[r.winner_code] ||= []).push(name);
     }
-    return { groupBackers, matchPicks };
+    return { groupPlacements, matchPicks };
   }
+
+  const ORDINAL = { 1: '1st', 2: '2nd', 3: '3rd', 4: '4th' };
 
   function namesHTML(names, cap = 8) {
     if (!names.length) return '<span class="ls-picks-nobody">nobody</span>';
@@ -110,16 +112,57 @@
       </div>`;
   }
 
+  // Group matches have no per-match picks, so the panel shows ranking
+  // behavior instead: how the pool ordered these two teams, with a
+  // hover/tap detail of who placed each team where in the group.
+  function groupPanelHTML(match, ctx) {
+    const a = match.team_a_code;
+    const b = match.team_b_code;
+    const ranked = (ctx.groupPlacements[match.group_code] || [])
+      .filter((p) => p.place[a] && p.place[b]);
+    if (!ranked.length) return '<div class="ls-picks-foot">No complete group rankings yet.</div>';
+    const aAbove = ranked.filter((p) => p.place[a] < p.place[b]).length;
+    const pctA = Math.round((aAbove / ranked.length) * 100);
+    const pctB = 100 - pctA;
+    const lead = pctA >= pctB ? { code: a, pct: pctA } : { code: b, pct: pctB };
+    const trail = lead.code === a ? { code: b, pct: pctB } : { code: a, pct: pctA };
+
+    const teamDetail = (code) => {
+      const byPlace = {};
+      for (const p of ranked) (byPlace[p.place[code]] ||= []).push(p.name);
+      const parts = [1, 2, 3, 4]
+        .filter((n) => byPlace[n])
+        .map((n) => `<span class="ls-h2h-place"><strong>${ORDINAL[n]}</strong> ${
+          byPlace[n].sort((x, y) => x.localeCompare(y)).map(escapeHtml).join(', ')
+        }</span>`)
+        .join('');
+      return `
+        <div class="ls-h2h-team">
+          <span class="ls-picks-team"><span class="fi fi-${flagCode(code)}" aria-hidden="true"></span> ${escapeHtml(code)}</span>
+          <div class="ls-h2h-places">${parts}</div>
+        </div>`;
+    };
+
+    return `
+      <div class="ls-h2h" tabindex="0"
+           aria-label="${lead.pct}% of the pool ranked ${escapeHtml(lead.code)} above ${escapeHtml(trail.code)}. Focus or hover for per-player placements.">
+        <div class="ls-h2h-stat">
+          <strong>${lead.pct}%</strong> ranked ${escapeHtml(lead.code)} above ${escapeHtml(trail.code)}
+          <span class="ls-picks-more">· ${ranked.length} ballot${ranked.length === 1 ? '' : 's'} · hover for detail</span>
+        </div>
+        <div class="ls-h2h-bar" aria-hidden="true"><span style="width: ${pctA}%"></span></div>
+        <div class="ls-h2h-caption"><span>${escapeHtml(a)} ${pctA}%</span><span>${escapeHtml(b)} ${pctB}%</span></div>
+        <div class="ls-h2h-detail">
+          ${teamDetail(a)}
+          ${teamDetail(b)}
+        </div>
+      </div>`;
+  }
+
   function picksPanelHTML(match, ctx) {
     if (!ctx) return '';
     if (match.stage === 'group') {
-      const g = ctx.groupBackers[match.group_code] || {};
-      const lines = [match.team_a_code, match.team_b_code].filter(Boolean).map((code) => {
-        const e = g[code] || { first: [], topTwo: 0 };
-        return picksLineHTML(code,
-          `group winner: ${namesHTML(e.first)} <span class="ls-picks-sep">·</span> top two: ${e.topTwo}`);
-      });
-      return lines.join('');
+      return groupPanelHTML(match, ctx);
     }
     // Knockout: real per-match winner picks.
     const byCode = ctx.matchPicks[match.id] || {};
