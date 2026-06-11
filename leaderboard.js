@@ -4,31 +4,11 @@
 import { scorePlayer, PERFECT_TOTAL, STAGE_POINTS } from './src/scoring.js';
 import { buildTournamentResults } from './src/results.js';
 import { buildReachability, isOutOfContention, maxPossible } from './src/projection.js';
+import { flagCode, avatarUrl, escapeHtml, bucketPicks, emptyPicks } from './src/page-utils.js';
 
 const STORAGE_KEY_PLAYER = 'wcbracket.player';
 const FINAL_MATCH_ID = 'M104';
 const THIRD_PLACE_MATCH_ID = 'M103'; // played but never scored — see scoring.js
-
-// FIFA 3-letter code → ISO 3166-1 alpha-2 (used by lipis/flag-icons).
-// Deterministic auto-avatar from the player id (stable across renames).
-function avatarUrl(id) {
-  return `https://api.dicebear.com/9.x/bottts/svg?seed=${encodeURIComponent(id)}`;
-}
-
-const FIFA_TO_ISO = {
-  MEX: 'mx', RSA: 'za', KOR: 'kr', CZE: 'cz',
-  CAN: 'ca', BIH: 'ba', QAT: 'qa', SUI: 'ch',
-  BRA: 'br', MAR: 'ma', HAI: 'ht', SCO: 'gb-sct',
-  USA: 'us', PAR: 'py', AUS: 'au', TUR: 'tr',
-  GER: 'de', CUW: 'cw', CIV: 'ci', ECU: 'ec',
-  NED: 'nl', JPN: 'jp', SWE: 'se', TUN: 'tn',
-  BEL: 'be', EGY: 'eg', IRN: 'ir', NZL: 'nz',
-  ESP: 'es', CPV: 'cv', KSA: 'sa', URU: 'uy',
-  FRA: 'fr', SEN: 'sn', IRQ: 'iq', NOR: 'no',
-  ARG: 'ar', ALG: 'dz', AUT: 'at', JOR: 'jo',
-  POR: 'pt', COD: 'cd', UZB: 'uz', COL: 'co',
-  ENG: 'gb-eng', CRO: 'hr', GHA: 'gh', PAN: 'pa',
-};
 
 // One row per scoring stage. The hover popover shows the per-stage calculation
 // (correct picks × points each = subtotal).
@@ -58,7 +38,7 @@ async function init() {
     const [playersRes, teamsRes, matchesRes, groupRes, brktRes, tbRes] = await Promise.all([
       supabase.from('players').select('id, name'),
       supabase.from('teams').select('code, name'),
-      supabase.from('matches').select('id, stage, group_code, slot_a, slot_b, team_a_code, team_b_code, score_a, score_b, winner_code, completed'),
+      supabase.from('matches').select('id, stage, group_code, slot_a, slot_b, team_a_code, team_b_code, score_a, score_b, winner_code, completed, updated_at'),
       supabase.from('group_picks').select('player_id, group_code, first_code, second_code, third_code, third_advances'),
       supabase.from('bracket_picks').select('player_id, match_id, winner_code'),
       supabase.from('tiebreaker_picks').select('player_id, champion_avg_goals'),
@@ -107,7 +87,7 @@ async function init() {
       r.rank = tiedWithPrev ? prev.rank : i + 1;
     });
 
-    render(rows, myName, hasResults, champStats);
+    render(rows, myName, hasResults, champStats, matchesRes.data);
   } catch (err) {
     root.innerHTML = `<div class="lb-error">Couldn't load leaderboard. ${escapeHtml(err.message || String(err))}</div>`;
   }
@@ -135,34 +115,7 @@ function actualChampionStats(matches) {
 }
 
 // ---------- Pick assembly ----------
-
-function emptyPicks() {
-  return { groups: {}, bracket: {}, tiebreaker: null };
-}
-
-function bucketPicks(groupRows, brktRows, tbRows) {
-  const out = new Map();
-  const get = (pid) => {
-    let p = out.get(pid);
-    if (!p) { p = emptyPicks(); out.set(pid, p); }
-    return p;
-  };
-  for (const row of groupRows) {
-    get(row.player_id).groups[row.group_code] = {
-      first: row.first_code,
-      second: row.second_code,
-      third: row.third_code,
-      advances: !!row.third_advances,
-    };
-  }
-  for (const row of brktRows) {
-    get(row.player_id).bracket[row.match_id] = row.winner_code;
-  }
-  for (const row of tbRows) {
-    get(row.player_id).tiebreaker = row.champion_avg_goals == null ? null : Number(row.champion_avg_goals);
-  }
-  return out;
-}
+// (bucketPicks / emptyPicks live in src/page-utils.js, shared with pool-stats.js)
 
 function buildRow(player, picks, results, reach, matches, teamsByCode) {
   const score = scorePlayer(picks, results);
@@ -219,22 +172,71 @@ function computeAccuracy(breakdown, results) {
 
 // ---------- Rendering ----------
 
-function render(rows, myNameLower, hasResults, champStats) {
-  if (!rows.length) {
-    root.innerHTML = `
-      <div class="lb-empty">No players have entered picks yet. Once anyone saves picks on the home page, they'll appear here.</div>
-    `;
-    return;
-  }
+function heroHTML(liveStripHTML) {
+  return `
+    <section class="lb-hero">
+      <div>
+        <div class="lb-kicker"><span class="lb-live-light" aria-hidden="true"></span> Live</div>
+        <h2>Leaderboard</h2>
+      </div>
+      ${liveStripHTML}
+    </section>`;
+}
 
-  if (!hasResults) {
-    root.innerHTML = `
-      <div class="lb-empty">The leaderboard goes live when the first match kicks off on June&nbsp;11. Check back once results start coming in.</div>
-    `;
-    return;
+// "Last update" = the freshest matches.updated_at (results sync bumps it).
+function latestUpdateLabel(matches) {
+  let max = null;
+  for (const m of matches) {
+    if (m.updated_at && (!max || m.updated_at > max)) max = m.updated_at;
   }
+  if (!max) return '&mdash;';
+  return new Date(max).toLocaleTimeString('en-US', {
+    hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York',
+  }) + ' ET';
+}
 
-  root.innerHTML = `
+function liveStripHTML(matches) {
+  const total = matches.length || 104;
+  const completed = matches.filter((m) => m.completed).length;
+  const fillPct = Math.round((completed / total) * 1000) / 10;
+  return `
+    <div class="lb-live-strip" aria-label="Leaderboard live summary">
+      <div class="lb-live-stat">
+        <span>Matches completed</span>
+        <strong>${completed} / ${total}</strong>
+        <div class="lb-progress-track" aria-hidden="true"><span style="width: ${fillPct}%"></span></div>
+      </div>
+      <div class="lb-live-stat">
+        <span>Last update</span>
+        <strong>${latestUpdateLabel(matches)}</strong>
+      </div>
+    </div>`;
+}
+
+const PODIUM_VARIANT = { 1: 'gold', 2: 'silver', 3: 'bronze' };
+const PODIUM_LABEL = { 1: 'Current leader', 2: 'Chasing', 3: 'On the podium' };
+
+// Top three table rows. Variant/label key off each row's (possibly shared)
+// rank, never the array index — a points+tiebreaker tie can mean two golds.
+function podiumHTML(rows) {
+  const cards = rows.slice(0, 3).map((p) => {
+    const variant = PODIUM_VARIANT[p.rank] || 'bronze';
+    return `
+      <article class="lb-podium-card lb-podium-card--${variant}">
+        <span class="lb-podium-rank lb-podium-rank--${variant}">${p.rank}</span>
+        <span class="lb-podium-label">${PODIUM_LABEL[p.rank] || 'On the podium'}</span>
+        <div class="lb-podium-player">
+          <img class="lb-podium-avatar" src="${avatarUrl(p.id)}" alt="" />
+          <span class="lb-podium-name">${escapeHtml(p.name)}</span>
+        </div>
+        <div class="lb-podium-score">${p.points} pts</div>
+      </article>`;
+  });
+  return `<section class="lb-podium" aria-label="Top three players">${cards.join('')}</section>`;
+}
+
+function legendHTML(champStats) {
+  return `
     <div class="lb-legend">
       <span class="lb-legend-item lb-legend-item--primary">
         <span class="lb-legend-key"><span class="lb-pts-star" aria-hidden="true">★</span> Pts</span>
@@ -258,27 +260,86 @@ function render(rows, myNameLower, hasResults, champStats) {
           champStats ? ` Actual: <strong>${champStats.avg.toFixed(2)}</strong>.` : ''
         }</span>
       </span>
-    </div>
-    <table class="lb-table">
-      <thead>
-        <tr>
-          <th class="lb-col-rank">#</th>
-          <th class="lb-col-name">Player</th>
-          <th class="lb-col-pts"><span class="lb-pts-star" aria-hidden="true">★</span> Pts</th>
-          <th class="lb-col-acc" title="Correct picks / decided picks so far">Acc</th>
-          <th class="lb-col-max" title="Most points still mathematically reachable (current + viable picks)">Max</th>
-          <th class="lb-col-champ">Champion</th>
-          <th class="lb-col-tb">Tiebreaker</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${rows.map((p) => rowHTML(p, myNameLower)).join('')}
-      </tbody>
-    </table>
+    </div>`;
+}
+
+function render(rows, myNameLower, hasResults, champStats, matches) {
+  if (!rows.length) {
+    root.innerHTML = `
+      ${heroHTML('')}
+      <div class="lb-empty">No players have entered picks yet. Once anyone saves picks on the home page, they'll appear here.</div>
+    `;
+    return;
+  }
+
+  if (!hasResults) {
+    root.innerHTML = `
+      ${heroHTML('')}
+      <div class="lb-empty">The leaderboard goes live when the first match kicks off on June&nbsp;11. Check back once results start coming in.</div>
+    `;
+    return;
+  }
+
+  // Stage chips: show only stages where someone has scored; the per-stage
+  // max marks the leader chip(s) — ties all get the highlight.
+  const visibleStages = BREAKDOWN_ROWS.map((r) => r.key)
+    .filter((key) => rows.some((p) => (p.breakdown[key] || 0) > 0));
+  const leadersByStage = {};
+  for (const key of visibleStages) {
+    leadersByStage[key] = Math.max(...rows.map((p) => p.breakdown[key] || 0));
+  }
+
+  root.innerHTML = `
+    ${heroHTML(liveStripHTML(matches))}
+    ${podiumHTML(rows)}
+    <section class="lb-board">
+      <div class="lb-board-head">
+        <h3>Full table</h3>
+        <span>Hover or tap a player&rsquo;s Pts for the full per-stage math. Names open read-only picks.</span>
+      </div>
+      <div class="lb-table-wrap">
+        <table class="lb-table">
+          <thead>
+            <tr>
+              <th class="lb-col-rank">#</th>
+              <th class="lb-col-name">Player</th>
+              <th class="lb-col-chips">Stage points</th>
+              <th class="lb-col-pts"><span class="lb-pts-star" aria-hidden="true">★</span> Pts</th>
+              <th class="lb-col-acc" title="Correct picks / decided picks so far">Acc</th>
+              <th class="lb-col-max" title="Most points still mathematically reachable (current + viable picks)">Max possible</th>
+              <th class="lb-col-champ">Champion</th>
+              <th class="lb-col-tb">Tiebreaker</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map((p) => rowHTML(p, myNameLower, visibleStages, leadersByStage)).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div class="lb-board-foot">${legendHTML(champStats)}</div>
+    </section>
   `;
 }
 
-function rowHTML(p, myNameLower) {
+const STAGE_CHIP_LABEL = {
+  groups: 'G', wildcards: 'WC', r32: 'R32', r16: 'R16', qf: 'QF', sf: 'SF', final: 'F',
+};
+
+function stageChipsHTML(p, visibleStages, leadersByStage) {
+  if (!visibleStages.length) return '<span class="lb-tb-empty">—</span>';
+  const chips = visibleStages.map((key) => {
+    const pts = STAGE_POINTS[key];
+    const subtotal = p.breakdown[key] || 0;
+    const correct = pts ? Math.round(subtotal / pts) : 0;
+    const isLeader = subtotal > 0 && subtotal === leadersByStage[key];
+    return `<span class="lb-stage-chip${isLeader ? ' is-stage-leader' : ''}"${
+      isLeader ? ` title="Stage leader: ${STAGE_CHIP_LABEL[key]}"` : ''
+    }>${STAGE_CHIP_LABEL[key]} <strong>${correct}&times;${pts}=${subtotal}</strong></span>`;
+  });
+  return `<div class="lb-stage-chips">${chips.join('')}</div>`;
+}
+
+function rowHTML(p, myNameLower, visibleStages, leadersByStage) {
   const isLeader = p.rank === 1;
   const isMe = myNameLower && p.name.toLowerCase() === myNameLower;
   const classes = ['lb-row'];
@@ -288,7 +349,7 @@ function rowHTML(p, myNameLower) {
   const champOut = !!(p.champion && p.champion.eliminated);
   const champHTML = p.champion
     ? `<span class="fi fi-${flagCode(p.champion.code)} lb-flag${champOut ? ' is-out' : ''}" aria-hidden="true"></span>
-       <span class="lb-champ-name${champOut ? ' is-out' : ''}">${escapeHtml(p.champion.name)}</span>
+       <span class="lb-champ-name${champOut ? ' is-out' : ''}" title="${escapeHtml(p.champion.name)}">${escapeHtml(p.champion.code)}</span>
        ${champOut ? '<span class="lb-champ-out" title="Champion eliminated">×</span>' : ''}`
     : '<span class="lb-champ-empty">—</span>';
   const accHTML = p.accuracy == null
@@ -306,6 +367,7 @@ function rowHTML(p, myNameLower) {
         <img class="lb-avatar" src="${avatarUrl(p.id)}" alt="" />
         <a class="lb-name-link" href="${viewHref}">${escapeHtml(p.name)}</a>${isMe ? ' <span class="lb-you-pill">you</span>' : ''}
       </td>
+      <td class="lb-col-chips">${stageChipsHTML(p, visibleStages, leadersByStage)}</td>
       <td class="lb-col-pts" tabindex="0" aria-label="${p.points} points — hover or focus for breakdown">
         <span class="lb-pts-total">${p.points}</span>
         ${breakdownHTML(p)}
@@ -318,14 +380,13 @@ function rowHTML(p, myNameLower) {
   `;
 }
 
-const MEDAL_BY_RANK = { 1: 'gold', 2: 'silver', 3: 'bronze' };
-const MEDAL_LABEL = { gold: '1st place', silver: '2nd place', bronze: '3rd place' };
-const TROPHY_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 4h10v3a5 5 0 0 1-10 0V4Z"/><path d="M5 5H3v2a3 3 0 0 0 3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M19 5h2v2a3 3 0 0 1-3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M10 13h4l-.5 3h-3L10 13Z"/><rect x="8" y="17" width="8" height="2" rx="0.5"/></svg>';
+const RANK_VARIANT = { 1: 'gold', 2: 'silver', 3: 'bronze' };
+const RANK_LABEL = { 1: '1st place', 2: '2nd place', 3: '3rd place' };
 
 function rankCellHTML(rank) {
-  const medal = MEDAL_BY_RANK[rank];
-  if (medal) {
-    return `<span class="lb-rank-medal lb-rank-medal--${medal}" title="${MEDAL_LABEL[medal]}" aria-label="${MEDAL_LABEL[medal]}">${TROPHY_SVG}</span>`;
+  const variant = RANK_VARIANT[rank];
+  if (variant) {
+    return `<span class="lb-rank-badge lb-rank-badge--${variant}" title="${RANK_LABEL[rank]}" aria-label="${RANK_LABEL[rank]}">${rank}</span>`;
   }
   return `<span class="lb-rank-num">${rank}</span>`;
 }
@@ -364,15 +425,4 @@ function breakdownHTML(p) {
     </div>`;
 }
 
-function flagCode(teamCode) {
-  return FIFA_TO_ISO[teamCode] || String(teamCode || '').toLowerCase();
-}
-
-function escapeHtml(s) {
-  return String(s ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
+// (flagCode / escapeHtml live in src/page-utils.js)

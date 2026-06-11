@@ -12,10 +12,10 @@ ABOUTME: Loads players + picks + match results from Supabase and runs the scorin
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.2.3/css/flag-icons.min.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Oswald:wght@400;500;600;700&family=Share+Tech+Mono&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Oswald:wght@400;500;600;700&family=Share+Tech+Mono&display=swap">
   <link rel="stylesheet" href="style.css" />
 </head>
-<body>
+<body class="page-leaderboard">
   <header id="site-header">
     <h1 class="wordmark">
       <a class="wordmark-link" href="./">
@@ -52,6 +52,15 @@ ABOUTME: Loads players + picks + match results from Supabase and runs the scorin
         </svg>
         Leaderboard
       </a>
+      <a href="pool-stats.html">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M2 12 H14" />
+          <path d="M3 10 L6 7 L8.4 8.8 L12.5 4.2" />
+          <path d="M12.5 4.2 H9.8" />
+          <path d="M12.5 4.2 V6.9" />
+        </svg>
+        Pool stats
+      </a>
       <a href="livescores.html">
         <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <circle cx="8" cy="8" r="5.5" />
@@ -87,12 +96,8 @@ ABOUTME: Loads players + picks + match results from Supabase and runs the scorin
     <div class="ticker-track" id="ticker-track"></div>
   </section>
 
-  <main>
-    <section id="leaderboard-section" class="section--center">
-      <h2>Leaderboard</h2>
-      <p class="section-help">Hover any player&rsquo;s points to see the per-stage score breakdown. Click a name to view their bracket.</p>
-      <div id="leaderboard"></div>
-    </section>
+  <main class="lb-main">
+    <div id="leaderboard"></div>
   </main>
 
   <footer id="site-footer">

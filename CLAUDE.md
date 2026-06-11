@@ -54,7 +54,8 @@ Perfect bracket = 148 points.
 
 Pages (each loads `config.js`, `user-bar.js`, `back-to-top.js`):
 - `index.html` / `app.js` — picks page + core logic (signup/PIN, group ranks, wildcards, bracket cascade, tiebreaker, save/submit, lock, view-only via `?view=<player_id>`). ES module.
-- `leaderboard.html` / `leaderboard.js` — standings scored from real results. ES module.
+- `leaderboard.html` / `leaderboard.js` — live leaderboard (hero + live strip + podium + full table with per-stage chips), scored from real results. ES module.
+- `pool-stats.html` / `pool-stats.js` — aggregate pick trends (champion favorites, final matchups, divisive matches/groups, contrarian picks). Gated until the pick lock — it reveals everyone's picks. ES module.
 - `livescores.html` / `livescores.js` — schedule + live/final scores from the `matches` table.
 - `rules.html` — static rules & scoring (no Supabase).
 - `admin.html` / `admin.js` — results entry + PIN reset + player delete (not in nav); gated by ADMIN_CODE.
@@ -64,6 +65,8 @@ Pure modules in `src/` (browser + Node; unit-tested in `tests/`):
 - `scoring.js` — per-stage scoring engine. `standings.js` — group table (FIFA tiebreakers) + best-8 thirds.
 - `results.js` — builds `{groupOutcomes, matchResults}` from match rows. `projection.js` — reachability + max-possible.
 - `cascade.js` — resolves knockout slot labels to team writes. `wildcards.js` / `wildcards-table.js` — Annexe C lookup.
+- `pool-stats.js` — Pool Stats aggregators (favorites, matchups, divisiveness, group chaos, contrarians).
+- `page-utils.js` — shared page helpers (flags, avatars, escapeHtml, pick bucketing) for leaderboard + pool stats.
 
 Results sync (`scripts/`, run by GitHub Actions, not served to the browser):
 - `sync-espn.js` — orchestrator. `espn-fetch.js` — ESPN fetch. `supabase-rest.js` — PostgREST writes (anon key). The sync reads and PATCHes only the `matches` table — it can never touch picks.

@@ -1,6 +1,6 @@
 <!--
-ABOUTME: Root HTML page for WC 2026 bracket pick'em.
-ABOUTME: Static shell; all dynamic content rendered by app.js.
+ABOUTME: Pool Stats page — aggregate pick trends across all players (post-lock only).
+ABOUTME: Renders champion favorites, final matchups, divisive matches/groups, contrarian calls.
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -8,14 +8,14 @@ ABOUTME: Static shell; all dynamic content rendered by app.js.
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>%E2%9A%BD</text></svg>" />
-  <title>2026 World Cup Bracket Challenge</title>
+  <title>Pool Stats · 2026 World Cup Bracket Challenge</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.2.3/css/flag-icons.min.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Oswald:wght@400;500;600;700&family=Share+Tech+Mono&display=swap">
   <link rel="stylesheet" href="style.css" />
 </head>
-<body class="page-picks">
+<body class="page-pulse">
   <header id="site-header">
     <h1 class="wordmark">
       <a class="wordmark-link" href="./">
@@ -37,7 +37,7 @@ ABOUTME: Static shell; all dynamic content rendered by app.js.
       </a>
     </h1>
     <nav class="site-nav">
-      <a href="./" class="is-active">
+      <a href="./">
         <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <circle cx="8" cy="8" r="6" />
           <path d="M5 8 L7 10 L11 6" />
@@ -52,7 +52,7 @@ ABOUTME: Static shell; all dynamic content rendered by app.js.
         </svg>
         Leaderboard
       </a>
-      <a href="pool-stats.html">
+      <a href="pool-stats.html" class="is-active">
         <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M2 12 H14" />
           <path d="M3 10 L6 7 L8.4 8.8 L12.5 4.2" />
@@ -96,80 +96,26 @@ ABOUTME: Static shell; all dynamic content rendered by app.js.
     <div class="ticker-track" id="ticker-track"></div>
   </section>
 
-  <section id="countdown-banner"></section>
-
-  <main>
-    <section id="view-banner" hidden></section>
-
-    <div class="pick-controls">
-      <nav id="pick-stepper" class="pick-stepper" aria-label="Pick progress"></nav>
-      <div id="actions-bar" class="actions-bar"></div>
-    </div>
-
-    <section id="groups-section" class="pick-section pick-section--1 is-collapsible">
-      <div class="section-head">
-        <h2><span class="step-badge step-badge--1">1</span> <span class="section-title-label">Group Stage</span></h2>
-        <p class="section-help">Drag teams to rank them 1st through 4th.</p>
-        <button class="section-toggle" type="button" aria-expanded="true" aria-controls="groups-body">
-          <span class="section-toggle-summary" data-summary-for="groups"></span>
-          <span class="section-toggle-caret" aria-hidden="true">▾</span>
-        </button>
-      </div>
-      <div id="groups-body" class="section-body">
-        <div id="groups-toolbar" class="section-toolbar"></div>
-        <div id="groups-grid"></div>
-      </div>
+  <main class="pulse-main">
+    <section class="pulse-hero">
+      <div class="pulse-kicker"><span class="pulse-light" aria-hidden="true"></span> Unlocks after kickoff</div>
+      <h2>Pool <span>Stats</span></h2>
     </section>
-
-    <section id="wildcards-section" class="pick-section pick-section--2 is-collapsible">
-      <div class="section-head">
-        <h2><span class="step-badge step-badge--2">2</span> <span class="section-title-label">Wildcards<span class="section-title-detail"> &mdash; 8 best 3rd-place teams</span></span></h2>
-        <p class="section-help">Pick 8 of the 12 third-place teams to advance.</p>
-        <button class="section-toggle" type="button" aria-expanded="true" aria-controls="wildcards-body">
-          <span class="section-toggle-summary" data-summary-for="wildcards"></span>
-          <span class="section-toggle-caret" aria-hidden="true">▾</span>
-        </button>
-      </div>
-      <div id="wildcards-body" class="section-body">
-        <div id="wildcards-toolbar" class="section-toolbar"></div>
-        <div id="wildcards-grid" class="wildcards-grid"></div>
-        <div id="wildcards-status" class="wildcards-status"></div>
-      </div>
-    </section>
-
-    <section id="bracket-section" class="pick-section pick-section--3">
-      <div class="section-head">
-        <h2><span class="step-badge step-badge--3">3</span> <span class="section-title-label">Knockout Bracket</span></h2>
-        <p class="section-help">Click a team to advance them to the next round.</p>
-      </div>
-      <div id="bracket-toolbar" class="section-toolbar"></div>
-      <div id="bracket"></div>
-    </section>
-
-    <section id="tiebreaker-section" class="pick-section pick-section--4">
-      <div class="section-head">
-        <h2><span class="step-badge step-badge--4">4</span> <span class="section-title-label">Tiebreaker</span></h2>
-        <p class="section-help">Predict your champion's average goals per game.</p>
-      </div>
-      <div id="tiebreaker"></div>
-    </section>
+    <section id="pool-stats" aria-label="Pool stats"></section>
   </main>
-
-  <div id="modal-root"></div>
 
   <footer id="site-footer">
     <a class="admin-footer-link" href="admin.html">admin</a>
     <div class="sig">
-      Nianci <span class="sig-dot">×</span> Claude
+      Nianci <span class="sig-dot">&times;</span> Claude
     </div>
   </footer>
 
   <script src="ticker.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
   <script src="config.js"></script>
   <script src="user-bar.js" defer></script>
   <script src="back-to-top.js" defer></script>
-  <script type="module" src="app.js"></script>
+  <script type="module" src="pool-stats.js"></script>
 </body>
 </html>
