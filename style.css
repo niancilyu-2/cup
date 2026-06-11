@@ -1724,6 +1724,16 @@ body.page-watch {
   line-height: 1.5;
 }
 
+.watch-game {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.watch-date {
+  color: var(--winner);
+  font-weight: 700;
+}
+
 .watch-venue {
   position: relative;
   display: grid;
@@ -2383,6 +2393,12 @@ body.page-watch {
   margin-top: 0.5rem;
   font-size: 0.8125rem;
   color: var(--text-muted);
+}
+
+.tiebreaker-footnote {
+  margin: 0.28rem 0 0;
+  font-size: 0.72rem;
+  color: rgba(159, 184, 214, 0.78);
 }
 
 /* ---- Bracket ---- */

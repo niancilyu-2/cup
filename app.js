@@ -1518,6 +1518,7 @@ function renderTiebreaker() {
              placeholder="e.g. 2.3" />
     </label>
     <p class="tiebreaker-note">If two players tie on points, whoever's predicted average is closest to the real tournament average for the actual champion wins the tiebreaker.</p>
+    <p class="tiebreaker-footnote">Penalty shootout kicks do not count; use only official match-score goals, including extra time.</p>
   `;
   document.getElementById('tiebreaker-input').addEventListener('input', (e) => {
     const v = e.target.value;
