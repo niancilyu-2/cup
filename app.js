@@ -214,7 +214,7 @@ function showPlayerPicker({ current = null } = {}) {
     const renderPickerList = (players) => {
       root.innerHTML = `
         <div class="modal-overlay">
-          <div class="modal">
+          <div class="modal player-picker-modal">
             ${closeHTML}
             <h2>Login</h2>
             ${

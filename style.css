@@ -1578,6 +1578,10 @@ body.page-watch {
   text-transform: uppercase;
 }
 
+.watch-kicker-aside {
+  color: rgba(238, 243, 248, 0.62);
+}
+
 .watch-hero h2 {
   margin: 0;
   font-family: var(--font-board);
@@ -3128,6 +3132,57 @@ body.page-watch {
   overflow-y: auto;
 }
 
+.player-picker-modal {
+  width: min(94vw, 680px);
+  max-width: 680px;
+  max-height: min(86vh, 720px);
+  padding: 1.15rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.player-picker-modal h2 {
+  margin-bottom: 0.35rem;
+}
+
+.player-picker-modal > p {
+  margin-bottom: 0.75rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.player-picker-modal .player-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.32rem;
+  max-height: min(58vh, 430px);
+  margin-bottom: 0.75rem;
+  padding-right: 0.15rem;
+}
+
+.player-picker-modal .player-row {
+  gap: 0.28rem;
+}
+
+.player-picker-modal .player-pick {
+  min-height: 2.35rem;
+  padding: 0.38rem 0.55rem;
+  gap: 0.45rem;
+}
+
+.player-picker-modal .picker-avatar {
+  width: 1.45rem;
+  height: 1.45rem;
+}
+
+.player-picker-modal .player-edit {
+  padding: 0 0.48rem;
+  font-size: 0.72rem;
+}
+
+.player-picker-modal .modal-divider {
+  margin: 0.72rem 0;
+}
+
 .player-pick {
   width: 100%;
   display: flex;
@@ -3240,6 +3295,19 @@ body.page-watch {
   padding: 0.5rem 0;
   background: transparent;
   color: var(--text-muted);
+}
+
+@media (max-width: 560px) {
+  .player-picker-modal {
+    width: min(94vw, 420px);
+    max-height: 88vh;
+    padding: 1rem;
+  }
+
+  .player-picker-modal .player-list {
+    grid-template-columns: 1fr;
+    max-height: 62vh;
+  }
 }
 
 /* ---- Rules page ---- */
