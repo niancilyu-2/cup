@@ -33,6 +33,11 @@
   // and render after this instant (same as app.js and the DB RLS freeze).
   const LOCK_DATE_ISO = '2026-06-11T13:00:00-06:00';
 
+  root.addEventListener('click', handleRootClick);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeGroupDetail();
+  });
+
   init();
 
   async function init() {
@@ -46,17 +51,16 @@
         queries.push(
           supabase.from('players').select('id, name'),
           supabase.from('group_picks').select('player_id, group_code, first_code, second_code, third_code'),
-          supabase.from('bracket_picks').select('player_id, match_id, winner_code'),
         );
       }
-      const [teamsRes, matchesRes, playersRes, groupRes, brktRes] = await Promise.all(queries);
+      const [teamsRes, matchesRes, playersRes, groupRes] = await Promise.all(queries);
       if (teamsRes.error) throw teamsRes.error;
       if (matchesRes.error) throw matchesRes.error;
       const teamByCode = Object.fromEntries(teamsRes.data.map((t) => [t.code, t]));
       // Pick data is an enhancement — render the schedule even if it failed.
       let picksCtx = null;
-      if (locked && playersRes && !playersRes.error && !groupRes.error && !brktRes.error) {
-        picksCtx = buildPicksCtx(playersRes.data, groupRes.data, brktRes.data, teamsRes.data);
+      if (locked && playersRes && !playersRes.error && !groupRes.error) {
+        picksCtx = buildPicksCtx(playersRes.data, groupRes.data, teamsRes.data);
       }
       render(matchesRes.data, teamByCode, picksCtx);
     } catch (err) {
@@ -66,7 +70,7 @@
 
   // ---------- Who picked who ----------
 
-  function buildPicksCtx(players, groupRows, bracketRows, teams) {
+  function buildPicksCtx(players, groupRows, teams) {
     const nameById = Object.fromEntries(players.map((p) => [p.id, p.name]));
     const teamsByGroup = {};
     for (const t of teams) (teamsByGroup[t.group_code] ||= []).push(t.code);
@@ -84,37 +88,23 @@
       const place = { [r.first_code]: 1, [r.second_code]: 2, [r.third_code]: 3, [fourth]: 4 };
       (groupPlacements[r.group_code] ||= []).push({ name, place });
     }
-    // matchId -> team -> [names who picked that team to win the match]
-    const matchPicks = {};
-    for (const r of bracketRows) {
-      const name = nameById[r.player_id];
-      if (!name) continue;
-      ((matchPicks[r.match_id] ||= {})[r.winner_code] ||= []).push(name);
-    }
-    return { groupPlacements, matchPicks };
+    return { groupPlacements };
   }
 
   const ORDINAL = { 1: '1st', 2: '2nd', 3: '3rd', 4: '4th' };
+  let groupDetailStore = {};
 
   function namesHTML(names, cap = 8) {
-    if (!names.length) return '<span class="ls-picks-nobody">nobody</span>';
+    if (!names.length) return '<span class="ls-picks-nobody">N/A</span>';
     const sorted = names.slice().sort((a, b) => a.localeCompare(b));
     const shown = sorted.slice(0, cap).map(escapeHtml).join(', ');
     const extra = sorted.length - cap;
     return extra > 0 ? `${shown} <span class="ls-picks-more">+${extra} more</span>` : shown;
   }
 
-  function picksLineHTML(code, detailHTML) {
-    return `
-      <div class="ls-picks-line">
-        <span class="ls-picks-team"><span class="fi fi-${flagCode(code)}" aria-hidden="true"></span> ${escapeHtml(code)}</span>
-        <span class="ls-picks-detail">${detailHTML}</span>
-      </div>`;
-  }
-
   // Group matches have no per-match picks, so the panel shows ranking
-  // behavior instead: how the pool ordered these two teams, with a
-  // hover/tap detail of who placed each team where in the group.
+  // behavior instead: how the pool ordered these two teams. The detail sheet
+  // stays group-only because knockout paths can differ across players.
   function groupPanelHTML(match, ctx) {
     const a = match.team_a_code;
     const b = match.team_b_code;
@@ -126,37 +116,41 @@
     const pctB = 100 - pctA;
     const lead = pctA >= pctB ? { code: a, pct: pctA } : { code: b, pct: pctB };
     const trail = lead.code === a ? { code: b, pct: pctB } : { code: a, pct: pctA };
+    const detailId = `group-${match.id}`;
 
-    const teamDetail = (code) => {
+    const teamRows = (code) => {
       const byPlace = {};
       for (const p of ranked) (byPlace[p.place[code]] ||= []).push(p.name);
-      const parts = [1, 2, 3, 4]
-        .filter((n) => byPlace[n])
-        .map((n) => `<span class="ls-h2h-place"><strong>${ORDINAL[n]}</strong> ${
-          byPlace[n].sort((x, y) => x.localeCompare(y)).map(escapeHtml).join(', ')
-        }</span>`)
-        .join('');
-      return `
-        <div class="ls-h2h-team">
-          <span class="ls-picks-team"><span class="fi fi-${flagCode(code)}" aria-hidden="true"></span> ${escapeHtml(code)}</span>
-          <div class="ls-h2h-places">${parts}</div>
-        </div>`;
+      return [1, 2, 3, 4].map((place) => ({
+        rank: ORDINAL[place],
+        names: (byPlace[place] || []).slice().sort((x, y) => x.localeCompare(y)),
+      }));
+    };
+    groupDetailStore[detailId] = {
+      title: `${a} vs ${b}`,
+      split: { left: a, leftPct: pctA, right: b, rightPct: pctB },
+      teams: [
+        { code: a, rows: teamRows(a) },
+        { code: b, rows: teamRows(b) },
+      ],
     };
 
     return `
-      <div class="ls-h2h" tabindex="0"
-           aria-label="${lead.pct}% of the pool ranked ${escapeHtml(lead.code)} above ${escapeHtml(trail.code)}. Focus or hover for per-player placements.">
-        <div class="ls-h2h-stat">
-          <strong>${lead.pct}%</strong> ranked ${escapeHtml(lead.code)} above ${escapeHtml(trail.code)}
-          <span class="ls-picks-more">· ${ranked.length} ballot${ranked.length === 1 ? '' : 's'} · hover for detail</span>
-        </div>
-        <div class="ls-h2h-bar" aria-hidden="true"><span style="width: ${pctA}%"></span></div>
-        <div class="ls-h2h-caption"><span>${escapeHtml(a)} ${pctA}%</span><span>${escapeHtml(b)} ${pctB}%</span></div>
-        <div class="ls-h2h-detail">
-          ${teamDetail(a)}
-          ${teamDetail(b)}
-        </div>
-      </div>`;
+      <button class="ls-h2h" type="button" data-group-detail="${escapeHtml(detailId)}"
+              aria-label="${lead.pct}% of the pool ranked ${escapeHtml(lead.code)} above ${escapeHtml(trail.code)}. Open per-player placements.">
+        <span class="ls-h2h-stat">
+          <span class="ls-h2h-copy">
+            <strong>${lead.pct}%</strong> ranked ${escapeHtml(lead.code)} above ${escapeHtml(trail.code)}
+          </span>
+          <span class="ls-h2h-detail-pill">Details</span>
+        </span>
+        <span class="ls-h2h-bar" aria-hidden="true">
+          <span class="ls-h2h-bar-side ls-h2h-bar-side--left" style="width: ${pctA}%"></span>
+          <span class="ls-h2h-bar-side ls-h2h-bar-side--right" style="width: ${pctB}%"></span>
+        </span>
+        <span class="ls-h2h-caption"><span>${escapeHtml(a)} ${pctA}%</span><span>${escapeHtml(b)} ${pctB}%</span></span>
+      </button>`;
+
   }
 
   function picksPanelHTML(match, ctx) {
@@ -164,34 +158,7 @@
     if (match.stage === 'group') {
       return groupPanelHTML(match, ctx);
     }
-    // Knockout: real per-match winner picks.
-    const byCode = ctx.matchPicks[match.id] || {};
-    const real = [match.team_a_code, match.team_b_code].filter(Boolean);
-    const lines = [];
-    if (real.length === 2) {
-      for (const code of real) {
-        const names = byCode[code] || [];
-        lines.push(picksLineHTML(code, `${names.length} backing: ${namesHTML(names)}`));
-      }
-      const stray = Object.entries(byCode)
-        .filter(([code]) => !real.includes(code))
-        .reduce((sum, [, names]) => sum + names.length, 0);
-      if (stray) {
-        lines.push(`<div class="ls-picks-foot">${stray} picked ${stray === 1 ? 'a team' : 'teams'} no longer in this match</div>`);
-      }
-    } else {
-      // Teams not yet decided: show the pool's most-picked winners for this slot.
-      const entries = Object.entries(byCode)
-        .map(([code, names]) => ({ code, names }))
-        .sort((a, b) => b.names.length - a.names.length || a.code.localeCompare(b.code));
-      for (const e of entries.slice(0, 4)) {
-        lines.push(picksLineHTML(e.code, `${e.names.length}: ${namesHTML(e.names, 6)}`));
-      }
-      const rest = entries.slice(4).reduce((sum, e) => sum + e.names.length, 0);
-      if (rest) lines.push(`<div class="ls-picks-foot">+${rest} more picks</div>`);
-      if (!entries.length) lines.push('<div class="ls-picks-foot">No picks for this match.</div>');
-    }
-    return lines.join('');
+    return '';
   }
 
   function picksPanelBlockHTML(match, ctx) {
@@ -201,6 +168,7 @@
   }
 
   function render(matches, teamByCode, picksCtx) {
+    groupDetailStore = {};
     const matchesByStage = groupBy(matches, 'stage');
     const matchesByGroup = groupBy(matchesByStage.group || [], 'group_code');
 
@@ -217,15 +185,93 @@
         ${knockoutsHTML}
       </section>
       ${groupsHTML}
+      ${detailSheetHTML()}
     `;
+  }
 
-    root.addEventListener('click', (e) => {
-      const toggle = e.target.closest('.ls-toggle');
-      if (!toggle) return;
-      const section = toggle.closest('.ls-section');
-      const expanded = section.classList.toggle('is-expanded');
-      toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-    });
+  function detailSheetHTML() {
+    return `
+      <div class="ls-detail-sheet-overlay" id="ls-detail-sheet" aria-hidden="true">
+        <section class="ls-detail-sheet" role="dialog" aria-modal="true" aria-labelledby="ls-detail-title">
+          <div class="ls-detail-sheet-head">
+            <div>
+              <span class="ls-detail-sheet-kicker">Pool detail</span>
+              <h3 class="ls-detail-sheet-title" id="ls-detail-title">Group matchup</h3>
+            </div>
+            <button class="ls-detail-sheet-close" type="button" aria-label="Close">x</button>
+          </div>
+          <div class="ls-detail-sheet-body" id="ls-detail-sheet-body"></div>
+        </section>
+      </div>`;
+  }
+
+  function handleRootClick(e) {
+    const detailTrigger = e.target.closest('[data-group-detail]');
+    if (detailTrigger && root.contains(detailTrigger)) {
+      openGroupDetail(detailTrigger.dataset.groupDetail);
+      return;
+    }
+
+    if (e.target.closest('.ls-detail-sheet-close') || e.target.classList.contains('ls-detail-sheet-overlay')) {
+      closeGroupDetail();
+      return;
+    }
+
+    const toggle = e.target.closest('.ls-toggle');
+    if (!toggle || !root.contains(toggle)) return;
+    const section = toggle.closest('.ls-section');
+    const expanded = section.classList.toggle('is-expanded');
+    toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+  }
+
+  function openGroupDetail(detailId) {
+    const data = groupDetailStore[detailId];
+    const sheet = document.getElementById('ls-detail-sheet');
+    const title = document.getElementById('ls-detail-title');
+    const body = document.getElementById('ls-detail-sheet-body');
+    if (!data || !sheet || !title || !body) return;
+    title.textContent = data.title;
+    body.innerHTML = `${supportDetailHTML(data.split)}<div class="ls-place-grid">${data.teams.map(placeCardHTML).join('')}</div>`;
+    sheet.classList.add('is-open');
+    sheet.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeGroupDetail() {
+    const sheet = document.getElementById('ls-detail-sheet');
+    if (!sheet) return;
+    sheet.classList.remove('is-open');
+    sheet.setAttribute('aria-hidden', 'true');
+  }
+
+  function supportDetailHTML(split) {
+    return `
+      <div class="ls-detail-support">
+        <div class="ls-support-row">
+          <span>${escapeHtml(split.left)} support</span>
+          <span>${escapeHtml(split.right)} support</span>
+        </div>
+        <div class="ls-h2h-bar" aria-hidden="true">
+          <span class="ls-h2h-bar-side ls-h2h-bar-side--left" style="width: ${split.leftPct}%"></span>
+          <span class="ls-h2h-bar-side ls-h2h-bar-side--right" style="width: ${split.rightPct}%"></span>
+        </div>
+        <div class="ls-support-caption">
+          <span>${escapeHtml(split.left)} ${split.leftPct}%</span>
+          <span>${escapeHtml(split.right)} ${split.rightPct}%</span>
+        </div>
+      </div>`;
+  }
+
+  function placeCardHTML(team) {
+    return `
+      <article class="ls-place-card">
+        <h4><span class="fi fi-${flagCode(team.code)}" aria-hidden="true"></span>${escapeHtml(team.code)}</h4>
+        ${team.rows.map((row) => `
+          <div class="ls-place-row">
+            <span class="ls-place-rank">${escapeHtml(row.rank)}</span>
+            <span class="ls-place-names">${namesHTML(row.names, 99)}</span>
+          </div>
+        `).join('')}
+      </article>`;
   }
 
   function statusFor(match) {
