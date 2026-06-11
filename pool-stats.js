@@ -255,7 +255,8 @@ function contrarianHTML(entries, ctx) {
     const copy = DEPTH_COPY[e.depth];
     const links = e.pickerIds.map((id) => {
       const name = escapeHtml(ctx.nameById[id] || 'Unknown');
-      return `<a class="pulse-user-link" href="./?view=${encodeURIComponent(id)}#bracket-section" title="View ${name}'s picks read-only">${name}</a>`;
+      const avatar = `https://api.dicebear.com/9.x/bottts/svg?seed=${encodeURIComponent(id)}`;
+      return `<a class="pulse-user-link" href="./?view=${encodeURIComponent(id)}#bracket-section" title="View ${name}'s picks read-only"><img class="pulse-user-avatar" src="${avatar}" alt="" />${name}</a>`;
     }).join('<span class="pulse-user-sep">,</span>');
     return `
       <div class="pulse-contrarian-card">
