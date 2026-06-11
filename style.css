@@ -3968,7 +3968,7 @@ body.page-leaderboard {
 }
 
 .lb-main {
-  width: min(1220px, calc(100% - 2rem));
+  width: min(1500px, calc(100% - 2rem));
   margin: 0 auto;
   padding: clamp(1.25rem, 3vw, 2.25rem) 0 4rem;
 }
@@ -4241,7 +4241,7 @@ body.page-leaderboard {
   overflow: visible;
 }
 
-@media (max-width: 1000px) {
+@media (max-width: 1300px) {
   .lb-table-wrap {
     overflow-x: auto;
   }
@@ -4314,7 +4314,7 @@ body.page-leaderboard {
 
 .lb-table {
   width: 100%;
-  min-width: 940px; /* horizontal scroll via .lb-table-wrap instead of hiding columns */
+  min-width: 1260px; /* horizontal scroll via .lb-table-wrap instead of hiding columns */
   /* `separate` (not collapse) so the sticky header keeps its border while
      rows scroll underneath it. */
   border-collapse: separate;
@@ -4446,13 +4446,14 @@ body.page-leaderboard {
 }
 
 .lb-col-chips {
-  min-width: 16rem;
+  width: 31rem;
+  min-width: 31rem;
 }
 
 .lb-stage-chips {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.28rem;
+  flex-wrap: nowrap;
+  gap: 0.22rem;
 }
 
 .lb-stage-chip {
@@ -4460,7 +4461,7 @@ body.page-leaderboard {
   align-items: baseline;
   gap: 0.22rem;
   min-height: 1.45rem;
-  padding: 0.16rem 0.42rem;
+  padding: 0.16rem 0.34rem;
   border: 1px solid rgba(159, 184, 214, 0.16);
   border-radius: 999px;
   background: rgba(11, 14, 19, 0.28);
@@ -4768,7 +4769,7 @@ body.page-leaderboard {
 /* The table scrolls horizontally inside .lb-table-wrap on small screens —
    no columns are hidden anymore. */
 @media (max-width: 600px) {
-  .lb-main { width: min(100% - 1rem, 1220px); }
+  .lb-main { width: min(100% - 1rem, 1500px); }
   .lb-board-head { display: grid; }
   .lb-board-head span { text-align: left; }
   .lb-legend {
