@@ -2623,12 +2623,16 @@ function countdownCellsHTML(ms) {
     </div>`;
 }
 
-function participationNoteHTML() {
+function announcementNoteHTML() {
   return `
-    <aside class="countdown-entry-note" aria-label="Participation note">
+    <aside class="countdown-entry-note" aria-label="What's new">
       <span class="entry-note-kicker">Announcement</span>
-      <span class="entry-note-main">Venmo <strong>@nianci $10</strong> before kickoff to lock in your participation.</span>
-      <span class="entry-note-sub">Idle users will be deleted <time datetime="2026-06-11T09:00:00-04:00">9am ET June 11</time>.</span>
+      <span class="entry-note-main">What&rsquo;s new on the site:</span>
+      <ul class="entry-note-list">
+        <li>New page &mdash; <a href="pool-stats.html"><strong>Pool stats</strong></a></li>
+        <li>New page &mdash; <a href="where-to-watch.html"><strong>Where to watch</strong></a></li>
+        <li>Updated &mdash; <a href="rules.html"><strong>Rules &amp; scoring</strong></a></li>
+      </ul>
     </aside>`;
 }
 
@@ -2676,19 +2680,10 @@ function tickCountdown() {
     // A viewing tab never loaded the viewed player's picks pre-lock; reload
     // so they're fetched and revealed now that the privacy gate has lifted.
     if (isViewing()) { location.reload(); return; }
-    if (nowLocked) {
-      if (banner.classList.contains('is-locking')) return;
-      const note = banner.querySelector('.countdown-entry-note');
-      if (note) {
-        banner.classList.add('is-locking');
-        note.classList.add('is-spinning-off');
-        setTimeout(renderAll, 700);
-        return;
-      }
-    }
     // Lock state flipped — rebuild the whole page, not just the banner:
     // sortables, pick buttons, and the actions bar must all switch to their
     // locked (disabled) state for a tab that was already open at kickoff.
+    // (The announcement note persists through the flip, so no spin-off.)
     renderAll();
     return;
   }
@@ -2745,11 +2740,13 @@ function renderCountdownBanner() {
     : `<div class="countdown-headline">Picks lock in</div>`;
 
   banner.classList.toggle('is-locked', locked);
+  // The what's-new note stays up after lock too — Pool stats only unlocks
+  // at kickoff, so that's when the announcement matters most.
   banner.innerHTML = `
     ${headline}
     <div class="countdown-stage">
       ${countdownCellsHTML(Math.max(0, remaining))}
-      ${locked ? '' : participationNoteHTML()}
+      ${announcementNoteHTML()}
     </div>
     <div class="countdown-when">${locked ? 'First kickoff: ' : ''}${whenStr}</div>
     ${progressLineHTML()}

@@ -808,6 +808,42 @@ main > * { min-width: 0; }
   color: #ff9f43;
 }
 
+.entry-note-list {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0.1rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #f1f5f9;
+}
+
+.entry-note-list li {
+  position: relative;
+  padding-left: 0.8rem;
+}
+
+.entry-note-list li::before {
+  content: '▸';
+  position: absolute;
+  left: 0;
+  color: #ff9f43;
+}
+
+.entry-note-list a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.entry-note-list a:hover,
+.entry-note-list a:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
 .countdown-entry-note:hover {
   animation: none;
   filter: brightness(1.06);
