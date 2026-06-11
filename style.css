@@ -4062,7 +4062,7 @@ body.page-leaderboard {
 
 .lb-live-strip {
   display: grid;
-  grid-template-columns: minmax(15rem, 1.35fr) minmax(0, 1fr);
+  grid-template-columns: minmax(15rem, 1.35fr) minmax(10rem, 1fr) minmax(10rem, 0.9fr);
   gap: 0.75rem;
   padding: 0.8rem;
   border: 1px solid rgba(159, 184, 214, 0.22);
@@ -4099,6 +4099,28 @@ body.page-leaderboard {
   font-family: var(--font-mono);
   font-size: 1rem;
   font-variant-numeric: tabular-nums;
+}
+
+.lb-live-stat--prize {
+  border-color: rgba(242, 201, 76, 0.24);
+  background:
+    linear-gradient(135deg, rgba(242, 201, 76, 0.09), rgba(255, 159, 67, 0.04)),
+    rgba(11, 14, 19, 0.3);
+}
+
+.lb-live-stat--prize strong {
+  color: var(--accent);
+}
+
+.lb-live-stat--prize small {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--text-faint);
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 .lb-progress-track {
@@ -4811,7 +4833,16 @@ body.page-leaderboard {
 /* The table scrolls horizontally inside .lb-table-wrap on small screens —
    no columns are hidden anymore. */
 @media (max-width: 600px) {
-  .lb-main { width: min(100% - 1rem, 1500px); }
+  .lb-main {
+    width: min(100% - 1rem, 1500px);
+    max-width: calc(100% - 1rem);
+    overflow-x: hidden;
+  }
+  .lb-live-strip,
+  .lb-live-stat {
+    min-width: 0;
+    max-width: 100%;
+  }
   .lb-board-head { display: grid; }
   .lb-board-head span { text-align: left; }
   .lb-legend {

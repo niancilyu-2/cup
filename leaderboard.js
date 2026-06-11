@@ -219,6 +219,11 @@ function liveStripHTML(matches) {
         <span>Last update</span>
         <strong>${latestUpdateLabel(matches)}</strong>
       </div>
+      <div class="lb-live-stat lb-live-stat--prize">
+        <span>Total pool prize</span>
+        <strong>$200</strong>
+        <small>Winner takes all</small>
+      </div>
     </div>`;
 }
 
