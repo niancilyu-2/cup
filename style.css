@@ -3476,6 +3476,12 @@ body.page-watch {
   font-weight: 700;
 }
 
+.scoring-table-footnote {
+  margin: 0.45rem 0 0;
+  font-size: 0.72rem;
+  color: rgba(159, 184, 214, 0.78);
+}
+
 .perfect-score {
   display: inline-grid;
   grid-template-columns: minmax(0, 8.6rem) auto;
