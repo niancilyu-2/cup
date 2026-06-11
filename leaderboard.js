@@ -308,7 +308,6 @@ function render(rows, myNameLower, hasResults, champStats, matches) {
     <section class="lb-board">
       <div class="lb-board-head">
         <h3>Full table</h3>
-        <span>Hover or tap a player&rsquo;s Pts for the full per-stage math. Names open read-only picks.</span>
       </div>
       <div class="lb-table-wrap">
         <table class="lb-table">

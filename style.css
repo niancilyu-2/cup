@@ -4234,7 +4234,8 @@ body.page-leaderboard {
 
 .lb-table-wrap {
   width: 100%;
-  overflow-x: auto;
+  max-height: min(36rem, 72vh);
+  overflow: auto;
 }
 
 .lb-board-foot {
@@ -4305,10 +4306,17 @@ body.page-leaderboard {
 .lb-table {
   width: 100%;
   min-width: 940px; /* horizontal scroll via .lb-table-wrap instead of hiding columns */
-  border-collapse: collapse;
+  /* `separate` (not collapse) so the sticky header keeps its border while
+     rows scroll underneath it. */
+  border-collapse: separate;
+  border-spacing: 0;
 }
 
 .lb-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--surface-2);
   font-family: var(--font-display);
   font-size: 0.7rem;
   font-weight: 600;
@@ -4328,21 +4336,20 @@ body.page-leaderboard {
   text-align: right;
 }
 
-.lb-table tbody tr {
-  border-bottom: 1px solid var(--border);
-}
-
 .lb-table tbody tr:nth-child(even):not(.lb-leader) {
   background: var(--surface-2);
-}
-
-.lb-table tbody tr:last-child {
-  border-bottom: none;
 }
 
 .lb-table td {
   padding: 0.7rem 0.85rem;
   vertical-align: middle;
+  /* Row separators live on cells: tr borders don't render with
+     border-collapse: separate (needed for the sticky header). */
+  border-bottom: 1px solid var(--border);
+}
+
+.lb-table tbody tr:last-child td {
+  border-bottom: none;
 }
 
 .lb-col-rank {
