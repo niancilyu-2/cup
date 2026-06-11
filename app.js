@@ -95,9 +95,18 @@ function isEditingDisabled() {
   return isLocked() || isSubmitted() || isViewing();
 }
 
+// Key-order-insensitive stringify: deleting and re-adding the same bracket
+// pick moves its key to the end of the object, which must not read as dirty.
+function stableStringify(value) {
+  return JSON.stringify(value, (key, v) =>
+    v && typeof v === 'object' && !Array.isArray(v)
+      ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, v[k]]))
+      : v);
+}
+
 function isDirty() {
   if (isViewing()) return false;
-  return JSON.stringify(state.picks.draft) !== JSON.stringify(state.picks.saved);
+  return stableStringify(state.picks.draft) !== stableStringify(state.picks.saved);
 }
 
 function hasResults() {
@@ -404,11 +413,15 @@ function showPlayerPicker({ current = null } = {}) {
           errorEl.hidden = false;
           return;
         }
-        // Two-step insert so the PIN hash can be salted with the player's UUID:
-        // insert with a placeholder hash, then UPDATE with the real one.
+        // Generate the id client-side so the PIN hash (salted with the player
+        // UUID) can go in a single insert — the old insert-then-update flow
+        // could strand a row with an unloginable placeholder hash if the
+        // second step never ran.
+        const id = crypto.randomUUID();
+        const pin_hash = await hashPin(pin, id);
         const { data: inserted, error: insertErr } = await supabase
           .from('players')
-          .insert({ name, pin_hash: 'pending' })
+          .insert({ id, name, pin_hash })
           .select()
           .single();
         if (insertErr) {
@@ -416,16 +429,6 @@ function showPlayerPicker({ current = null } = {}) {
             insertErr.code === '23505'
               ? `"${name}" is already taken. Try another name.`
               : `Couldn't add you: ${insertErr.message}`;
-          errorEl.hidden = false;
-          return;
-        }
-        const pin_hash = await hashPin(pin, inserted.id);
-        const { error: updateErr } = await supabase
-          .from('players')
-          .update({ pin_hash })
-          .eq('id', inserted.id);
-        if (updateErr) {
-          errorEl.textContent = `Saved your name but couldn't save the PIN: ${updateErr.message}`;
           errorEl.hidden = false;
           return;
         }
@@ -445,11 +448,18 @@ function showPlayerPicker({ current = null } = {}) {
 // ---------- Data loading ----------
 
 async function loadReferenceData() {
-  const [{ data: groups }, { data: teams }, { data: matches }] = await Promise.all([
+  const [groupsRes, teamsRes, matchesRes] = await Promise.all([
     supabase.from('groups').select('*').order('code'),
     supabase.from('teams').select('*').order('code'),
     supabase.from('matches').select('*').order('id'),
   ]);
+  const failed = groupsRes.error || teamsRes.error || matchesRes.error;
+  if (failed) {
+    throw new Error(`Couldn't load tournament data: ${failed.message}`);
+  }
+  const { data: groups } = groupsRes;
+  const { data: teams } = teamsRes;
+  const { data: matches } = matchesRes;
   state.groups = groups;
   state.teams = teams;
   state.matches = matches;
@@ -730,8 +740,14 @@ function showTiebreakerModal() {
   setTimeout(() => input.focus(), 0);
   const close = () => { root.innerHTML = ''; };
   document.getElementById('tb-modal-save').addEventListener('click', () => {
-    const v = input.value;
-    state.picks.draft.tiebreaker = v === '' ? null : Number(v);
+    const parsed = parseTiebreakerInput(input.value);
+    if (!parsed.ok) {
+      input.setCustomValidity('Enter a value between 0 and 99.99.');
+      input.reportValidity();
+      return;
+    }
+    input.setCustomValidity('');
+    state.picks.draft.tiebreaker = parsed.value;
     close();
     renderTiebreaker();
     renderActionsBar();
@@ -1026,9 +1042,8 @@ function groupPickEqual(a, b) {
   return a.first === b.first && a.second === b.second && a.third === b.third && !!a.advances === !!b.advances;
 }
 
-async function persistGroupPicks() {
+async function persistGroupPicks(draft) {
   const saved = state.picks.saved.groups;
-  const draft = state.picks.draft.groups;
   const upserts = [];
   const deletes = [];
   for (const code of Object.keys(draft)) {
@@ -1070,9 +1085,8 @@ async function persistGroupPicks() {
   }
 }
 
-async function persistBracketPicks() {
+async function persistBracketPicks(draft) {
   const saved = state.picks.saved.bracket;
-  const draft = state.picks.draft.bracket;
   const upserts = [];
   const deletes = [];
   for (const matchId of Object.keys(draft)) {
@@ -1104,10 +1118,9 @@ async function persistBracketPicks() {
   }
 }
 
-async function persistTiebreaker() {
-  const draft = state.picks.draft.tiebreaker;
+async function persistTiebreaker(draft) {
   const saved = state.picks.saved.tiebreaker;
-  if (draft === saved) return;
+  if ((draft ?? null) === (saved ?? null)) return;
   if (draft === null || draft === undefined) {
     const { error } = await supabase
       .from('tiebreaker_picks')
@@ -1127,11 +1140,40 @@ async function persistTiebreaker() {
   if (error) throw error;
 }
 
+// Drop draft bracket entries that are not knockout matches, or whose winner is
+// no longer a participant of a fully-resolved match (an upstream group/wildcard
+// change can orphan a pick the UI no longer shows — it must not reach the DB,
+// where scoring would still count it). Picks in matches with an *unresolved*
+// slot are kept: that state is transient (e.g. 7/8 wildcards mid-swap), and
+// the pick becomes valid again when the player completes their picks.
+function pruneInvalidBracketPicks() {
+  const knockoutIds = new Set(bracketMatches().map((m) => m.id));
+  for (const id of Object.keys(state.picks.draft.bracket)) {
+    if (!knockoutIds.has(id)) {
+      delete state.picks.draft.bracket[id];
+      continue;
+    }
+    const pick = state.picks.draft.bracket[id];
+    const a = teamForSlot(id, 'a');
+    const b = teamForSlot(id, 'b');
+    if (a && b && pick !== a && pick !== b) {
+      delete state.picks.draft.bracket[id];
+    }
+  }
+}
+
 async function saveDraft() {
-  await persistGroupPicks();
-  await persistBracketPicks();
-  await persistTiebreaker();
-  state.picks.saved = snapshot(state.picks.draft);
+  if (isLocked()) {
+    throw new Error('Picks are locked — the tournament has started.');
+  }
+  pruneInvalidBracketPicks();
+  // Snapshot before the awaits: edits made while the requests are in flight
+  // must stay dirty rather than be marked saved without reaching the DB.
+  const draft = snapshot(state.picks.draft);
+  await persistGroupPicks(draft.groups);
+  await persistBracketPicks(draft.bracket);
+  await persistTiebreaker(draft.tiebreaker ?? null);
+  state.picks.saved = draft;
 }
 
 async function submitPicks() {
@@ -1161,6 +1203,9 @@ async function unsubmitPicks() {
 function renderActionsBar() {
   const bar = document.getElementById('actions-bar');
   if (!bar) return;
+  // Every pick mutation ends here, so this keeps the beforeunload guard in
+  // sync with the draft's dirty state without each call site remembering to.
+  updateNavigationGuards();
   const locked = isLocked();
   const submitted = isSubmitted();
   const dirty = isDirty();
@@ -1195,11 +1240,14 @@ function renderActionsBar() {
 function wireActionsBar() {
   document.getElementById('actions-bar').addEventListener('click', async (e) => {
     if (e.target.id === 'save-picks-btn') {
+      if (e.target.disabled) return;
+      e.target.disabled = true; // no double-fire while the save is in flight
       try {
         await saveDraft();
       } catch (err) {
         console.error('Save failed', err);
-        alert('Save failed — see console.');
+        alert(`Save failed — ${err.message || 'see console'}.`);
+        e.target.disabled = false;
         return;
       }
       renderActionsBar();
@@ -1225,11 +1273,14 @@ function wireActionsBar() {
         }
         return;
       }
+      if (e.target.disabled) return;
+      e.target.disabled = true;
       try {
         await submitPicks();
       } catch (err) {
         console.error('Submit failed', err);
-        alert('Submit failed — see console.');
+        alert(`Submit failed — ${err.message || 'see console'}.`);
+        e.target.disabled = false;
         return;
       }
       renderAll();
@@ -1461,9 +1512,11 @@ function autoPickBracket() {
   const groupsReady = state.groups.every((g) => hasGroupPick(g.code));
   const wildcardsReady = advancingGroups().length === 8;
   if (!groupsReady || !wildcardsReady) return;
-  // Iterate in match-id order so earlier rounds resolve first and their
-  // winners populate downstream slots before we look at later matches.
-  const ordered = state.matches
+  // Iterate knockout matches only (group matches always have both teams set,
+  // so including them would invent winner picks for all 72 group games), in
+  // match-id order so earlier rounds resolve first and their winners populate
+  // downstream slots before we look at later matches.
+  const ordered = bracketMatches()
     .slice()
     .sort((a, b) => parseInt(a.id.slice(1), 10) - parseInt(b.id.slice(1), 10));
   let changed = 0;
@@ -1489,6 +1542,18 @@ function autoPickBracket() {
 
 function predictedChampionCode() {
   return state.picks.draft.bracket[FINAL_MATCH_ID] || null;
+}
+
+// Parse a tiebreaker input. Bounds come from the DB column — NUMERIC(4,2)
+// with CHECK (>= 0) — so a stray value can't make the save fail after the
+// group/bracket writes already went through.
+function parseTiebreakerInput(raw) {
+  if (raw === '') return { ok: true, value: null };
+  const num = Number(raw);
+  if (!Number.isFinite(num) || num < 0 || num > 99.99) {
+    return { ok: false, value: null };
+  }
+  return { ok: true, value: Math.round(num * 100) / 100 };
 }
 
 function renderTiebreaker() {
@@ -1521,8 +1586,14 @@ function renderTiebreaker() {
     <p class="tiebreaker-footnote">Penalty shootout kicks do not count; use only official match-score goals, including extra time.</p>
   `;
   document.getElementById('tiebreaker-input').addEventListener('input', (e) => {
-    const v = e.target.value;
-    state.picks.draft.tiebreaker = v === '' ? null : Number(v);
+    const parsed = parseTiebreakerInput(e.target.value);
+    if (!parsed.ok) {
+      e.target.setCustomValidity('Enter a value between 0 and 99.99.');
+      e.target.reportValidity();
+      return;
+    }
+    e.target.setCustomValidity('');
+    state.picks.draft.tiebreaker = parsed.value;
     renderActionsBar();
     renderCountdownBanner();
   });
@@ -1570,7 +1641,15 @@ function showLeaveSiteModal() {
       resolve(decision);
     };
     document.getElementById('leave-save').addEventListener('click', async () => {
-      try { await saveDraft(); } catch (err) { console.error(err); }
+      try {
+        await saveDraft();
+      } catch (err) {
+        // Don't navigate away on a failed save — the picks would be lost.
+        console.error('Save failed', err);
+        alert(`Save failed — ${err.message || 'see console'}. Staying on this page.`);
+        finish('cancel');
+        return;
+      }
       finish('save');
     });
     document.getElementById('leave-go').addEventListener('click', () => finish('go'));
@@ -2594,18 +2673,23 @@ function tickCountdown() {
   const wasLocked = banner.classList.contains('is-locked');
   const nowLocked = remaining <= 0;
   if (wasLocked !== nowLocked) {
+    // A viewing tab never loaded the viewed player's picks pre-lock; reload
+    // so they're fetched and revealed now that the privacy gate has lifted.
+    if (isViewing()) { location.reload(); return; }
     if (nowLocked) {
       if (banner.classList.contains('is-locking')) return;
       const note = banner.querySelector('.countdown-entry-note');
       if (note) {
         banner.classList.add('is-locking');
         note.classList.add('is-spinning-off');
-        setTimeout(renderCountdownBanner, 700);
+        setTimeout(renderAll, 700);
         return;
       }
     }
-    // Lock state flipped — banner structure differs, so do a full rebuild.
-    renderCountdownBanner();
+    // Lock state flipped — rebuild the whole page, not just the banner:
+    // sortables, pick buttons, and the actions bar must all switch to their
+    // locked (disabled) state for a tab that was already open at kickoff.
+    renderAll();
     return;
   }
   if (!nowLocked) tickCountdownDigits(remaining);
@@ -2889,7 +2973,10 @@ async function init() {
     const viewed = await loadViewedPlayer(viewId);
     if (viewed) {
       state.viewedPlayer = viewed;
-      await loadMyPicks(viewed.id);
+      // Pre-lock, another player's picks are private: don't load them at all
+      // rather than only hiding them with CSS. (The DB stays open to anon by
+      // design; this closes the casual devtools route.)
+      if (isLocked()) await loadMyPicks(viewed.id);
     } else {
       // Unknown player id: fall back to the current user's own picks rather
       // than landing on a blank board.
@@ -2910,4 +2997,14 @@ async function init() {
   startCountdownTicker();
 }
 
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', () => {
+  init().catch((err) => {
+    console.error('Init failed', err);
+    const main = document.querySelector('main');
+    if (main) {
+      const msg = String(err?.message || err)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      main.innerHTML = `<div class="lb-error">Something went wrong loading the page. ${msg}</div>`;
+    }
+  });
+});

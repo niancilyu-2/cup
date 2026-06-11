@@ -59,19 +59,24 @@ export function computeCascadeWrites(matches, standingsByGroup) {
   for (const m of matches) {
     if (m.stage === 'group') continue;
     const ctx = { standingsByGroup, byId, wildcardAssignment, currentMatchId: m.id };
-    const a = resolveSlot(m.slot_a, ctx);
-    const b = resolveSlot(m.slot_b, ctx);
+    let a = resolveSlot(m.slot_a, ctx);
+    let b = resolveSlot(m.slot_b, ctx);
 
-    // For group-based or wildcard slots, require both to resolve before writing.
+    // For group-based or wildcard slots, require both to resolve before
+    // writing either (a half-known R32 pairing stays unpopulated).
     const slotAIsGroupBased = GROUP_SLOT.test(m.slot_a) || WILDCARD_SLOT.test(m.slot_a);
     const slotBIsGroupBased = GROUP_SLOT.test(m.slot_b) || WILDCARD_SLOT.test(m.slot_b);
-    if ((slotAIsGroupBased && a == null) || (slotBIsGroupBased && b == null)) continue;
+    if ((slotAIsGroupBased && a == null) || (slotBIsGroupBased && b == null)) {
+      a = null;
+      b = null;
+    }
 
-    // Only proceed if at least one slot resolved to a value.
-    if (a == null && b == null) continue;
-    const nextA = a ?? m.team_a_code ?? null;
-    const nextB = b ?? m.team_b_code ?? null;
-    // Skip if nothing changed.
+    // The row must mirror the resolved slots exactly. An unresolved slot is
+    // null — so when an upstream result is voided (admin unchecks a final, a
+    // correction empties a group), the team it once cascaded here is cleared
+    // instead of lingering as a phantom participant.
+    const nextA = a ?? null;
+    const nextB = b ?? null;
     if (nextA === (m.team_a_code ?? null) && nextB === (m.team_b_code ?? null)) continue;
     writes.push({ id: m.id, team_a_code: nextA, team_b_code: nextB });
   }

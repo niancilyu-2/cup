@@ -73,6 +73,27 @@ describe('computeCascadeWrites', () => {
     expect(m103.team_a_code).toBe('BRA'); // loser of M101
   });
 
+  it('clears a previously cascaded team when the upstream result is voided', () => {
+    const matches = [
+      // M73 was final and cascaded KOR into M90, then an admin unchecked it.
+      match('M73', 'r32', '2A', '2B', {
+        team_a_code: 'KOR', team_b_code: 'SUI',
+      }),
+      match('M90', 'r16', 'W73', 'W75', { team_a_code: 'KOR' }),
+    ];
+    const writes = computeCascadeWrites(matches, {});
+    expect(writes).toContainEqual({ id: 'M90', team_a_code: null, team_b_code: null });
+  });
+
+  it('clears R32 teams when a group result becomes incomplete again', () => {
+    const matches = [match('M73', 'r32', '2A', '2B', {
+      team_a_code: 'KOR', team_b_code: 'SUI',
+    })];
+    const standings = { A: { complete: false }, B: { complete: true, second: 'SUI' } };
+    expect(computeCascadeWrites(matches, standings))
+      .toContainEqual({ id: 'M73', team_a_code: null, team_b_code: null });
+  });
+
   it('emits no write when the resolved teams already match the row', () => {
     const matches = [match('M73', 'r32', '2A', '2B', {
       team_a_code: 'KOR', team_b_code: 'SUI',

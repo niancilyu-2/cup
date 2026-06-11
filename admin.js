@@ -39,6 +39,7 @@
   let teamsByCode = {};
   let allMatches = [];
   let allPlayers = [];
+  let listenersWired = false;
 
   init();
 
@@ -107,8 +108,13 @@
         </section>`;
     }).join('');
     root.innerHTML = playersSection + sections;
-    root.addEventListener('click', onClick);
-    root.addEventListener('change', onChange);
+    // render() now also runs after cascade updates; attach only once or every
+    // re-render would stack another copy of each listener.
+    if (!listenersWired) {
+      root.addEventListener('click', onClick);
+      root.addEventListener('change', onChange);
+      listenersWired = true;
+    }
   }
 
   function renderPlayersSection() {
@@ -382,7 +388,7 @@
     const sbRaw = sbField.value;
     const score_a = saRaw === '' ? null : Number(saRaw);
     const score_b = sbRaw === '' ? null : Number(sbRaw);
-    const winner_code = winnerField.value || null;
+    let winner_code = winnerField.value || null;
     const completed = completedField.checked;
 
     for (const [label, val] of [['Team A', score_a], ['Team B', score_b]]) {
@@ -404,6 +410,17 @@
       }
       if (!isGroup && score_a === score_b && !winner_code) {
         return fail(status, 'Knockout draws need a PK winner.');
+      }
+      // A final with a decisive score must name its winner — a completed row
+      // with winner_code null scores nobody and silently stalls the cascade.
+      // Derive it from the score when the select was left blank (e.g. scores
+      // were prefilled by the ESPN poll, so the change-event autofill never ran).
+      if (!winner_code && score_a !== score_b) {
+        winner_code = score_a > score_b ? match?.team_a_code : match?.team_b_code;
+        if (!winner_code) {
+          return fail(status, 'Pick the winner before marking final.');
+        }
+        winnerField.value = winner_code;
       }
       if (winner_code && score_a !== score_b) {
         const higher = score_a > score_b ? 'a' : 'b';
@@ -432,10 +449,68 @@
       row.classList.toggle('is-completed', completed);
       status.classList.add('is-ok');
       status.textContent = '✓ Saved';
-      setTimeout(() => { if (status.textContent === '✓ Saved') status.textContent = ''; }, 2500);
     } catch (err) {
-      fail(status, err.message || String(err));
+      return fail(status, err.message || String(err));
     }
+
+    // Propagate teams into later rounds exactly like the ESPN sync does, so
+    // manual entry alone can progress the knockout bracket (this page is the
+    // fallback for when the automated poll is offline).
+    try {
+      const cascaded = await runCascade();
+      if (cascaded > 0) {
+        render(); // newly resolved knockout rows become editable
+        const fresh = root.querySelector(`.admin-row[data-match-id="${matchId}"] .admin-row-status`);
+        if (fresh) {
+          fresh.classList.add('is-ok');
+          fresh.textContent = `✓ Saved · ${cascaded} bracket slot${cascaded === 1 ? '' : 's'} updated`;
+        }
+      } else {
+        setTimeout(() => { if (status.textContent === '✓ Saved') status.textContent = ''; }, 2500);
+      }
+    } catch (err) {
+      fail(status, `Saved, but bracket propagation failed: ${err.message || err}`);
+    }
+  }
+
+  // Same slot-resolution the sync script uses, via the shared pure modules.
+  // Dynamic import keeps this classic (non-module) script working unchanged.
+  async function runCascade() {
+    const [{ computeCascadeWrites }, { computeGroupStandings }] = await Promise.all([
+      import('./src/cascade.js'),
+      import('./src/standings.js'),
+    ]);
+    const byGroup = {};
+    for (const m of allMatches) {
+      if (m.stage === 'group' && m.group_code) (byGroup[m.group_code] ||= []).push(m);
+    }
+    const standings = {};
+    for (const [g, ms] of Object.entries(byGroup)) standings[g] = computeGroupStandings(ms);
+    const writes = computeCascadeWrites(allMatches, standings);
+    for (const w of writes) {
+      const local = allMatches.find((m) => m.id === w.id);
+      const fields = {
+        team_a_code: w.team_a_code,
+        team_b_code: w.team_b_code,
+        updated_at: new Date().toISOString(),
+      };
+      // Losing a participant invalidates any result already on the row: keep
+      // it and the leaderboard would still score a match whose teams are now
+      // unknown — and the row would be uneditable here (no teams, no inputs).
+      if ((w.team_a_code == null || w.team_b_code == null) && local?.completed) {
+        Object.assign(fields, {
+          score_a: null, score_b: null, winner_code: null,
+          completed: false, result_source: null,
+        });
+      }
+      const { error } = await supabase.from('matches').update(fields).eq('id', w.id);
+      if (error) throw error;
+      if (local) {
+        const { updated_at, ...localFields } = fields;
+        Object.assign(local, localFields);
+      }
+    }
+    return writes.length;
   }
 
   function fail(status, msg) {

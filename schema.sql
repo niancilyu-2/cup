@@ -82,7 +82,10 @@ CREATE TABLE IF NOT EXISTS group_picks (
   third_code TEXT REFERENCES teams(code),
   third_advances BOOLEAN NOT NULL DEFAULT FALSE,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  PRIMARY KEY (player_id, group_code)
+  PRIMARY KEY (player_id, group_code),
+  -- Kept in sync with migration 001.
+  CONSTRAINT group_picks_check
+    CHECK (first_code IS NULL OR second_code IS NULL OR first_code <> second_code)
 );
 
 -- Bracket winner picks for every knockout match (R32 + R16 + QF + SF + 3rd + Final).
@@ -125,7 +128,12 @@ CREATE POLICY "groups_read"  ON groups  FOR SELECT USING (true);
 CREATE POLICY "teams_read"   ON teams   FOR SELECT USING (true);
 CREATE POLICY "matches_read" ON matches FOR SELECT USING (true);
 
--- Players: read + self-signup + updating submission timestamps + delete (trust-based).
+-- Players: read + self-signup + update + delete (trust-based).
+-- NOTE: the UPDATE policy grants ALL columns to anon, not just the submission
+-- timestamps — name (rename), pin_hash (admin PIN reset), and the timestamps
+-- are all written through the anon key, so it cannot be narrower without
+-- server-side auth. Anyone holding the anon key can therefore also rewrite
+-- another player's pin_hash or is_admin; accepted within this pool's trust model.
 -- Admin delete is gated client-side by ADMIN_CODE; FK cascades remove the player's picks.
 CREATE POLICY "players_read"              ON players FOR SELECT USING (true);
 CREATE POLICY "players_insert"            ON players FOR INSERT WITH CHECK (true);

@@ -14,7 +14,7 @@
     'First kickoff Jun 11 — Mexico vs South Africa @ Estadio Azteca',
     'Final Jul 19 @ MetLife Stadium, New Jersey',
     'Defending champions: Argentina (2022)',
-    'Perfect bracket = 134 pts · never been done',
+    'Perfect bracket = 148 pts · never been done',
   ];
 
   const track = document.getElementById('ticker-track');

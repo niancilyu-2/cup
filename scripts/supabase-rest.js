@@ -22,8 +22,11 @@ export async function selectMatches() {
   return res.json();
 }
 
-export async function patchMatch(id, fields) {
-  const url = `${URL}/rest/v1/matches?id=eq.${encodeURIComponent(id)}`;
+export async function patchMatch(id, fields, { skipManual = false } = {}) {
+  // skipManual guards server-side against racing an admin manual entry made
+  // between our SELECT and this PATCH (neq alone would also exclude NULLs).
+  const guard = skipManual ? '&or=(result_source.is.null,result_source.neq.manual)' : '';
+  const url = `${URL}/rest/v1/matches?id=eq.${encodeURIComponent(id)}${guard}`;
   const res = await fetch(url, {
     method: 'PATCH',
     headers: { ...headers(), Prefer: 'return=minimal' },

@@ -39,15 +39,31 @@ export function buildIndex(matches) {
   return idx;
 }
 
+// Numeric YYYYMMDD differences jump by ~70 across month boundaries, so compare
+// real calendar distance instead.
+const stampToMs = (s) =>
+  Date.UTC(Number(s.slice(0, 4)), Number(s.slice(4, 6)) - 1, Number(s.slice(6, 8)));
+
 export function matchIdFor(idx, ev) {
   const cands = idx[pairKey(ev.teamA, ev.teamB)];
   if (!cands || !cands.length) return null;
   if (cands.length === 1) return cands[0].id;
   // Rematch across stages: pick the candidate whose UTC date is nearest.
-  const evNum = Number(ev.dateUTC);
+  const evMs = stampToMs(ev.dateUTC);
   return cands.slice().sort(
-    (x, y) => Math.abs(Number(x.dateUTC) - evNum) - Math.abs(Number(y.dateUTC) - evNum),
+    (x, y) => Math.abs(stampToMs(x.dateUTC) - evMs) - Math.abs(stampToMs(y.dateUTC) - evMs),
   )[0].id;
+}
+
+// ESPN reports home/away; our row's a/b orientation is fixed by the seed and
+// cascade, and matchIdFor matches the pair in either order — so re-orient the
+// scores to the row before writing. (winner_code is a team code, already
+// orientation-free.)
+export function orientScores(ev, row) {
+  const flipped = ev.teamA === row.team_b_code;
+  return flipped
+    ? { scoreA: ev.scoreB, scoreB: ev.scoreA }
+    : { scoreA: ev.scoreA, scoreB: ev.scoreB };
 }
 
 function standingsByGroup(matches) {
@@ -69,7 +85,8 @@ async function main() {
   const byId = Object.fromEntries(matches.map((m) => [m.id, m]));
   const events = await fetchEspnEvents({ fixture: args.fixture, dates: args.dates });
 
-  const counts = { final: 0, inProgress: 0, skipManual: 0, unmapped: 0, noMatch: 0 };
+  const counts = { final: 0, inProgress: 0, skipManual: 0, unchanged: 0,
+                   koNoWinner: 0, unmapped: 0, noMatch: 0 };
   const scoreWrites = [];
 
   for (const raw of events) {
@@ -83,20 +100,42 @@ async function main() {
     const row = byId[id];
     if (row.result_source === 'manual') { counts.skipManual++; continue; }
 
+    const { scoreA, scoreB } = orientScores(ev, row);
+
     if (ev.status === 'final') {
+      // A finished knockout must name a winner (PKs decide level scores). If
+      // ESPN hasn't flagged one yet, store the score but leave the row
+      // incomplete so the cascade waits and a later run can finish it.
+      if (row.stage !== 'group' && !ev.winnerCode) {
+        counts.koNoWinner++;
+        log(`WARN ${id}: final knockout event without winner flag — left incomplete`);
+        if (row.score_a !== scoreA || row.score_b !== scoreB) {
+          scoreWrites.push([id, { score_a: scoreA, score_b: scoreB }]);
+        }
+        continue;
+      }
+      if (row.completed && row.score_a === scoreA && row.score_b === scoreB &&
+          row.winner_code === ev.winnerCode) {
+        counts.unchanged++;
+        continue;
+      }
       counts.final++;
       scoreWrites.push([id, {
-        score_a: ev.scoreA, score_b: ev.scoreB,
+        score_a: scoreA, score_b: scoreB,
         winner_code: ev.winnerCode, completed: true, result_source: 'espn_fetch',
       }]);
       // Update local copy so the cascade in this same run sees the final result.
       Object.assign(row, {
-        score_a: ev.scoreA, score_b: ev.scoreB,
+        score_a: scoreA, score_b: scoreB,
         winner_code: ev.winnerCode, completed: true,
       });
     } else { // in_progress
+      if (row.score_a === scoreA && row.score_b === scoreB && !row.completed) {
+        counts.unchanged++;
+        continue;
+      }
       counts.inProgress++;
-      scoreWrites.push([id, { score_a: ev.scoreA, score_b: ev.scoreB }]);
+      scoreWrites.push([id, { score_a: scoreA, score_b: scoreB }]);
     }
   }
 
@@ -106,6 +145,7 @@ async function main() {
     .filter((w) => byId[w.id]?.result_source !== 'manual');
 
   log(`events=${events.length} final=${counts.final} live=${counts.inProgress} ` +
+      `unchanged=${counts.unchanged} koNoWinner=${counts.koNoWinner} ` +
       `skipManual=${counts.skipManual} noMatch=${counts.noMatch} unmapped=${counts.unmapped} ` +
       `cascade=${cascadeWrites.length}`);
 
@@ -117,9 +157,20 @@ async function main() {
     return;
   }
 
-  for (const [id, fields] of scoreWrites) await patchMatch(id, fields);
+  for (const [id, fields] of scoreWrites) await patchMatch(id, fields, { skipManual: true });
   for (const w of cascadeWrites) {
-    await patchMatch(w.id, { team_a_code: w.team_a_code, team_b_code: w.team_b_code });
+    const fields = { team_a_code: w.team_a_code, team_b_code: w.team_b_code };
+    // Losing a participant invalidates any result already on the row (this
+    // only happens after an upstream result was voided): a completed match
+    // with unknown teams must not keep scoring.
+    const row = byId[w.id];
+    if ((w.team_a_code == null || w.team_b_code == null) && row?.completed) {
+      Object.assign(fields, {
+        score_a: null, score_b: null, winner_code: null,
+        completed: false, result_source: null,
+      });
+    }
+    await patchMatch(w.id, fields, { skipManual: true });
   }
   log(`Wrote ${scoreWrites.length} scores + ${cascadeWrites.length} cascade updates.`);
 }

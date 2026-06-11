@@ -7,6 +7,7 @@ import { buildReachability, isOutOfContention, maxPossible } from './src/project
 
 const STORAGE_KEY_PLAYER = 'wcbracket.player';
 const FINAL_MATCH_ID = 'M104';
+const THIRD_PLACE_MATCH_ID = 'M103'; // played but never scored — see scoring.js
 
 // FIFA 3-letter code → ISO 3166-1 alpha-2 (used by lipis/flag-icons).
 // Deterministic auto-avatar from the player id (stable across renames).
@@ -65,6 +66,11 @@ async function init() {
 
     for (const r of [playersRes, teamsRes, matchesRes, groupRes, brktRes, tbRes]) {
       if (r.error) throw r.error;
+      // Supabase silently caps un-ranged queries at 1000 rows; mis-scoring
+      // players whose rows fell past the cap would be invisible. Fail loudly.
+      if (r.data && r.data.length >= 1000) {
+        throw new Error('Pick data exceeds a single query — leaderboard needs pagination.');
+      }
     }
 
     const teamsByCode = Object.fromEntries(teamsRes.data.map((t) => [t.code, t]));
@@ -77,10 +83,31 @@ async function init() {
       .map((p) => buildRow(p, picksByPlayer.get(p.id) || emptyPicks(), results, reach, matchesRes.data, teamsByCode))
       .filter((r) => r.hasAnyPicks);
 
-    rows.sort((a, b) => b.points - a.points);
-    rows.forEach((r, i) => { r.rank = i + 1; });
+    // Tiebreaker: once the Final is decided, ties on points break by whose
+    // predicted avg is closest to the actual champion's avg goals per game.
+    const champStats = actualChampionStats(matchesRes.data);
+    const tbDist = (r) => (champStats && r.tiebreaker != null)
+      ? Math.abs(r.tiebreaker - champStats.avg)
+      : null;
+    rows.sort((a, b) => {
+      if (b.points !== a.points) return b.points - a.points;
+      const da = tbDist(a);
+      const db = tbDist(b);
+      if (da == null && db == null) return 0;
+      if (da == null) return 1; // no tiebreaker entered sorts below
+      if (db == null) return -1;
+      return da - db;
+    });
+    // Standard competition ranking: genuinely tied rows share a rank (1,2,2,4)
+    // instead of getting arbitrary distinct ranks from the sort order.
+    rows.forEach((r, i) => {
+      const prev = rows[i - 1];
+      const tiedWithPrev = prev && r.points === prev.points &&
+        (tbDist(r) ?? Infinity) === (tbDist(prev) ?? Infinity);
+      r.rank = tiedWithPrev ? prev.rank : i + 1;
+    });
 
-    render(rows, myName, hasResults);
+    render(rows, myName, hasResults, champStats);
   } catch (err) {
     root.innerHTML = `<div class="lb-error">Couldn't load leaderboard. ${escapeHtml(err.message || String(err))}</div>`;
   }
@@ -90,6 +117,22 @@ async function init() {
 
 // Scoring results are derived from raw match rows by the shared results module.
 const buildResults = buildTournamentResults;
+
+// The real champion's average goals per game (their own goals, regulation +
+// extra time — shootout kicks are not in score_a/b). Null until the Final is
+// decided, so the tiebreaker only kicks in when it can be computed.
+function actualChampionStats(matches) {
+  const final = matches.find((m) => m.id === FINAL_MATCH_ID);
+  if (!final?.completed || !final.winner_code) return null;
+  const code = final.winner_code;
+  const played = matches.filter((m) =>
+    m.completed && m.score_a != null && m.score_b != null &&
+    (m.team_a_code === code || m.team_b_code === code));
+  if (!played.length) return null;
+  const goals = played.reduce(
+    (sum, m) => sum + (m.team_a_code === code ? m.score_a : m.score_b), 0);
+  return { code, avg: goals / played.length };
+}
 
 // ---------- Pick assembly ----------
 
@@ -162,7 +205,9 @@ function decidedPicksCount(results) {
   const decidedGroups = Object.keys(results.groupOutcomes).length;
   const groupSlots = decidedGroups * 2;
   const wildcards = decidedGroups === 12 ? 8 : 0;
-  const ko = Object.values(results.matchResults).filter((r) => r.played).length;
+  // M103 is played but never scored, so it must not inflate the denominator.
+  const ko = Object.entries(results.matchResults)
+    .filter(([id, r]) => r.played && id !== THIRD_PLACE_MATCH_ID).length;
   return groupSlots + wildcards + ko;
 }
 
@@ -174,7 +219,7 @@ function computeAccuracy(breakdown, results) {
 
 // ---------- Rendering ----------
 
-function render(rows, myNameLower, hasResults) {
+function render(rows, myNameLower, hasResults, champStats) {
   if (!rows.length) {
     root.innerHTML = `
       <div class="lb-empty">No players have entered picks yet. Once anyone saves picks on the home page, they'll appear here.</div>
@@ -209,7 +254,9 @@ function render(rows, myNameLower, hasResults) {
       </span>
       <span class="lb-legend-item">
         <span class="lb-legend-key">Tiebreaker</span>
-        <span class="lb-legend-desc">Predicted avg goals/game for the champion.</span>
+        <span class="lb-legend-desc">Predicted avg goals/game for the champion.${
+          champStats ? ` Actual: <strong>${champStats.avg.toFixed(2)}</strong>.` : ''
+        }</span>
       </span>
     </div>
     <table class="lb-table">
