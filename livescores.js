@@ -194,12 +194,10 @@
     return lines.join('');
   }
 
-  function picksToggleHTML(match, ctx) {
+  function picksPanelBlockHTML(match, ctx) {
     const panel = picksPanelHTML(match, ctx);
     if (!panel) return '';
-    return `
-      <button type="button" class="ls-picks-toggle" aria-expanded="false">Picks <span class="ls-picks-caret" aria-hidden="true">▾</span></button>
-      <div class="ls-picks-panel" hidden>${panel}</div>`;
+    return `<div class="ls-picks-panel">${panel}</div>`;
   }
 
   function render(matches, teamByCode, picksCtx) {
@@ -222,15 +220,6 @@
     `;
 
     root.addEventListener('click', (e) => {
-      const pickBtn = e.target.closest('.ls-picks-toggle');
-      if (pickBtn) {
-        const panel = pickBtn.nextElementSibling;
-        const open = panel.hidden;
-        panel.hidden = !open;
-        pickBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-        pickBtn.classList.toggle('is-open', open);
-        return;
-      }
       const toggle = e.target.closest('.ls-toggle');
       if (!toggle) return;
       const section = toggle.closest('.ls-section');
@@ -286,7 +275,7 @@
           </div>
           <div class="ls-live-team ls-live-team--right">${liveTeamHTML(teamB)}</div>
         </div>
-        ${picksToggleHTML(match, picksCtx)}
+        ${picksPanelBlockHTML(match, picksCtx)}
       </section>`;
   }
 
@@ -384,7 +373,7 @@
           ${teamLine(teamB, teamBCode, 'b')}
         </div>
         <div class="ls-match-venue">${escapeHtml(venueShort(match.venue))}</div>
-        ${picksToggleHTML(match, picksCtx)}
+        ${picksPanelBlockHTML(match, picksCtx)}
       </div>`;
   }
 
