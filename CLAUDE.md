@@ -39,6 +39,7 @@ All sections open from day 1 and lock at the first WC kickoff on June 11.
 ## Lock & visibility
 
 - `LOCK_DATE_ISO` (June 11 13:00 -06:00) freezes all picks. After lock, everyone's picks are revealed and the leaderboard goes live.
+- The lock is enforced twice: the app refuses to save, and (migration 005) the picks tables' RLS policies reject all anon INSERT/UPDATE/DELETE after the same instant — pick rows cannot be changed or deleted once the tournament starts. Player deletion is gated the same way because its FK cascade would remove picks.
 
 ## Scoring (final)
 
@@ -65,10 +66,11 @@ Pure modules in `src/` (browser + Node; unit-tested in `tests/`):
 - `cascade.js` — resolves knockout slot labels to team writes. `wildcards.js` / `wildcards-table.js` — Annexe C lookup.
 
 Results sync (`scripts/`, run by GitHub Actions, not served to the browser):
-- `sync-espn.js` — orchestrator. `espn-fetch.js` — ESPN fetch. `supabase-rest.js` — PostgREST writes (anon key).
+- `sync-espn.js` — orchestrator. `espn-fetch.js` — ESPN fetch. `supabase-rest.js` — PostgREST writes (anon key). The sync reads and PATCHes only the `matches` table — it can never touch picks.
+- `backup-data.js` — dumps all tables to JSON; run 6-hourly during the tournament by `backup-data.yml`, artifacts kept 90 days.
 
 Other:
-- `.github/workflows/` — `deploy-pages.yml` (Pages deploy, injects `config.js` from secrets) + `sync-results.yml` (30-min cron, June 11–July 19 UTC).
+- `.github/workflows/` — `deploy-pages.yml` (Pages deploy, injects `config.js` from secrets) + `sync-results.yml` (30-min cron, June 11–July 19 UTC) + `backup-data.yml` (6-hourly data snapshots during the tournament).
 - `style.css` — editorial broadcast theme: true-black surfaces, single yellow accent, condensed display type, hairline chrome.
 - `schema.sql` — Supabase tables + RLS. `seed.sql` — teams/groups/matches seed data.
 - `config.example.js` — credentials template (copy to `config.js`, gitignored). `docs/superpowers/` — design spec + plan. `BUILD_STORY.md` — narrative log.

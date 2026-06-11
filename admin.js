@@ -337,10 +337,10 @@
       if (error) throw error;
       if (!data || data.length === 0) {
         throw new Error(
-          'No row deleted. Likely cause: the players DELETE policy is missing. ' +
-          'Run in Supabase SQL editor: ' +
-          `CREATE POLICY "players_delete" ON players FOR DELETE USING (true); ` +
-          `NOTIFY pgrst, 'reload schema';`
+          'No row deleted. Player deletion is disabled once picks lock at first ' +
+          'kickoff (it would cascade-delete their picks); use the Supabase SQL ' +
+          'editor if removal is truly needed. Before lock, check that the ' +
+          'players_delete_prelock policy from migration 005 exists.'
         );
       }
       allPlayers = allPlayers.filter((p) => p.id !== playerId);

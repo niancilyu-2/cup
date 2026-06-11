@@ -138,13 +138,41 @@ CREATE POLICY "matches_read" ON matches FOR SELECT USING (true);
 CREATE POLICY "players_read"              ON players FOR SELECT USING (true);
 CREATE POLICY "players_insert"            ON players FOR INSERT WITH CHECK (true);
 CREATE POLICY "players_update_submission" ON players FOR UPDATE USING (true) WITH CHECK (true);
-CREATE POLICY "players_delete"            ON players FOR DELETE USING (true);
+-- Player deletion cascades into picks (FK cascades bypass RLS), so it is
+-- gated on the lock too. Post-lock cleanup goes through the SQL editor.
+CREATE POLICY "players_delete_prelock"    ON players
+  FOR DELETE USING (now() < TIMESTAMPTZ '2026-06-11 19:00:00+00');
 
--- Picks: full read + write for anon (trust-based).
--- App enforces "only your own picks" and "hidden until lock".
-CREATE POLICY "group_picks_all"       ON group_picks       FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "bracket_picks_all"     ON bracket_picks     FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "tiebreaker_picks_all"  ON tiebreaker_picks  FOR ALL USING (true) WITH CHECK (true);
+-- Picks: read always; writes only until first kickoff (kept in sync with
+-- migration 005 and LOCK_DATE_ISO in app.js). After lock the database — not
+-- just the app — guarantees pick rows can never be changed or deleted by the
+-- anon key. App still enforces "only your own picks" and "hidden until lock".
+CREATE POLICY "group_picks_read"           ON group_picks FOR SELECT USING (true);
+CREATE POLICY "group_picks_insert_prelock" ON group_picks
+  FOR INSERT WITH CHECK (now() < TIMESTAMPTZ '2026-06-11 19:00:00+00');
+CREATE POLICY "group_picks_update_prelock" ON group_picks
+  FOR UPDATE USING (now() < TIMESTAMPTZ '2026-06-11 19:00:00+00')
+  WITH CHECK (now() < TIMESTAMPTZ '2026-06-11 19:00:00+00');
+CREATE POLICY "group_picks_delete_prelock" ON group_picks
+  FOR DELETE USING (now() < TIMESTAMPTZ '2026-06-11 19:00:00+00');
+
+CREATE POLICY "bracket_picks_read"           ON bracket_picks FOR SELECT USING (true);
+CREATE POLICY "bracket_picks_insert_prelock" ON bracket_picks
+  FOR INSERT WITH CHECK (now() < TIMESTAMPTZ '2026-06-11 19:00:00+00');
+CREATE POLICY "bracket_picks_update_prelock" ON bracket_picks
+  FOR UPDATE USING (now() < TIMESTAMPTZ '2026-06-11 19:00:00+00')
+  WITH CHECK (now() < TIMESTAMPTZ '2026-06-11 19:00:00+00');
+CREATE POLICY "bracket_picks_delete_prelock" ON bracket_picks
+  FOR DELETE USING (now() < TIMESTAMPTZ '2026-06-11 19:00:00+00');
+
+CREATE POLICY "tiebreaker_picks_read"           ON tiebreaker_picks FOR SELECT USING (true);
+CREATE POLICY "tiebreaker_picks_insert_prelock" ON tiebreaker_picks
+  FOR INSERT WITH CHECK (now() < TIMESTAMPTZ '2026-06-11 19:00:00+00');
+CREATE POLICY "tiebreaker_picks_update_prelock" ON tiebreaker_picks
+  FOR UPDATE USING (now() < TIMESTAMPTZ '2026-06-11 19:00:00+00')
+  WITH CHECK (now() < TIMESTAMPTZ '2026-06-11 19:00:00+00');
+CREATE POLICY "tiebreaker_picks_delete_prelock" ON tiebreaker_picks
+  FOR DELETE USING (now() < TIMESTAMPTZ '2026-06-11 19:00:00+00');
 
 -- Matches: anon may UPDATE results (admin entry is gated client-side by ADMIN_CODE).
 CREATE POLICY "matches_update_results" ON matches FOR UPDATE USING (true) WITH CHECK (true);

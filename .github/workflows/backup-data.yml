@@ -1,0 +1,39 @@
+# ABOUTME: Snapshots all Supabase data (picks, players, matches) to a JSON artifact.
+# ABOUTME: Safety net for the tournament — restore by re-inserting rows in the SQL editor.
+name: Backup data
+
+on:
+  schedule:
+    # Every 6 hours, June 12 – July 20 UTC. Starts the day after picks lock
+    # (June 11 19:00 UTC): pre-lock picks stay private, and artifacts on a
+    # public repo can be downloaded by any logged-in GitHub user. Run the
+    # workflow manually (workflow_dispatch) for an ad-hoc snapshot any time.
+    - cron: '41 */6 12-30 6 *'
+    - cron: '41 */6 1-20 7 *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Dump all tables to JSON
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: node scripts/backup-data.js backup
+      - uses: actions/upload-artifact@v4
+        with:
+          name: supabase-backup-${{ github.run_id }}
+          path: backup/
+          retention-days: 90
