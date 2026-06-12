@@ -5,6 +5,15 @@ import { STAGE_MATCHES } from './scoring.js';
 
 const FINAL_MATCH_ID = 'M104';
 const SF_MATCH_IDS = STAGE_MATCHES.sf;       // ['M101', 'M102']
+const THIRD_PLACE_MATCH_ID = 'M103';
+const BRACKET_COMPARE_IDS = [
+  ...STAGE_MATCHES.r32,
+  ...STAGE_MATCHES.r16,
+  ...STAGE_MATCHES.qf,
+  ...STAGE_MATCHES.sf,
+  ...STAGE_MATCHES.final,
+  THIRD_PLACE_MATCH_ID,
+];
 const STAGE_DEPTH = { r32: 1, r16: 2, qf: 3, sf: 4, final: 5 };
 
 // Shared tally helper: Map<key, count> from an iterable of keys.
@@ -163,6 +172,114 @@ export function divisiveGroups(picksByPlayer, teamsByGroup, { top = 2 } = {}) {
     y.uniqueOrderings - x.uniqueOrderings ||
     (x.group < y.group ? -1 : 1));
   return rows.slice(0, top);
+}
+
+// ---------- Most similar picks ----------
+// Similarity compares stable pick slots only: group 1st/2nd/3rd/4th, each
+// group's wildcard flag, and fixed knockout match IDs. Players are ranked by
+// match rate, then raw matches, with a minimum comparable-pick guard.
+function buildPickVector(picks, teamsByGroup) {
+  const vector = new Map();
+  const groups = Object.keys(teamsByGroup || {}).sort();
+
+  for (const group of groups) {
+    const teams = teamsByGroup[group] || [];
+    const members = new Set(teams);
+    const p = picks.groups[group];
+    if (!p || !p.first || !p.second || !p.third) continue;
+
+    const trio = [p.first, p.second, p.third];
+    if (new Set(trio).size !== 3 || !trio.every((c) => members.has(c))) continue;
+
+    const fourth = teams.find((c) => !trio.includes(c));
+    if (!fourth) continue;
+
+    [p.first, p.second, p.third, fourth].forEach((code, idx) => {
+      vector.set(`G:${group}:${idx + 1}`, code);
+    });
+    vector.set(`G:${group}:WC`, p.advances ? 'ADV' : 'OUT');
+  }
+
+  const bracketIds = [...new Set([
+    ...BRACKET_COMPARE_IDS,
+    ...Object.keys(picks.bracket || {}),
+  ])].sort((a, b) => parseInt(a.slice(1), 10) - parseInt(b.slice(1), 10));
+
+  for (const id of bracketIds) {
+    const winner = picks.bracket[id];
+    if (winner) vector.set(`B:${id}`, winner);
+  }
+
+  return vector;
+}
+
+function comparePickVectors(a, b) {
+  const out = {
+    matches: 0,
+    compared: 0,
+    groupMatches: 0,
+    groupCompared: 0,
+    bracketMatches: 0,
+    bracketCompared: 0,
+  };
+
+  for (const [key, value] of a.entries()) {
+    if (!b.has(key)) continue;
+    const same = b.get(key) === value;
+    out.compared++;
+    if (same) out.matches++;
+
+    if (key.startsWith('G:')) {
+      out.groupCompared++;
+      if (same) out.groupMatches++;
+    } else if (key.startsWith('B:')) {
+      out.bracketCompared++;
+      if (same) out.bracketMatches++;
+    }
+  }
+
+  return { ...out, share: out.compared ? out.matches / out.compared : 0 };
+}
+
+function pickSimilarityPairs(picksByPlayer, teamsByGroup, { top = 5, minCompared = 24, direction = 'most' } = {}) {
+  const vectors = [...picksByPlayer.entries()]
+    .map(([playerId, picks]) => ({ playerId, vector: buildPickVector(picks, teamsByGroup) }))
+    .filter((row) => row.vector.size > 0)
+    .sort((a, b) => (a.playerId < b.playerId ? -1 : 1));
+
+  const pairs = [];
+  for (let i = 0; i < vectors.length; i++) {
+    for (let j = i + 1; j < vectors.length; j++) {
+      const comparison = comparePickVectors(vectors[i].vector, vectors[j].vector);
+      if (comparison.compared < minCompared) continue;
+      pairs.push({
+        playerIds: [vectors[i].playerId, vectors[j].playerId],
+        ...comparison,
+      });
+    }
+  }
+
+  pairs.sort((x, y) => {
+    if (direction === 'least') {
+      return x.share - y.share ||
+        x.matches - y.matches ||
+        y.compared - x.compared ||
+        (x.playerIds.join('|') < y.playerIds.join('|') ? -1 : 1);
+    }
+    return y.share - x.share ||
+      y.matches - x.matches ||
+      y.compared - x.compared ||
+      (x.playerIds.join('|') < y.playerIds.join('|') ? -1 : 1);
+  });
+  return pairs.slice(0, top);
+}
+
+export function similarPickPairs(picksByPlayer, teamsByGroup, { top = 5, minCompared = 24 } = {}) {
+  return pickSimilarityPairs(picksByPlayer, teamsByGroup, { top, minCompared, direction: 'most' });
+}
+
+export function leastSimilarPickPairs(picksByPlayer, teamsByGroup, { top = 5, minCompared = 24 } = {}) {
+  return pickSimilarityPairs(picksByPlayer, teamsByGroup, { top, minCompared, direction: 'least' });
 }
 
 // ---------- Contrarian picks ----------

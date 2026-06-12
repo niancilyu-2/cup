@@ -1,9 +1,10 @@
 // ABOUTME: Pool Stats page — renders aggregate pick trends from Supabase after lock.
 // ABOUTME: Pre-lock it shows a locked panel and fetches no pick data (picks are private).
 
-import { flagCode, escapeHtml, bucketPicks } from './src/page-utils.js';
+import { flagCode, escapeHtml, bucketPicks, avatarUrl } from './src/page-utils.js';
 import {
-  championFavorites, finalMatchups, divisiveMatches, divisiveGroups, contrarianPicks,
+  championFavorites, finalMatchups, similarPickPairs, leastSimilarPickPairs,
+  divisiveMatches, divisiveGroups, contrarianPicks,
 } from './src/pool-stats.js';
 
 // Same instant as app.js's lock and the DB RLS freeze (2026-06-11 19:00 UTC).
@@ -71,12 +72,16 @@ async function init() {
           favoritesHTML(championFavorites(picksByPlayer), ctx))}
         ${card('Most common final matchup', 'Projected final pairings',
           matchupsHTML(finalMatchups(picksByPlayer), ctx))}
+        ${card('Most divisive groups', 'Ranking disagreement',
+          divisiveGroupsHTML(divisiveGroups(picksByPlayer, teamsByGroup), ctx))}
         ${card('Most divisive matches', 'Closest pick splits',
           divisiveMatchesHTML(divisiveMatches(picksByPlayer), ctx))}
-        ${card('Most divisive group', 'Ranking disagreement',
-          divisiveGroupsHTML(divisiveGroups(picksByPlayer, teamsByGroup), ctx))}
         ${card('Contrarian picks', 'Boldest user calls',
           contrarianHTML(contrarianPicks(picksByPlayer), ctx), 'pulse-card--wide')}
+        ${card('Most similar picks', 'Closest player pairs',
+          similarPairsHTML(similarPickPairs(picksByPlayer, teamsByGroup, { top: 3 }), ctx))}
+        ${card('Least similar picks', 'Biggest pick contrasts',
+          similarPairsHTML(leastSimilarPickPairs(picksByPlayer, teamsByGroup, { top: 3 }), ctx, 'pulse-similar-row--least'))}
       </section>`;
   } catch (err) {
     root.innerHTML = `<div class="lb-error">Couldn't load pool stats. ${escapeHtml(err.message || String(err))}</div>`;
@@ -107,6 +112,11 @@ function flagHTML(code, teamName) {
 
 function teamHTML(code, ctx, cls = 'pulse-team') {
   return `<span class="${cls}">${flagHTML(code, ctx.teamName)} ${escapeHtml(code)}</span>`;
+}
+
+function userLinkHTML(id, ctx) {
+  const name = escapeHtml(ctx.nameById[id] || 'Unknown');
+  return `<a class="pulse-user-link" href="./?view=${encodeURIComponent(id)}#bracket-section" title="View ${name}'s picks read-only"><img class="pulse-user-avatar" src="${avatarUrl(id)}" alt="" />${name}</a>`;
 }
 
 const pct = (share) => `${Math.round(share * 100)}%`;
@@ -146,6 +156,35 @@ function matchupsHTML(fm, ctx) {
       <span class="pulse-matchup-share">${pct(e.share)}</span>
     </div>`);
   return `<div class="pulse-card-body pulse-matchup-board">${rows.join('')}</div>`;
+}
+
+// ---------- Most similar picks ----------
+
+function similarPairsHTML(pairs, ctx, rowClass = '') {
+  if (!pairs.length) return emptyBody();
+  const rows = pairs.map((p) => {
+    const [a, b] = p.playerIds;
+    const parts = [
+      p.groupCompared ? `${p.groupMatches}/${p.groupCompared} group` : '',
+      p.bracketCompared ? `${p.bracketMatches}/${p.bracketCompared} bracket` : '',
+    ].filter(Boolean).join(' · ');
+    return `
+      <div class="pulse-similar-row ${rowClass}">
+        <div class="pulse-similar-topline">
+          <span class="pulse-similar-users">
+            ${userLinkHTML(a, ctx)}
+            <span class="pulse-similar-plus">+</span>
+            ${userLinkHTML(b, ctx)}
+          </span>
+          <span class="pulse-tag">${pct(p.share)} match</span>
+        </div>
+        <div class="pulse-similar-meter" aria-hidden="true">
+          <span style="width: ${Math.round(p.share * 100)}%"></span>
+        </div>
+        <div class="pulse-similar-meta"><span>${p.matches}/${p.compared} same picks</span><span>${parts}</span></div>
+      </div>`;
+  });
+  return `<div class="pulse-card-body pulse-similar-list">${rows.join('')}</div>`;
 }
 
 // ---------- Divisive matches ----------
@@ -253,11 +292,7 @@ function contrarianHTML(entries, ctx) {
   if (!entries.length) return emptyBody();
   const cards = entries.map((e) => {
     const copy = DEPTH_COPY[e.depth];
-    const links = e.pickerIds.map((id) => {
-      const name = escapeHtml(ctx.nameById[id] || 'Unknown');
-      const avatar = `https://api.dicebear.com/9.x/bottts/svg?seed=${encodeURIComponent(id)}`;
-      return `<a class="pulse-user-link" href="./?view=${encodeURIComponent(id)}#bracket-section" title="View ${name}'s picks read-only"><img class="pulse-user-avatar" src="${avatar}" alt="" />${name}</a>`;
-    }).join('<span class="pulse-user-sep">,</span>');
+    const links = e.pickerIds.map((id) => userLinkHTML(id, ctx)).join('<span class="pulse-user-sep">,</span>');
     return `
       <div class="pulse-contrarian-card">
         <div>

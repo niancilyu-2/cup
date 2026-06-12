@@ -6534,6 +6534,7 @@ body.page-pulse {
 .pulse-bars,
 .pulse-match-list,
 .pulse-group-list,
+.pulse-similar-list,
 .pulse-contrarian-list,
 .pulse-matchup-board {
   display: grid;
@@ -6609,6 +6610,7 @@ body.page-pulse {
 
 .pulse-match-card,
 .pulse-group-card,
+.pulse-similar-row,
 .pulse-contrarian-card {
   display: grid;
   gap: 0.55rem;
@@ -6621,6 +6623,7 @@ body.page-pulse {
 
 .pulse-match-topline,
 .pulse-group-topline,
+.pulse-similar-topline,
 .pulse-contrarian-topline {
   display: flex;
   align-items: center;
@@ -6732,6 +6735,49 @@ body.page-pulse {
   font-weight: 700;
   color: var(--accent);
   text-align: right;
+}
+
+.pulse-similar-users {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.34rem 0.42rem;
+  min-width: 0;
+}
+
+.pulse-similar-plus {
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+.pulse-similar-meter {
+  height: 0.5rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(11, 14, 19, 0.52);
+  box-shadow: inset 0 0 0 1px rgba(159, 184, 214, 0.14);
+}
+
+.pulse-similar-meter span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--steel), var(--winner));
+  box-shadow: 0 0 14px rgba(65, 181, 106, 0.18);
+}
+
+.pulse-similar-row--least .pulse-similar-meter span {
+  background: linear-gradient(90deg, var(--orange), var(--steel));
+  box-shadow: 0 0 14px rgba(255, 159, 67, 0.16);
+}
+
+.pulse-similar-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  color: var(--text-muted);
+  font-size: 0.78rem;
 }
 
 .pulse-team-strip {
@@ -6997,9 +7043,14 @@ body.page-pulse {
 
   .pulse-split-caption,
   .pulse-group-caption,
+  .pulse-similar-meta,
   .pulse-contrarian-meta {
     display: grid;
     gap: 0.2rem;
+  }
+
+  .pulse-similar-topline {
+    align-items: flex-start;
   }
 
   .pulse-group-summary {

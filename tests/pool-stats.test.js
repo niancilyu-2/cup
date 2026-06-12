@@ -3,7 +3,8 @@
 
 import { describe, it, expect } from 'vitest';
 import {
-  championFavorites, finalMatchups, divisiveMatches, divisiveGroups, contrarianPicks,
+  championFavorites, finalMatchups, divisiveMatches, divisiveGroups,
+  similarPickPairs, leastSimilarPickPairs, contrarianPicks,
 } from '../src/pool-stats.js';
 
 // Build Map<playerId, picks> from a compact spec: { p1: { bracket: {...}, groups: {...} } }
@@ -174,6 +175,88 @@ describe('divisiveGroups', () => {
   it('returns wildcard null when nobody flags the group', () => {
     const r = divisiveGroups(players({ a: order('MEX', 'KOR', 'CZE') }), TEAMS);
     expect(r[0].wildcard).toBeNull();
+  });
+});
+
+describe('similarPickPairs', () => {
+  const TEAMS = {
+    A: ['MEX', 'KOR', 'CZE', 'RSA'],
+    B: ['BRA', 'MAR', 'HAI', 'SCO'],
+  };
+  const group = (first, second, third, advances = false) => ({ first, second, third, advances });
+
+  it('ranks player pairs by shared group and bracket picks', () => {
+    const r = similarPickPairs(players({
+      alpha: {
+        groups: {
+          A: group('MEX', 'KOR', 'CZE', true),
+          B: group('BRA', 'MAR', 'HAI'),
+        },
+        bracket: { M73: 'MEX', M74: 'BRA', M104: 'BRA' },
+      },
+      beta: {
+        groups: {
+          A: group('MEX', 'KOR', 'CZE', true),
+          B: group('BRA', 'MAR', 'SCO'),
+        },
+        bracket: { M73: 'MEX', M74: 'ARG', M104: 'BRA' },
+      },
+      gamma: {
+        groups: {
+          A: group('KOR', 'MEX', 'RSA'),
+          B: group('MAR', 'SCO', 'HAI', true),
+        },
+        bracket: { M73: 'KOR', M74: 'ARG', M104: 'ARG' },
+      },
+    }), TEAMS, { minCompared: 1 });
+
+    expect(r[0].playerIds).toEqual(['alpha', 'beta']);
+    expect(r[0].matches).toBe(10);
+    expect(r[0].compared).toBe(13);
+    expect(r[0].groupMatches).toBe(8);
+    expect(r[0].groupCompared).toBe(10);
+    expect(r[0].bracketMatches).toBe(2);
+    expect(r[0].bracketCompared).toBe(3);
+    expect(r[0].share).toBeCloseTo(10 / 13);
+  });
+
+  it('requires a minimum number of comparable picks', () => {
+    const r = similarPickPairs(players({
+      alpha: { bracket: { M104: 'BRA' } },
+      beta: { bracket: { M104: 'BRA' } },
+    }), TEAMS, { minCompared: 2 });
+    expect(r).toEqual([]);
+  });
+
+  it('can rank the least similar player pairs', () => {
+    const r = leastSimilarPickPairs(players({
+      alpha: {
+        groups: {
+          A: group('MEX', 'KOR', 'CZE', true),
+          B: group('BRA', 'MAR', 'HAI'),
+        },
+        bracket: { M73: 'MEX', M74: 'BRA', M104: 'BRA' },
+      },
+      beta: {
+        groups: {
+          A: group('MEX', 'KOR', 'CZE', true),
+          B: group('BRA', 'MAR', 'SCO'),
+        },
+        bracket: { M73: 'MEX', M74: 'ARG', M104: 'BRA' },
+      },
+      gamma: {
+        groups: {
+          A: group('KOR', 'MEX', 'RSA'),
+          B: group('MAR', 'SCO', 'HAI', true),
+        },
+        bracket: { M73: 'KOR', M74: 'ARG', M104: 'ARG' },
+      },
+    }), TEAMS, { top: 1, minCompared: 1 });
+
+    expect(r[0].playerIds).toEqual(['alpha', 'gamma']);
+    expect(r[0].matches).toBe(1);
+    expect(r[0].compared).toBe(13);
+    expect(r[0].share).toBeCloseTo(1 / 13);
   });
 });
 
