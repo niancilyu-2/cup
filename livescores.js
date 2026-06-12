@@ -4,6 +4,7 @@
 (() => {
   const root = document.getElementById('livescores-root');
   if (!root) return;
+  const summaryRoot = document.getElementById('livescores-summary');
 
   const supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
 
@@ -62,6 +63,7 @@
       if (locked && playersRes && !playersRes.error && !groupRes.error) {
         picksCtx = buildPicksCtx(playersRes.data, groupRes.data, teamsRes.data);
       }
+      renderTodaySummary(matchesRes.data);
       render(matchesRes.data, teamByCode, picksCtx);
     } catch (err) {
       root.innerHTML = `<div class="ls-error">Couldn't load matches. ${escapeHtml(err.message || String(err))}</div>`;
@@ -187,6 +189,18 @@
       ${groupsHTML}
       ${detailSheetHTML()}
     `;
+  }
+
+  function renderTodaySummary(matches) {
+    if (!summaryRoot) return;
+    const todayKey = etDateKey(new Date());
+    const todayCount = matches.filter((m) => m.kickoff_at && etDateKey(m.kickoff_at) === todayKey).length;
+    summaryRoot.innerHTML = `
+      <div class="ls-summary-stat">
+        <span>Today</span>
+        <strong>${todayCount}</strong>
+        <small>${todayCount === 1 ? 'game' : 'games'}</small>
+      </div>`;
   }
 
   function detailSheetHTML() {
@@ -453,6 +467,17 @@
       weekday: 'short', month: 'short', day: 'numeric',
       hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York',
     })} ET`;
+  }
+
+  function etDateKey(value) {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/New_York',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(new Date(value));
+    const byType = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+    return `${byType.year}-${byType.month}-${byType.day}`;
   }
 
   function groupBy(arr, key) {
