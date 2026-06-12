@@ -29,6 +29,58 @@
     sf: 'Semifinals', third: '3rd-Place Match', final: 'Final',
   };
   const KNOCKOUT_STAGES = ['r32', 'r16', 'qf', 'sf', 'third', 'final'];
+  const ESPN_SCOREBOARD_URL = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard';
+  const ESPN_EVENT_LIMIT = 200;
+  const ESPN_NAME_TO_CODE = {
+    'Mexico': 'MEX',
+    'South Africa': 'RSA',
+    'South Korea': 'KOR', 'Korea Republic': 'KOR',
+    'Czech Republic': 'CZE', 'Czechia': 'CZE',
+    'Canada': 'CAN',
+    'Bosnia and Herzegovina': 'BIH', 'Bosnia & Herzegovina': 'BIH', 'Bosnia-Herzegovina': 'BIH',
+    'Qatar': 'QAT',
+    'Switzerland': 'SUI',
+    'Brazil': 'BRA',
+    'Morocco': 'MAR',
+    'Haiti': 'HAI',
+    'Scotland': 'SCO',
+    'United States': 'USA', 'USA': 'USA',
+    'Paraguay': 'PAR',
+    'Australia': 'AUS',
+    'Turkey': 'TUR', 'Turkiye': 'TUR',
+    'Germany': 'GER',
+    'Curacao': 'CUW',
+    'Ivory Coast': 'CIV', "Cote d'Ivoire": 'CIV',
+    'Ecuador': 'ECU',
+    'Netherlands': 'NED',
+    'Japan': 'JPN',
+    'Sweden': 'SWE',
+    'Tunisia': 'TUN',
+    'Belgium': 'BEL',
+    'Egypt': 'EGY',
+    'Iran': 'IRN', 'IR Iran': 'IRN',
+    'New Zealand': 'NZL',
+    'Spain': 'ESP',
+    'Cape Verde': 'CPV', 'Cabo Verde': 'CPV',
+    'Saudi Arabia': 'KSA',
+    'Uruguay': 'URU',
+    'France': 'FRA',
+    'Senegal': 'SEN',
+    'Iraq': 'IRQ',
+    'Norway': 'NOR',
+    'Argentina': 'ARG',
+    'Algeria': 'ALG',
+    'Austria': 'AUT',
+    'Jordan': 'JOR',
+    'Portugal': 'POR',
+    'DR Congo': 'COD', 'Congo DR': 'COD', 'DR Congo (Congo-Kinshasa)': 'COD',
+    'Uzbekistan': 'UZB',
+    'Colombia': 'COL',
+    'England': 'ENG',
+    'Croatia': 'CRO',
+    'Ghana': 'GHA',
+    'Panama': 'PAN',
+  };
 
   // Picks are private until the lock; the per-match "Picks" panels only load
   // and render after this instant (same as app.js and the DB RLS freeze).
@@ -54,20 +106,122 @@
           supabase.from('group_picks').select('player_id, group_code, first_code, second_code, third_code'),
         );
       }
-      const [teamsRes, matchesRes, playersRes, groupRes] = await Promise.all(queries);
+      queries.push(fetchEspnLiveEvents().catch(() => []));
+      const results = await Promise.all(queries);
+      const espnLiveEvents = results.pop();
+      const [teamsRes, matchesRes, playersRes, groupRes] = results;
       if (teamsRes.error) throw teamsRes.error;
       if (matchesRes.error) throw matchesRes.error;
       const teamByCode = Object.fromEntries(teamsRes.data.map((t) => [t.code, t]));
+      const matches = applyEspnLiveOverlay(matchesRes.data, espnLiveEvents);
       // Pick data is an enhancement — render the schedule even if it failed.
       let picksCtx = null;
       if (locked && playersRes && !playersRes.error && !groupRes.error) {
         picksCtx = buildPicksCtx(playersRes.data, groupRes.data, teamsRes.data);
       }
-      renderTodaySummary(matchesRes.data);
-      render(matchesRes.data, teamByCode, picksCtx);
+      renderTodaySummary(matches);
+      render(matches, teamByCode, picksCtx);
     } catch (err) {
       root.innerHTML = `<div class="ls-error">Couldn't load matches. ${escapeHtml(err.message || String(err))}</div>`;
     }
+  }
+
+  function utcDateStamp(value) {
+    const d = new Date(value);
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(d.getUTCDate()).padStart(2, '0');
+    return `${y}${m}${day}`;
+  }
+
+  function liveScoreboardRange() {
+    const now = new Date();
+    const start = new Date(now);
+    const end = new Date(now);
+    start.setUTCDate(start.getUTCDate() - 1);
+    end.setUTCDate(end.getUTCDate() + 1);
+    return `${utcDateStamp(start)}-${utcDateStamp(end)}`;
+  }
+
+  function codeFromEspnCompetitor(competitor) {
+    const abbr = String(competitor?.team?.abbreviation || '').trim().toUpperCase();
+    if (abbr && FIFA_TO_ISO[abbr]) return abbr;
+    const name = String(competitor?.team?.displayName || '').trim();
+    return ESPN_NAME_TO_CODE[name] || null;
+  }
+
+  function normalizeEspnLiveEvent(event) {
+    const comp = event?.competitions?.[0];
+    const type = comp?.status?.type;
+    if (!comp || type?.state !== 'in') return null;
+    const home = comp.competitors?.find((c) => c.homeAway === 'home');
+    const away = comp.competitors?.find((c) => c.homeAway === 'away');
+    if (!home || !away) return null;
+    const teamA = codeFromEspnCompetitor(home);
+    const teamB = codeFromEspnCompetitor(away);
+    if (!teamA || !teamB) return null;
+    const scoreA = home.score == null || home.score === '' ? null : Number(home.score);
+    const scoreB = away.score == null || away.score === '' ? null : Number(away.score);
+    if (!Number.isFinite(scoreA) || !Number.isFinite(scoreB)) return null;
+    return {
+      dateUTC: utcDateStamp(event.date),
+      teamA,
+      teamB,
+      scoreA,
+      scoreB,
+      clock: type.shortDetail || type.detail || comp.status?.displayClock || 'LIVE',
+    };
+  }
+
+  async function fetchEspnLiveEvents() {
+    const range = liveScoreboardRange();
+    const res = await fetch(`${ESPN_SCOREBOARD_URL}?dates=${range}&limit=${ESPN_EVENT_LIMIT}`);
+    if (!res.ok) throw new Error(`ESPN live fetch failed: ${res.status}`);
+    const data = await res.json();
+    return (data.events || []).map(normalizeEspnLiveEvent).filter(Boolean);
+  }
+
+  function pairKey(a, b) {
+    return [a, b].filter(Boolean).sort().join('|');
+  }
+
+  function stampToMs(stamp) {
+    const y = Number(stamp.slice(0, 4));
+    const m = Number(stamp.slice(4, 6)) - 1;
+    const d = Number(stamp.slice(6, 8));
+    return Date.UTC(y, m, d);
+  }
+
+  function nearestMatchRef(candidates, eventDateUTC) {
+    if (!candidates?.length) return null;
+    const evMs = stampToMs(eventDateUTC);
+    return candidates.slice().sort(
+      (x, y) => Math.abs(stampToMs(x.dateUTC) - evMs) - Math.abs(stampToMs(y.dateUTC) - evMs),
+    )[0];
+  }
+
+  function applyEspnLiveOverlay(matches, liveEvents) {
+    if (!liveEvents?.length) return matches;
+    const out = matches.map((m) => ({ ...m }));
+    const byId = Object.fromEntries(out.map((m) => [m.id, m]));
+    const byPair = {};
+    for (const match of out) {
+      if (!match.team_a_code || !match.team_b_code) continue;
+      const key = pairKey(match.team_a_code, match.team_b_code);
+      (byPair[key] ||= []).push({ id: match.id, dateUTC: utcDateStamp(match.kickoff_at) });
+    }
+
+    for (const event of liveEvents) {
+      const matchRef = nearestMatchRef(byPair[pairKey(event.teamA, event.teamB)], event.dateUTC);
+      const match = matchRef ? byId[matchRef.id] : null;
+      if (!match || match.completed || match.result_source === 'manual') continue;
+      const flipped = event.teamA === match.team_b_code;
+      match.score_a = flipped ? event.scoreB : event.scoreA;
+      match.score_b = flipped ? event.scoreA : event.scoreB;
+      match.live_clock = event.clock;
+      match.is_espn_live_overlay = true;
+    }
+    return out;
   }
 
   // ---------- Who picked who ----------
@@ -323,7 +477,7 @@
     return `
       <section class="ls-live-card">
         <header class="ls-live-card-head">
-          <span class="ls-live-min">LIVE</span>
+          <span class="ls-live-min">${escapeHtml(match.live_clock || 'LIVE')}</span>
           <span class="ls-live-meta">${escapeHtml(stageMetaLabel(match))} · ${escapeHtml(venueShort(match.venue))}</span>
         </header>
         <div class="ls-live-matchup">
@@ -419,7 +573,7 @@
     } else if (status === 'live') {
       centerHTML = `
         <span class="ls-score ls-score--live">${escapeHtml(sa)}<span class="ls-score-dash">–</span>${escapeHtml(sb)}</span>
-        <span class="ls-status ls-status--live"><span class="ls-pulse" aria-hidden="true"></span>LIVE</span>`;
+        <span class="ls-status ls-status--live"><span class="ls-pulse" aria-hidden="true"></span>${escapeHtml(match.live_clock || 'LIVE')}</span>`;
     } else {
       centerHTML = `<span class="ls-vs">vs</span>`;
     }
