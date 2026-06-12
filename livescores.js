@@ -89,6 +89,7 @@
   const LIVE_WINDOW_BEFORE_MS = 5 * 60 * 1000;
   const LIVE_WINDOW_AFTER_MS = 3 * 60 * 60 * 1000;
   let liveRefreshTimer = null;
+  let liveRefreshWakeTimer = null;
   let liveRefreshInFlight = false;
 
   root.addEventListener('click', handleRootClick);
@@ -136,6 +137,7 @@
         return;
       }
       stopLivePolling();
+      clearLiveWakeTimer();
       root.innerHTML = `<div class="ls-error">Couldn't load matches. ${escapeHtml(err.message || String(err))}</div>`;
     }
   }
@@ -153,9 +155,13 @@
   function updateLivePolling(matches) {
     const shouldPoll = liveMatches(matches).length > 0 || hasActiveMatchWindow(matches);
     if (shouldPoll && !liveRefreshTimer) {
+      clearLiveWakeTimer();
       liveRefreshTimer = window.setInterval(refreshLiveScores, LIVE_REFRESH_MS);
     } else if (!shouldPoll && liveRefreshTimer) {
       stopLivePolling();
+      scheduleNextLiveWake(matches);
+    } else if (!shouldPoll) {
+      scheduleNextLiveWake(matches);
     }
   }
 
@@ -163,6 +169,22 @@
     if (!liveRefreshTimer) return;
     window.clearInterval(liveRefreshTimer);
     liveRefreshTimer = null;
+  }
+
+  function clearLiveWakeTimer() {
+    if (!liveRefreshWakeTimer) return;
+    window.clearTimeout(liveRefreshWakeTimer);
+    liveRefreshWakeTimer = null;
+  }
+
+  function scheduleNextLiveWake(matches) {
+    clearLiveWakeTimer();
+    const wakeAt = nextLiveWakeMs(matches);
+    if (!wakeAt) return;
+    liveRefreshWakeTimer = window.setTimeout(() => {
+      liveRefreshWakeTimer = null;
+      refreshLiveScores();
+    }, Math.max(0, wakeAt - Date.now()));
   }
 
   function hasActiveMatchWindow(matches) {
@@ -173,6 +195,16 @@
       if (!Number.isFinite(kickoff)) return false;
       return now >= kickoff - LIVE_WINDOW_BEFORE_MS && now <= kickoff + LIVE_WINDOW_AFTER_MS;
     });
+  }
+
+  function nextLiveWakeMs(matches) {
+    const now = Date.now();
+    const upcoming = matches
+      .filter((match) => match.kickoff_at && !match.completed)
+      .map((match) => new Date(match.kickoff_at).getTime() - LIVE_WINDOW_BEFORE_MS)
+      .filter((wakeAt) => Number.isFinite(wakeAt) && wakeAt > now)
+      .sort((a, b) => a - b);
+    return upcoming[0] || null;
   }
 
   function utcDateStamp(value) {
