@@ -85,15 +85,23 @@
   // Picks are private until the lock; the per-match "Picks" panels only load
   // and render after this instant (same as app.js and the DB RLS freeze).
   const LOCK_DATE_ISO = '2026-06-11T13:00:00-06:00';
+  const LIVE_REFRESH_MS = 30 * 1000;
+  const LIVE_WINDOW_BEFORE_MS = 5 * 60 * 1000;
+  const LIVE_WINDOW_AFTER_MS = 3 * 60 * 60 * 1000;
+  let liveRefreshTimer = null;
+  let liveRefreshInFlight = false;
 
   root.addEventListener('click', handleRootClick);
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeGroupDetail();
   });
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && liveRefreshTimer) refreshLiveScores();
+  });
 
   init();
 
-  async function init() {
+  async function init({ silent = false } = {}) {
     try {
       const locked = new Date() >= new Date(LOCK_DATE_ISO);
       const queries = [
@@ -121,9 +129,50 @@
       }
       renderTodaySummary(matches);
       render(matches, teamByCode, picksCtx);
+      updateLivePolling(matches);
     } catch (err) {
+      if (silent) {
+        console.warn('Live scores refresh failed', err);
+        return;
+      }
+      stopLivePolling();
       root.innerHTML = `<div class="ls-error">Couldn't load matches. ${escapeHtml(err.message || String(err))}</div>`;
     }
+  }
+
+  async function refreshLiveScores() {
+    if (liveRefreshInFlight) return;
+    liveRefreshInFlight = true;
+    try {
+      await init({ silent: true });
+    } finally {
+      liveRefreshInFlight = false;
+    }
+  }
+
+  function updateLivePolling(matches) {
+    const shouldPoll = liveMatches(matches).length > 0 || hasActiveMatchWindow(matches);
+    if (shouldPoll && !liveRefreshTimer) {
+      liveRefreshTimer = window.setInterval(refreshLiveScores, LIVE_REFRESH_MS);
+    } else if (!shouldPoll && liveRefreshTimer) {
+      stopLivePolling();
+    }
+  }
+
+  function stopLivePolling() {
+    if (!liveRefreshTimer) return;
+    window.clearInterval(liveRefreshTimer);
+    liveRefreshTimer = null;
+  }
+
+  function hasActiveMatchWindow(matches) {
+    const now = Date.now();
+    return matches.some((match) => {
+      if (!match.kickoff_at || match.completed) return false;
+      const kickoff = new Date(match.kickoff_at).getTime();
+      if (!Number.isFinite(kickoff)) return false;
+      return now >= kickoff - LIVE_WINDOW_BEFORE_MS && now <= kickoff + LIVE_WINDOW_AFTER_MS;
+    });
   }
 
   function utcDateStamp(value) {
