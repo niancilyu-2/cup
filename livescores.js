@@ -128,7 +128,7 @@
       if (locked && playersRes && !playersRes.error && !groupRes.error) {
         picksCtx = buildPicksCtx(playersRes.data, groupRes.data, teamsRes.data);
       }
-      renderTodaySummary(matches);
+      renderTodaySummary(matches, teamByCode);
       render(matches, teamByCode, picksCtx);
       updateLivePolling(matches);
     } catch (err) {
@@ -426,16 +426,47 @@
     `;
   }
 
-  function renderTodaySummary(matches) {
+  function renderTodaySummary(matches, teamByCode) {
     if (!summaryRoot) return;
     const todayKey = etDateKey(new Date());
-    const todayCount = matches.filter((m) => m.kickoff_at && etDateKey(m.kickoff_at) === todayKey).length;
+    const todayMatches = matches
+      .filter((m) => m.kickoff_at && etDateKey(m.kickoff_at) === todayKey)
+      .sort((a, b) => new Date(a.kickoff_at) - new Date(b.kickoff_at));
+    const todayCount = todayMatches.length;
+    const fixtureHTML = todayMatches.map((match) => todayFixtureHTML(match, teamByCode)).join('');
     summaryRoot.innerHTML = `
-      <div class="ls-summary-stat">
-        <span>Today</span>
-        <strong>${todayCount}</strong>
-        <small>${todayCount === 1 ? 'game' : 'games'}</small>
+      <div class="ls-summary-stat ls-summary-stat--with-fixtures">
+        <div class="ls-summary-count">
+          <span>Today</span>
+          <strong>${todayCount}</strong>
+          <small>${todayCount === 1 ? 'game' : 'games'}</small>
+        </div>
+        ${fixtureHTML ? `<div class="ls-today-fixtures">${fixtureHTML}</div>` : ''}
       </div>`;
+  }
+
+  function todayFixtureHTML(match, teamByCode) {
+    const teamA = teamByCode[match.team_a_code];
+    const teamB = teamByCode[match.team_b_code];
+    return `
+      <div class="ls-today-fixture">
+        <span class="ls-today-side" title="${escapeHtml(teamA?.name || match.team_a_code || match.slot_a || '')}">
+          ${teamChipHTML(match.team_a_code || match.slot_a, teamA)}
+        </span>
+        <span class="ls-today-vs">vs</span>
+        <span class="ls-today-side" title="${escapeHtml(teamB?.name || match.team_b_code || match.slot_b || '')}">
+          ${teamChipHTML(match.team_b_code || match.slot_b, teamB)}
+        </span>
+        <time>${escapeHtml(formatKickoffTime(match.kickoff_at))}</time>
+      </div>`;
+  }
+
+  function teamChipHTML(code, team) {
+    const label = team?.code || code || 'TBD';
+    const flag = team?.code
+      ? `<span class="fi fi-${flagCode(team.code)}" aria-hidden="true"></span>`
+      : '';
+    return `${flag}<span>${escapeHtml(label)}</span>`;
   }
 
   function detailSheetHTML() {
@@ -702,6 +733,15 @@
       weekday: 'short', month: 'short', day: 'numeric',
       hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York',
     })} ET`;
+  }
+
+  function formatKickoffTime(iso) {
+    if (!iso) return '';
+    return new Date(iso).toLocaleString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      timeZone: 'America/New_York',
+    });
   }
 
   function etDateKey(value) {

@@ -5153,6 +5153,18 @@ body.page-leaderboard {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
+.ls-summary-stat--with-fixtures {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  min-width: min(100%, 29rem);
+}
+
+.ls-summary-count {
+  flex: 0 0 auto;
+  min-width: 4.2rem;
+}
+
 .ls-summary-stat span,
 .ls-summary-stat small {
   display: block;
@@ -5178,6 +5190,72 @@ body.page-leaderboard {
   color: var(--text-faint);
   font-size: 0.6rem;
   letter-spacing: 0.1em;
+}
+
+.ls-today-fixtures {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.ls-today-fixture {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  box-sizing: border-box;
+  max-width: 100%;
+  padding: 0.28rem 0.38rem;
+  border: 1px solid rgba(159, 184, 214, 0.16);
+  border-radius: 999px;
+  background: rgba(10, 14, 20, 0.56);
+  color: var(--text-muted);
+  font: 700 0.64rem var(--font-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.ls-today-fixture .ls-today-side {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.22rem;
+  min-width: 0;
+  color: var(--text-muted);
+  font: inherit;
+  letter-spacing: inherit;
+}
+
+.ls-today-fixture .ls-today-side span:not(.fi),
+.ls-today-fixture .ls-today-vs {
+  display: inline;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: uppercase;
+}
+
+.ls-today-side .fi {
+  width: 15px;
+  height: 11px;
+  flex: 0 0 auto;
+  border-radius: 1px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+}
+
+.ls-today-fixture .ls-today-vs {
+  color: var(--text-faint);
+  font-size: 0.58rem;
+  letter-spacing: 0.05em;
+}
+
+.ls-today-fixture time {
+  color: var(--winner);
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .ls-loading,
@@ -6347,6 +6425,31 @@ body.page-leaderboard {
   .ls-summary-stat {
     width: min(100%, 17rem);
     min-width: 0;
+  }
+
+  .ls-summary-stat--with-fixtures {
+    width: 100%;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+
+  .ls-today-fixtures {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .ls-today-fixture {
+    width: auto;
+    justify-content: flex-start;
+    font-size: 0.6rem;
+  }
+
+  .ls-today-fixture time {
+    margin-left: 0.2rem;
   }
 
   .ls-live-matchup,
