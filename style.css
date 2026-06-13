@@ -5155,9 +5155,9 @@ body.page-leaderboard {
 
 .ls-summary-stat--with-fixtures {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.8rem;
-  min-width: min(100%, 29rem);
+  min-width: min(100%, 17.5rem);
 }
 
 .ls-summary-count {
@@ -5194,8 +5194,10 @@ body.page-leaderboard {
 
 .ls-today-fixtures {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  justify-content: flex-start;
   gap: 0.3rem;
   min-width: 0;
 }
