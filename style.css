@@ -5636,6 +5636,17 @@ body.page-leaderboard {
   background: linear-gradient(180deg, rgba(220, 60, 60, 0.05), transparent 60%);
 }
 
+/* Played games recede so live/upcoming fixtures stand out. Restore full
+   contrast on hover/focus so finished results stay readable on demand. */
+.ls-match--final {
+  opacity: 0.5;
+  transition: opacity 0.15s ease;
+}
+.ls-match--final:hover,
+.ls-match--final:focus-within {
+  opacity: 1;
+}
+
 @media (max-width: 560px) {
   .livescores-main {
     padding: 1rem 0.75rem 2rem;
