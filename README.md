@@ -9,7 +9,7 @@ For the readable build/change history, see [BUILD_STORY.md](BUILD_STORY.md).
 - Plain HTML/CSS/JS, no build step
 - Supabase (Postgres) for picks, results, and leaderboard
 - GitHub Pages for hosting
-- ESPN scoreboard endpoint pulled every 30 min by a GitHub Actions cron (`scripts/sync-espn.js`) for auto-results; manual admin entry as fallback
+- ESPN scoreboard auto-results: a Supabase Edge Function (`supabase/functions/sync-espn/`) polls every ~5 min during live windows via `pg_cron` (reliable cadence); a GitHub Actions cron (`scripts/sync-espn.js`) runs the same logic as a fallback. The live scores page also overlays ESPN scores client-side for instant updates. Manual admin entry overrides both.
 
 ## How it works
 
@@ -64,6 +64,9 @@ npm test
 - `rules.html` — rules and scoring
 - `leaderboard.html` — leaderboard (placeholder until first kickoff)
 - `app.js` — all client logic (picks, draft/save/submit, bracket cascade, navigation guards)
+- `livescores.html` / `livescores.js` — live scores page; overlays ESPN scores client-side and greys out finished games
+- `scripts/sync-espn.js` — ESPN→Supabase sync logic (shared by the Edge Function and the GitHub fallback)
+- `supabase/functions/sync-espn/` — Supabase Edge Function + `pg_cron` schedule (`cron.sql`) for reliable score sync
 - `style.css` — stadium-green palette on a vector soccer-pitch background
 - `schema.sql` — current Supabase schema
 - `migrations/` — incremental schema changes
