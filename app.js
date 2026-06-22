@@ -3,6 +3,7 @@
 
 import { lookupAssignment } from './src/wildcards.js';
 import { buildTournamentResults } from './src/results.js';
+import { computeGroupStandings } from './src/standings.js';
 
 // Single-phase model: everything (groups + bracket + tiebreaker) is editable
 // until the first WC kickoff on June 11.
@@ -48,6 +49,10 @@ const state = {
 // picks don't get scrolled or popped a modal on page load.
 const stageProgress = { groups: false, wildcards: false, bracket: false };
 let tiebreakerPromptShown = false;
+
+// True while a group row is being dragged, so the 30s results poll doesn't
+// rebuild the cards (and tear down SortableJS) mid-gesture.
+let isDragging = false;
 
 // FIFA 3-letter code → ISO 3166-1 alpha-2 (used by lipis/flag-icons).
 // gb-eng/gb-sct are valid library subregion codes.
@@ -127,6 +132,27 @@ function pickMarkHTML(correct) {
   return correct
     ? '<span class="pick-mark is-correct" aria-label="Correct">✓</span>'
     : '<span class="pick-mark is-wrong" aria-label="Wrong">✗</span>';
+}
+
+// Live group-stage standing per team for the picks page, so players can see how
+// their ranking is panning out before a group fully resolves. Uses completed
+// matches only (mirrors the scoring engine, which ignores in-progress games).
+// Returns a { code: row } map; teams with no completed match yet are absent, so
+// their row shows no chip and the pre-tournament layout is untouched.
+function groupLiveStats(groupCode) {
+  const ms = state.matches.filter(
+    (m) => m.stage === 'group' && m.group_code === groupCode,
+  );
+  const { table } = computeGroupStandings(ms);
+  const out = {};
+  for (const r of table) if (r.played > 0) out[r.code] = r;
+  return out;
+}
+
+function teamStatHTML(stat) {
+  const gd = stat.gd > 0 ? `+${stat.gd}` : stat.gd < 0 ? `−${Math.abs(stat.gd)}` : '0';
+  const ptsLabel = `${stat.pts} pt${stat.pts === 1 ? '' : 's'}`;
+  return `<span class="team-stat" title="${stat.played} played · ${ptsLabel} · GD ${gd}">${stat.pts} · ${gd}</span>`;
 }
 
 function dirtyCount() {
@@ -831,6 +857,7 @@ function groupCardHTML(groupCode) {
   const { codes, isDefault } = rankedOrder(groupCode);
   const disabled = isEditingDisabled();
   const outcome = groupOutcomeFor(groupCode);
+  const statByCode = groupLiveStats(groupCode);
   const rows = codes
     .map((code, idx) => {
       const team = state.teamsByCode[code];
@@ -844,13 +871,15 @@ function groupCardHTML(groupCode) {
         const actual = rank === 1 ? outcome.first : outcome.second;
         mark = pickMarkHTML(code === actual);
       }
+      const stat = statByCode[code];
+      const statHTML = stat ? teamStatHTML(stat) : '';
       return `
         <li class="team-item" data-team="${code}"${disabled ? ' aria-disabled="true"' : ''}>
           <div class="${classes}" title="${team.name}">
             <span class="rank-chip rank-${rank}">${rank}</span>
             ${flagHTML(code)}
             <span class="team-code">${code}</span>
-            ${mark}
+            <span class="team-end">${statHTML}${mark}</span>
             <span class="drag-handle" aria-hidden="true"></span>
           </div>
         </li>`;
@@ -887,7 +916,11 @@ function initGroupCardSortable(groupCode) {
     ghostClass: 'team-row-ghost',
     chosenClass: 'team-row-chosen',
     dragClass: 'team-row-dragging',
+    onStart() {
+      isDragging = true;
+    },
     onEnd(evt) {
+      isDragging = false;
       if (evt.oldIndex === evt.newIndex) return;
       const newOrder = Array.from(evt.to.children).map((li) => li.dataset.team);
       reorderTeamsInGroup(groupCode, newOrder);
@@ -2941,6 +2974,39 @@ function startCountdownTicker() {
   setInterval(tickCountdown, 1000);
 }
 
+// Poll match results every 30s so the per-row group standings (pts · GD) stay
+// current without a manual reload — mirrors livescores.html's refresh cadence.
+const RESULTS_REFRESH_MS = 30 * 1000;
+// Signature of the scoring-relevant match fields; lets the poll skip a re-render
+// when nothing changed (the common case between the staggered group games).
+let lastResultsSig = null;
+function resultsSignature(matches) {
+  return matches
+    .map((m) => `${m.id}:${m.score_a}:${m.score_b}:${m.completed ? 1 : 0}:${m.winner_code || ''}`)
+    .join('|');
+}
+
+async function refreshResults() {
+  if (isDragging) return; // don't fetch-then-rebuild under an active drag
+  const { data, error } = await supabase.from('matches').select('*').order('id');
+  if (error || !data) return;
+  const sig = resultsSignature(data);
+  state.matches = data;
+  state.results = buildTournamentResults(data);
+  if (sig === lastResultsSig) return; // nothing scoring-relevant changed
+  lastResultsSig = sig;
+  if (isDragging) return; // a drag may have started during the await
+  // Both reads below pull picks from the draft, so in-flight edits survive the
+  // rebuild; only the results-derived chips and marks change.
+  renderGroupPicks();
+  renderWildcardsSection();
+}
+
+function startResultsTicker() {
+  lastResultsSig = resultsSignature(state.matches);
+  setInterval(refreshResults, RESULTS_REFRESH_MS);
+}
+
 // ---------- Init ----------
 
 async function init() {
@@ -2992,6 +3058,7 @@ async function init() {
   wireSectionToggles();
   wireInternalLinkGuards();
   startCountdownTicker();
+  startResultsTicker();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
