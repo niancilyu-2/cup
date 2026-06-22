@@ -2283,6 +2283,31 @@ body.page-watch {
   white-space: nowrap;
 }
 
+/* Right-aligned tail of a team row: live standing chip + correctness mark.
+   Occupies the row's existing `auto` column, so when both are empty the layout
+   is identical to before any results came in. */
+.team-end {
+  display: inline-flex;
+  align-items: center;
+  justify-self: end;
+  gap: 0.4rem;
+}
+
+/* Live group standing per row (points · goal difference). Deliberately quiet —
+   mono, faint, tabular so the digits sit still as they tick up. */
+.team-stat {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  color: var(--text-muted);
+  opacity: 0.85;
+}
+
+/* 4th-place styling already dims the row; keep its chip legible. */
+.team-list li:nth-child(4) .team-row .team-stat { color: var(--text-faint); }
+
 /* ---- Wildcards picker ---- */
 
 .wildcards-grid {
