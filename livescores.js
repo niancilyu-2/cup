@@ -608,12 +608,16 @@
   function renderStageSection(stage, label, matches, teamByCode, picksCtx) {
     const ordered = matches.slice().sort((a, b) => new Date(a.kickoff_at) - new Date(b.kickoff_at));
     const completed = ordered.filter((m) => statusFor(m) === 'final').length;
+    const allDone = ordered.length > 0 && completed === ordered.length;
     const summary = ordered.length
       ? `${completed}/${ordered.length} done`
       : 'No matches';
+    // Same rule as the group stage: keep stages open while they're in play and
+    // collapse them once every match is final. The toggle still opens them.
+    const expandedClass = allDone ? '' : ' is-expanded';
     return `
-      <section class="ls-section" data-stage="${stage}">
-        <button type="button" class="ls-toggle" aria-expanded="false">
+      <section class="ls-section${expandedClass}" data-stage="${stage}">
+        <button type="button" class="ls-toggle" aria-expanded="${allDone ? 'false' : 'true'}">
           <span class="ls-toggle-title">${label}</span>
           <span class="ls-toggle-meta">${summary}</span>
           <span class="ls-toggle-caret" aria-hidden="true">▾</span>
@@ -630,12 +634,16 @@
     const sections = groups.map((code) => {
       const matches = matchesByGroup[code].slice().sort((a, b) => new Date(a.kickoff_at) - new Date(b.kickoff_at));
       const completed = matches.filter((m) => statusFor(m) === 'final').length;
-      const summary = completed === matches.length
+      const allDone = matches.length > 0 && completed === matches.length;
+      const summary = allDone
         ? `All ${matches.length} done`
         : `${completed}/${matches.length} done`;
+      // Fully-finished groups collapse by default so attention stays on groups
+      // still in play; the toggle still opens them.
+      const expandedClass = allDone ? '' : ' is-expanded';
       return `
-        <section class="ls-section ls-section--group is-expanded" data-group="${code}">
-          <button type="button" class="ls-toggle" aria-expanded="true">
+        <section class="ls-section ls-section--group${expandedClass}" data-group="${code}">
+          <button type="button" class="ls-toggle" aria-expanded="${allDone ? 'false' : 'true'}">
             <span class="ls-toggle-title">Group ${code}</span>
             <span class="ls-toggle-meta">${summary}</span>
             <span class="ls-toggle-caret" aria-hidden="true">▾</span>
