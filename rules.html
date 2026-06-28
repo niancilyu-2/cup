@@ -91,10 +91,337 @@ ABOUTME: Linked from index.html header; no JS or Supabase required.
     </nav>
     <div id="user-bar"></div>
   </header>
- 
+
   <section id="ticker-bar" aria-label="Tournament facts">
     <div class="ticker-track" id="ticker-track"></div>
   </section>
- 
+
   <main class="rules-main">
     <h2>Rules &amp; Scoring</h2>
+
+    <section class="rules-section">
+      <h3>The game</h3>
+      <ul class="rules-list">
+        <li><strong>$10 winner-take-all.</strong> Pick who advances through the 2026 World Cup bracket.</li>
+        <li><strong>Locks:</strong> Thursday, June 11, 2026, 1:00&nbsp;PM Mexico City time (Mexico vs South Africa).</li>
+        <li>After kickoff, edits close, picks reveal, and the leaderboard goes live.</li>
+      </ul>
+    </section>
+
+    <section class="rules-section">
+      <h3>How wildcards get slotted into the Round of 32</h3>
+      <p>Eight of the twelve third-place finishers advance. Which third-place team plays whom in the R32 depends on <em>which eight groups</em> contribute a wildcard, not on the teams themselves &mdash; FIFA pre-computed every combination into a fixed lookup table called <strong>Annexe&nbsp;C</strong>.</p>
+      <p>There are <code>C(12,8) = 495</code> possible combinations of contributing groups. Annexe&nbsp;C lists all 495, and for each combination it spells out which third-place team is paired with which group-winner / group-runner-up in the Round of 32. The bracket code on this site reads from that same table, so once you've ranked all 12 groups and chosen your 8 wildcards, every R32 slot is filled automatically.</p>
+      <p>The full text of Annexe&nbsp;C lives in FIFA's official tournament regulations:</p>
+      <p><a class="rules-link" href="https://digitalhub.fifa.com/m/636f5c9c6f29771f/original/FWC2026_regulations_EN.pdf" target="_blank" rel="noopener">FIFA World Cup 26&trade; Regulations (PDF) &rarr; Annexe&nbsp;C</a></p>
+    </section>
+
+    <section class="rules-section">
+      <h3>Scoring</h3>
+      <div class="scoring-table-wrap">
+        <table class="scoring-table">
+          <thead>
+            <tr>
+              <th>Round</th>
+              <th class="num">Points per correct pick</th>
+              <th class="num">Picks available</th>
+              <th class="num">Subtotal if all right</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Group standings (1st or 2nd of any group)</td>
+              <td class="num">1</td>
+              <td class="num">24</td>
+              <td class="num">24</td>
+            </tr>
+            <tr>
+              <td>Wildcards (3rd-place team you flagged actually advances)</td>
+              <td class="num">1</td>
+              <td class="num">8</td>
+              <td class="num">8</td>
+            </tr>
+            <tr>
+              <td>R32 winner</td>
+              <td class="num">2</td>
+              <td class="num">16</td>
+              <td class="num">32</td>
+            </tr>
+            <tr>
+              <td>R16 winner</td>
+              <td class="num">4</td>
+              <td class="num">8</td>
+              <td class="num">32</td>
+            </tr>
+            <tr>
+              <td>Quarterfinal winner</td>
+              <td class="num">6</td>
+              <td class="num">4</td>
+              <td class="num">24</td>
+            </tr>
+            <tr>
+              <td>Semifinal winner</td>
+              <td class="num">8</td>
+              <td class="num">2</td>
+              <td class="num">16</td>
+            </tr>
+            <tr>
+              <td>Final winner</td>
+              <td class="num">12</td>
+              <td class="num">1</td>
+              <td class="num">12</td>
+            </tr>
+            <tr class="row-total">
+              <td colspan="3"><strong>Perfect bracket</strong></td>
+              <td class="num">
+                <span class="perfect-score">
+                  <span class="perfect-score-note">not likely, see below for why</span>
+                  <strong>148</strong>
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="scoring-table-footnote">The 3rd-place match and the tiebreaker are picked but worth no points &mdash; the 3rd-place pick is bragging rights only, and the tiebreaker only breaks ties.</p>
+      <p class="scoring-table-footnote">Knockout scoring is team-by-round: if you picked a team to advance from R32, R16, QF, SF, or the Final and that team actually advances from that round, you get that round's points even if the exact matchup slot differs.</p>
+      </div>
+      <div class="monte-carlo-panel" aria-labelledby="monte-carlo-title">
+        <div class="monte-carlo-head">
+          <div>
+            <h4 id="monte-carlo-title">What is a good score?</h4>
+            <p>We ran a Monte Carlo simulation with 12,000 simulated player brackets per knowledge level (see below), all scored against one highly informed fake-tournament result permutation.</p>
+            <ul class="mc-scenario-list" aria-label="Monte Carlo scenario definitions">
+              <li class="mc-scenario-list--random"><strong>Complete randomness:</strong> picks do not use team strength at all.</li>
+              <li class="mc-scenario-list--some"><strong>Some football knowledge:</strong> picks lean toward stronger teams, but with plenty of miss rate.</li>
+              <li class="mc-scenario-list--expert"><strong>Expert knowledge:</strong> picks follow team strength more closely, with less random noise.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="mc-compare" aria-label="Monte Carlo scenario score summary">
+          <div class="mc-scenario mc-scenario--random">
+            <span>Complete randomness</span>
+            <strong>~18 pts avg</strong>
+            <small>Median 17 / 90th pct. 29 / 95th pct. 34. Picks ignore team strength.</small>
+          </div>
+          <div class="mc-scenario mc-scenario--some">
+            <span>Some football knowledge</span>
+            <strong>~43 pts avg</strong>
+            <small>Median 42 / 90th pct. 64 / 95th pct. 71. Picks lean toward stronger teams, but still miss plenty.</small>
+          </div>
+          <div class="mc-scenario mc-scenario--expert">
+            <span>Expert knowledge</span>
+            <strong>~61 pts avg</strong>
+            <small>Median 60 / 90th pct. 80 / 95th pct. 86. Picks have stronger signal and lower pick noise.</small>
+          </div>
+        </div>
+
+        <div class="mc-method">
+          <p><strong>Simulation methodology:</strong></p>
+          <ul class="rules-list">
+            <li>One football-informed fake tournament was generated first, including group rankings, wildcard groups (<code>A/B/D/E/F/H/J/L</code>), Annexe&nbsp;C placement, and seeded knockout match IDs.</li>
+            <li>Then 12,000 simulated players per scenario were scored against that same fixed fake result.</li>
+            <li><code>S_team</code> is a latent strength rating. Higher means stronger; it is not pool scoring.</li>
+            <li>For each group ranking, match result, or player pick, the model computes <code>V_team = alpha * S_team + sigma * epsilon</code>.</li>
+            <li><code>epsilon</code> is random shock. <code>sigma</code> is upset/noise size. The higher <code>V_team</code> ranks higher or wins the match.</li>
+            <li>The fake tournament result uses a football-informed signal, so stronger teams are more likely to advance, but noise still creates upsets.</li>
+            <li>Player knowledge is the signal-to-noise ratio: random picks use <code>alpha = 0</code>; stronger scenarios use higher <code>alpha</code> and lower pick noise.</li>
+            <li>Tiebreakers and the 3rd-place match are excluded from scoring.</li>
+          </ul>
+        </div>
+
+        <div class="mc-lift" aria-labelledby="mc-lift-title">
+          <div class="mc-lift-head">
+            <h5 id="mc-lift-title">Direct impact of choices per stage (not including cascading impact)</h5>
+            <span>One-stage upgrade from random to some knowledge</span>
+          </div>
+          <div class="mc-lift-row">
+            <span>R16 winners</span>
+            <span class="mc-lift-track"><span style="--w: 100%;"></span></span>
+            <strong>+6.9 pts</strong>
+          </div>
+          <div class="mc-lift-row">
+            <span>R32 winners</span>
+            <span class="mc-lift-track"><span style="--w: 86%;"></span></span>
+            <strong>+5.9 pts</strong>
+          </div>
+          <div class="mc-lift-row">
+            <span>Group top two</span>
+            <span class="mc-lift-track"><span style="--w: 70%;"></span></span>
+            <strong>+4.8 pts</strong>
+          </div>
+          <div class="mc-lift-row">
+            <span>Quarterfinals</span>
+            <span class="mc-lift-track"><span style="--w: 68%;"></span></span>
+            <strong>+4.7 pts</strong>
+          </div>
+          <div class="mc-lift-row">
+            <span>Semifinals</span>
+            <span class="mc-lift-track"><span style="--w: 30%;"></span></span>
+            <strong>+2.1 pts</strong>
+          </div>
+          <div class="mc-lift-row">
+            <span>Final</span>
+            <span class="mc-lift-track"><span style="--w: 9%;"></span></span>
+            <strong>+0.6 pts</strong>
+          </div>
+          <div class="mc-lift-row">
+            <span>Wildcards</span>
+            <span class="mc-lift-track"><span style="--w: 0%;"></span></span>
+            <strong>-0.2 pts</strong>
+          </div>
+          <div class="mc-cascade" aria-labelledby="mc-cascade-title">
+            <div class="mc-cascade-head">
+              <h5 id="mc-cascade-title">Total leverage including cascade</h5>
+            </div>
+            <div class="mc-lift-row">
+              <span>Group 1st/2nd</span>
+              <span class="mc-lift-track"><span style="--w: 100%;"></span></span>
+              <strong>+11.9 pts</strong>
+            </div>
+            <div class="mc-lift-row">
+              <span>R32 winners</span>
+              <span class="mc-lift-track"><span style="--w: 32%;"></span></span>
+              <strong>+3.8 pts</strong>
+            </div>
+            <div class="mc-lift-row">
+              <span>R16 winners</span>
+              <span class="mc-lift-track"><span style="--w: 18%;"></span></span>
+              <strong>+2.1 pts</strong>
+            </div>
+            <div class="mc-lift-row">
+              <span>Quarterfinals</span>
+              <span class="mc-lift-track"><span style="--w: 8%;"></span></span>
+              <strong>+0.9 pts</strong>
+            </div>
+            <div class="mc-lift-row">
+              <span>Semifinals</span>
+              <span class="mc-lift-track"><span style="--w: 3%;"></span></span>
+              <strong>+0.3 pts</strong>
+            </div>
+            <div class="mc-lift-row">
+              <span>Final</span>
+              <span class="mc-lift-track"><span style="--w: 2%;"></span></span>
+              <strong>+0.2 pts</strong>
+            </div>
+            <div class="mc-lift-row">
+              <span>Wildcards</span>
+              <span class="mc-lift-track"><span style="--w: 0%;"></span></span>
+              <strong>~0.0 pts</strong>
+            </div>
+          </div>
+          <div class="rules-note mc-takeaway">
+            <strong>Practical takeaway:</strong>
+            <ul>
+              <li>The direct chart shows where points are booked; the cascade chart shows total lift when one stage gets smarter.</li>
+              <li>Group 1st/2nd rankings are the biggest leverage point because they populate the Round of 32 and can create downstream bracket points.</li>
+              <li>Wildcard selection alone separates players less in this sample because 8 of 12 third-place groups advance, so even random picks overlap with the fake result often.</li>
+            </ul>
+          </div>
+        </div>
+
+        <figure class="monte-carlo-chart mc-distribution">
+          <figcaption>Score distribution by scenario</figcaption>
+          <div class="mc-dist-grid">
+            <div class="mc-dist-card mc-dist-card--random">
+              <h5>Complete randomness</h5>
+              <div class="mc-bar" style="--w: 100%;"><span class="mc-range">0-24</span><span class="mc-track"><span></span></span><strong>82%</strong></div>
+              <div class="mc-bar" style="--w: 17%;"><span class="mc-range">25-34</span><span class="mc-track"><span></span></span><strong>14%</strong></div>
+              <div class="mc-bar" style="--w: 4%;"><span class="mc-range">35-44</span><span class="mc-track"><span></span></span><strong>3%</strong></div>
+              <div class="mc-bar" style="--w: 1%;"><span class="mc-range">45-54</span><span class="mc-track"><span></span></span><strong>1%</strong></div>
+              <div class="mc-bar" style="--w: 0%;"><span class="mc-range">55-64</span><span class="mc-track"><span></span></span><strong>0%</strong></div>
+              <div class="mc-bar" style="--w: 0%;"><span class="mc-range">65-74</span><span class="mc-track"><span></span></span><strong>0%</strong></div>
+              <div class="mc-bar" style="--w: 0%;"><span class="mc-range">75+</span><span class="mc-track"><span></span></span><strong>0%</strong></div>
+            </div>
+            <div class="mc-dist-card mc-dist-card--some">
+              <h5>Some football knowledge</h5>
+              <div class="mc-bar" style="--w: 41%;"><span class="mc-range">0-24</span><span class="mc-track"><span></span></span><strong>11%</strong></div>
+              <div class="mc-bar" style="--w: 83%;"><span class="mc-range">25-34</span><span class="mc-track"><span></span></span><strong>21%</strong></div>
+              <div class="mc-bar" style="--w: 100%;"><span class="mc-range">35-44</span><span class="mc-track"><span></span></span><strong>26%</strong></div>
+              <div class="mc-bar" style="--w: 82%;"><span class="mc-range">45-54</span><span class="mc-track"><span></span></span><strong>21%</strong></div>
+              <div class="mc-bar" style="--w: 49%;"><span class="mc-range">55-64</span><span class="mc-track"><span></span></span><strong>12%</strong></div>
+              <div class="mc-bar" style="--w: 24%;"><span class="mc-range">65-74</span><span class="mc-track"><span></span></span><strong>6%</strong></div>
+              <div class="mc-bar" style="--w: 14%;"><span class="mc-range">75+</span><span class="mc-track"><span></span></span><strong>4%</strong></div>
+            </div>
+            <div class="mc-dist-card mc-dist-card--expert">
+              <h5>Expert knowledge</h5>
+              <div class="mc-bar" style="--w: 0%;"><span class="mc-range">0-24</span><span class="mc-track"><span></span></span><strong>0%</strong></div>
+              <div class="mc-bar" style="--w: 6%;"><span class="mc-range">25-34</span><span class="mc-track"><span></span></span><strong>2%</strong></div>
+              <div class="mc-bar" style="--w: 35%;"><span class="mc-range">35-44</span><span class="mc-track"><span></span></span><strong>10%</strong></div>
+              <div class="mc-bar" style="--w: 80%;"><span class="mc-range">45-54</span><span class="mc-track"><span></span></span><strong>22%</strong></div>
+              <div class="mc-bar" style="--w: 100%;"><span class="mc-range">55-64</span><span class="mc-track"><span></span></span><strong>28%</strong></div>
+              <div class="mc-bar" style="--w: 77%;"><span class="mc-range">65-74</span><span class="mc-track"><span></span></span><strong>21%</strong></div>
+              <div class="mc-bar" style="--w: 61%;"><span class="mc-range">75+</span><span class="mc-track"><span></span></span><strong>17%</strong></div>
+            </div>
+          </div>
+        </figure>
+
+      </div>
+    </section>
+
+    <section class="rules-section">
+      <h3>Save vs. Submit</h3>
+      <p>Your clicks live in a <strong>draft</strong> until you commit them:</p>
+      <ul class="rules-list">
+        <li><strong>Save my picks</strong> writes your current draft to the database. You can keep editing afterward.</li>
+        <li><strong>Submit</strong> writes your draft AND marks your picks as final. Editing is disabled until you click <strong>Edit picks</strong> to unlock again.</li>
+        <li>Both Save and Submit are no-ops if your draft already matches the database.</li>
+        <li>Leaving the site (close tab, refresh, click Rules) with unsaved changes triggers a warning. The modal offers a "Save &amp; continue" shortcut, or you can leave without saving.</li>
+      </ul>
+    </section>
+
+    <section class="rules-section">
+      <h3>The tiebreaker, explained</h3>
+      <p>Your <strong>champion</strong> is whichever team you've picked to win the Final &mdash; you don't choose them separately. The tiebreaker number is your prediction of that champion's <strong>average goals per game</strong> across every match they play (group stage + knockouts).</p>
+      <p>If two players finish tied on points, whoever's prediction is closest to the real tournament average for the <em>actual</em> champion wins the tiebreaker. The team you picked doesn't have to be the team that actually wins &mdash; we always compare against reality.</p>
+      <p>Decimals are fine: 2.3, 1.75, etc. A typical World Cup winner averages somewhere between 1.5 and 2.5 goals per game.</p>
+    </section>
+
+    <section class="rules-section">
+      <h3>Visibility</h3>
+      <p>Until first kickoff on June 11, only <strong>your own picks</strong> are visible to you. No peeking at how other players are filling their brackets. At kickoff, everything is revealed and the leaderboard goes live.</p>
+    </section>
+
+    <section class="rules-section">
+      <h3>Forgot your PIN?</h3>
+      <p>Your 4-digit PIN protects your picks when you switch players. If you ever forget it, contact the admin (<strong>Nianci</strong>) to reset it for you.</p>
+    </section>
+
+    <section class="rules-section">
+      <h3>How results get entered</h3>
+      <p>The site fetches match results automatically every 30 minutes from a public data source. If that ever falls behind or breaks, an admin can enter scores manually so the leaderboard stays current.</p>
+    </section>
+
+    <section class="rules-section">
+      <h3>How to play</h3>
+      <ol class="rules-list">
+        <li>Pick your name (or add yourself) on the home page.</li>
+        <li>For each of the 12 groups, rank all 4 teams from <strong>1st to 4th</strong> by dragging them into your preferred order. Only your 1st and 2nd score group-stage points; your 3rd determines wildcard eligibility.</li>
+        <li>Pick exactly <strong>8 of the 12 third-place teams</strong> to advance as wildcards. The R32 bracket auto-populates from FIFA's official Annexe&nbsp;C lookup table.</li>
+        <li>Click winners through <strong>R32 &rarr; R16 &rarr; QF &rarr; SF &rarr; Final</strong>, plus the <strong>3rd-place match</strong>.</li>
+        <li>Your <strong>champion</strong> is whoever you pick to win the Final. In the tiebreaker, predict that champion's <strong>average goals per game</strong> across the whole tournament.</li>
+        <li>Click <strong>Save my picks</strong> as you go (commits your current draft to the database). Click <strong>Submit</strong> when you're done &mdash; finalizes everything until you click Edit.</li>
+      </ol>
+      <p class="rules-callout">A few mechanics worth knowing:</p>
+      <ul class="rules-list">
+        <li><strong>Group ranks:</strong> drag a team row up or down inside its group to change its rank; the other rows shift to make room. Each group starts in a random order, so rank all four yourself.</li>
+        <li><strong>Auto-fill:</strong> shuffles all four teams in each empty group so the top three become a random 1st/2nd/3rd. Groups you've already touched are left alone.</li>
+        <li><strong>Wildcards:</strong> after every group is ranked, pick exactly 8 of the 12 third-place teams. The R32 matchups are looked up from FIFA's official Annexe&nbsp;C table &mdash; you don't place teams into slots yourself.</li>
+        <li><strong>Winner picks:</strong> click a team in a match to advance them; click again to un-pick.</li>
+        <li><strong>Bracket cascade:</strong> change an upstream winner and downstream slots update. Any later pick whose team is no longer in its match gets dropped &mdash; re-pick that round.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer id="site-footer">
+    <a class="admin-footer-link" href="admin.html">admin</a>
+    <div class="sig">
+      Nianci <span class="sig-dot">×</span> Claude
+    </div>
+  </footer>
+
+  <script src="ticker.js" defer></script>
+  <script src="user-bar.js" defer></script>
+  <script src="back-to-top.js" defer></script>
+</body>
+</html>
