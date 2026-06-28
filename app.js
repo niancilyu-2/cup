@@ -3006,6 +3006,7 @@ async function refreshResults() {
   // rebuild; only the results-derived chips and marks change.
   renderGroupPicks();
   renderWildcardsSection();
+  renderBracket();
 }
 
 function startResultsTicker() {
