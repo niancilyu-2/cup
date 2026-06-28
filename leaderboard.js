@@ -358,10 +358,9 @@ function stageChipsHTML(p, visibleStages, leadersByStage) {
 
 function rowHTML(p, myNameLower, visibleStages, leadersByStage, hasResults) {
   // Before any result, every row is rank 1 — no leader tint, no gold badges.
-  const isLeader = hasResults && p.rank === 1;
   const isMe = myNameLower && p.name.toLowerCase() === myNameLower;
   const classes = ['lb-row'];
-  if (isLeader) classes.push('lb-leader');
+  if (isMe) classes.push('lb-leader');
   if (isMe) classes.push('lb-me');
   const viewHref = `./?view=${encodeURIComponent(p.id)}`;
   const champOut = !!(p.champion && p.champion.eliminated);
