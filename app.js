@@ -3,6 +3,7 @@
 
 import { lookupAssignment } from './src/wildcards.js';
 import { buildTournamentResults } from './src/results.js';
+import { buildReachability } from './src/projection.js';
 import { computeGroupStandings } from './src/standings.js';
 
 // Single-phase model: everything (groups + bracket + tiebreaker) is editable
@@ -36,6 +37,7 @@ const state = {
   groups: [],
   teams: [],
   matches: [],
+  bracketReach: null,
   teamsByGroup: {},
   teamsByCode: {},
   picks: {
@@ -1860,13 +1862,16 @@ function matchCellHTML(matchId) {
     if (result && isWinner) {
       resultClass = team === result.winner ? ' is-correct' : ' is-wrong';
     }
+    const impossibleHere = !!(team && state.bracketReach && !state.bracketReach.participants(matchId).has(team));
+    const wrongCompletedPick = !!(result && isWinner && team !== result.winner);
+    const strikeClass = (impossibleHere || wrongCompletedPick) ? ' is-eliminated' : '';
     const pill = teamPillHTML(team, { placeholder: '?' });
     if (!team || !canAdvance || disabled) {
-      return `<div class="bracket-slot bracket-slot--readonly ${isWinner ? 'is-winner' : ''}${resultClass}">${pill}</div>`;
+      return `<div class="bracket-slot bracket-slot--readonly ${isWinner ? 'is-winner' : ''}${resultClass}${strikeClass}">${pill}</div>`;
     }
     return `
-      <button type="button" class="bracket-slot ${isWinner ? 'is-winner' : ''}${resultClass}"
-              data-match="${matchId}" data-team="${team}" data-action="advance">
+    <button type="button" class="bracket-slot ${isWinner ? 'is-winner' : ''}${resultClass}${strikeClass}"
+            data-match="${matchId}" data-team="${team}" data-action="advance">
         ${pill}
       </button>`;
   };
@@ -2582,7 +2587,7 @@ function renderBracket() {
     renderBracketToolbar();
     return;
   }
-
+  state.bracketReach = state.results ? buildReachability(state.matches, state.results) : null;
   state.bracketPairs = bracketPairOrder();
   root.innerHTML = `
     <div class="bracket-board">
