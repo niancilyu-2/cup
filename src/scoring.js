@@ -59,7 +59,8 @@ export function scorePlayer(picks, results) {
     const o = groupOutcomes[code];
     const p = playerGroups[code];
     if (!p) continue;
-    if (p.advances && o.third_advances) out.wildcards += STAGE_POINTS.wildcards;
+    if (p.advances && o.third_advances && p.third === o.third) {
+      out.wildcards += STAGE_POINTS.wildcards;
   }
 
   // Knockout stages: per-stage points for picking the actual winner of each
