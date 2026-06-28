@@ -1842,7 +1842,7 @@ function resultFor(matchId) {
   return r && r.played ? r : null;
 }
 function teamAdvancedFromStage(stage, teamCode) {
-  if (!stage || stage === 'group' || !teamCode) return false;
+  if (!['r32', 'r16', 'qf', 'sf', 'final'].includes(stage) || !teamCode) return false;
   return state.matches.some((m) => {
     const r = state.results?.matchResults?.[m.id];
     return m.stage === stage && r?.played && r.winner === teamCode;
