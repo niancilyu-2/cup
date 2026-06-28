@@ -2,7 +2,7 @@
 // ABOUTME: A knockout pick only counts toward the max if that team can still reach the match.
 
 import { lookupAssignment, WILDCARD_SLOTS, ALL_GROUPS } from './wildcards.js';
-import { STAGE_POINTS } from './scoring.js';
+import { STAGE_MATCHES, STAGE_POINTS } from './scoring.js';
 
 const FINAL_MATCH_ID = 'M104';
 
@@ -129,15 +129,27 @@ export function maxPossible({ breakdown, picks, results, matches, reach }) {
     const flagged = Object.values(picks.groups).filter((g) => g.advances).length;
     max += Math.min(8, flagged) - (breakdown.wildcards || 0);
   }
-
-  for (const m of matches) {
-    if (m.stage === 'group') continue;
-    const r = results.matchResults[m.id];
-    if (r && r.played) continue;
-    const pick = picks.bracket[m.id];
-    if (!pick) continue;
-    if (!reach.participants(m.id).has(pick)) continue;
-    max += STAGE_POINTS[m.stage] || 0;
+  for (const stage of Object.keys(STAGE_MATCHES)) {
+    const actualAdvancers = new Set(
+      STAGE_MATCHES[stage]
+      .map((id) => results.matchResults[id])
+      .filter((r) => r?.played && r.winner)
+      .map((r) => r.winner),
+    );
+    const pickedTeams = new Set(
+      STAGE_MATCHES[stage]
+      .map((id) => picks.bracket[id])
+      .filter(Boolean),
+    );
+    
+    for (const pick of pickedTeams) {
+      if (actualAdvancers.has(pick)) continue;
+      const canStillAdvance = STAGE_MATCHES[stage].some((id) => {
+        const r = results.matchResults[id];
+        return !(r?.played) && reach.participants(id).has(pick);
+      });
+      if (canStillAdvance) max += STAGE_POINTS[stage] || 0;
+    }
   }
   return max;
 }
