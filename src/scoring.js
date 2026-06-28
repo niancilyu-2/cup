@@ -36,7 +36,6 @@ function actualAdvancersForStage(matchResults, stage) {
   }
   return out;
 }
- 
 function playerAdvancersForStage(playerBracket, stage) {
   const out = new Set();
   for (const matchId of STAGE_MATCHES[stage]) {
@@ -80,12 +79,11 @@ export function scorePlayer(picks, results) {
     }
   }
 
-// Knockout stages: per-stage points for each team the player correctly picked
-// to advance from that round, regardless of exact match slot.
+  // Knockout stages: per-stage points for each team the player correctly picked
+  // to advance from that round, regardless of exact match slot.
   for (const stage of KNOCKOUT_STAGES) {
     const actualAdvancers = actualAdvancersForStage(matchResults, stage);
     if (!actualAdvancers.size) continue;
-    
     for (const pick of playerAdvancersForStage(playerBracket, stage)) {
       if (actualAdvancers.has(pick)) out[stage] += STAGE_POINTS[stage];
     }
