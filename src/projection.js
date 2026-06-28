@@ -141,7 +141,6 @@ export function maxPossible({ breakdown, picks, results, matches, reach }) {
       .map((id) => picks.bracket[id])
       .filter(Boolean),
     );
-    
     for (const pick of pickedTeams) {
       if (actualAdvancers.has(pick)) continue;
       const canStillAdvance = STAGE_MATCHES[stage].some((id) => {
