@@ -85,7 +85,6 @@ async function init() {
       }
       return a.name.localeCompare(b.name);
     });
-    
     // Standard competition ranking: genuinely tied rows share a rank (1,2,2,4)
     // instead of getting arbitrary distinct ranks from the sort order.
     rows.forEach((r, i) => {
