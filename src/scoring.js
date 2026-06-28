@@ -28,7 +28,23 @@ export const PERFECT_TOTAL =
 // 148
 
 const KNOCKOUT_STAGES = ['r32', 'r16', 'qf', 'sf', 'final'];
-
+function actualAdvancersForStage(matchResults, stage) {
+  const out = new Set();
+  for (const matchId of STAGE_MATCHES[stage]) {
+    const r = matchResults[matchId];
+    if (r?.played && r.winner) out.add(r.winner);
+  }
+  return out;
+}
+ 
+function playerAdvancersForStage(playerBracket, stage) {
+  const out = new Set();
+  for (const matchId of STAGE_MATCHES[stage]) {
+    const pick = playerBracket[matchId];
+    if (pick) out.add(pick);
+  }
+  return out;
+}
 const ZERO_BREAKDOWN = () => ({
   groups: 0, wildcards: 0, r32: 0, r16: 0, qf: 0, sf: 0, final: 0, total: 0,
 });
@@ -64,13 +80,14 @@ export function scorePlayer(picks, results) {
     }
   }
 
-  // Knockout stages: per-stage points for picking the actual winner of each
-  // played match. Unplayed matches and matches missing a winner are skipped.
+// Knockout stages: per-stage points for each team the player correctly picked
+// to advance from that round, regardless of exact match slot.
   for (const stage of KNOCKOUT_STAGES) {
-    for (const matchId of STAGE_MATCHES[stage]) {
-      const r = matchResults[matchId];
-      if (!r || !r.played || !r.winner) continue;
-      if (playerBracket[matchId] === r.winner) out[stage] += STAGE_POINTS[stage];
+    const actualAdvancers = actualAdvancersForStage(matchResults, stage);
+    if (!actualAdvancers.size) continue;
+    
+    for (const pick of playerAdvancersForStage(playerBracket, stage)) {
+      if (actualAdvancers.has(pick)) out[stage] += STAGE_POINTS[stage];
     }
   }
 
