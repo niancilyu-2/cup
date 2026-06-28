@@ -2842,7 +2842,24 @@ body.page-watch {
   content: '✗';
   color: var(--lose);
 }
-
+.bracket-slot.is-eliminated .team-pill {
+  position: relative;
+  opacity: 0.58;
+  filter: grayscale(0.35);
+}
+.bracket-slot.is-eliminated .team-pill::after {
+  content: '';
+  position: absolute;
+  left: -0.18rem;
+  right: -0.18rem;
+  top: 50%;
+  border-top: 2px solid rgba(238, 244, 255, 0.42);
+  transform: rotate(-4deg);
+  pointer-events: none;
+}
+.bracket-slot.is-eliminated:not(.is-winner) {
+  color: var(--text-muted);
+}
 .bracket-match.is-played .bracket-match-meta {
   color: var(--text-faint);
 }
