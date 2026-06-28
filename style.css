@@ -2847,7 +2847,6 @@ body.page-watch {
   opacity: 0.58;
   filter: grayscale(0.35);
 }
- 
 .bracket-slot.is-eliminated .team-pill::after {
   content: '';
   position: absolute;
@@ -2858,7 +2857,6 @@ body.page-watch {
   transform: rotate(-4deg);
   pointer-events: none;
 }
- 
 .bracket-slot.is-eliminated:not(.is-winner) {
   color: var(--text-muted);
 }
