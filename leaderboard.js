@@ -75,6 +75,7 @@ async function init() {
       : null;
     rows.sort((a, b) => {
       if (b.points !== a.points) return b.points - a.points;
+      if (b.maxPossible !== a.maxPossible) return b.maxPossible - a.maxPossible;
       const da = tbDist(a);
       const db = tbDist(b);
       if (da != null || db != null) {
@@ -82,14 +83,15 @@ async function init() {
         if (db == null) return -1;
         if (da !== db) return da - db;
       }
-      // Display-only determinism for full ties (rank sharing is unaffected).
       return a.name.localeCompare(b.name);
     });
+    
     // Standard competition ranking: genuinely tied rows share a rank (1,2,2,4)
     // instead of getting arbitrary distinct ranks from the sort order.
     rows.forEach((r, i) => {
       const prev = rows[i - 1];
       const tiedWithPrev = prev && r.points === prev.points &&
+        r.maxPossible === prev.maxPossible &&
         (tbDist(r) ?? Infinity) === (tbDist(prev) ?? Infinity);
       r.rank = tiedWithPrev ? prev.rank : i + 1;
     });
