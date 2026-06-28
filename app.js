@@ -1025,10 +1025,8 @@ function renderWildcardsSection() {
       const atMax = count >= 8 && !active;
       const teamName = team ? team.name : '—';
       const outcome = groupOutcomeFor(g.code);
-      const wildcardCorrect = active
-        ? !!outcome?.third_advances && p.third === outcome.third
-        : !outcome?.third_advances;
-      const mark = (outcome && allGroupsDecided()) ? pickMarkHTML(wildcardCorrect) : '';
+      const wildcardPointEarned = active && !!outcome?.third_advances && p.third === outcome.third;
+      const mark = (outcome && allGroupsDecided() && wildcardPointEarned) ? pickMarkHTML(true) : '';
       return `
         <button type="button" class="wildcard-card ${active ? 'is-active' : ''}"
                 data-group="${g.code}"
