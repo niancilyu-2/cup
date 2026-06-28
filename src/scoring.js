@@ -56,11 +56,13 @@ export function scorePlayer(picks, results) {
   // 3rd-place team actually advanced. Max 8 — both sets are size 8 in a
   // valid pick, so the score is |picked ∩ actual|.
   for (const code of Object.keys(groupOutcomes)) {
-    const o = groupOutcomes[code];
-    const p = playerGroups[code];
-    if (!p) continue;
-    if (p.advances && o.third_advances) out.wildcards += STAGE_POINTS.wildcards;
+  const o = groupOutcomes[code];
+  const p = playerGroups[code];
+  if (!p) continue;
+  if (p.advances && o.third_advances && p.third === o.third) {
+    out.wildcards += STAGE_POINTS.wildcards;
   }
+}
 
   // Knockout stages: per-stage points for picking the actual winner of each
   // played match. Unplayed matches and matches missing a winner are skipped.
