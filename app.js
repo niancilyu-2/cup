@@ -3,7 +3,7 @@
 
 import { lookupAssignment } from './src/wildcards.js';
 import { buildTournamentResults } from './src/results.js';
-import { buildReachability } from './src/projection.js';
+import { buildReachability, isOutOfContention } from './src/projection.js';
 import { computeGroupStandings } from './src/standings.js';
 
 // Single-phase model: everything (groups + bracket + tiebreaker) is editable
@@ -133,7 +133,7 @@ function allGroupsDecided() {
 function pickMarkHTML(correct) {
   return correct
     ? '<span class="pick-mark is-correct" aria-label="Correct">✓</span>'
-    : '<span class="pick-mark is-wrong" aria-label="Wrong">✗</span>';
+    : '';
 }
 
 // Live group-stage standing per team for the picks page, so players can see how
@@ -1841,7 +1841,13 @@ function resultFor(matchId) {
   const r = state.results?.matchResults?.[matchId];
   return r && r.played ? r : null;
 }
-
+function teamAdvancedFromStage(stage, teamCode) {
+  if (!stage || stage === 'group' || !teamCode) return false;
+  return state.matches.some((m) => {
+    const r = state.results?.matchResults?.[m.id];
+    return m.stage === stage && r?.played && r.winner === teamCode;
+  });
+}
 function matchCellHTML(matchId) {
   const match = state.matches.find((m) => m.id === matchId);
   if (!match) return '';
@@ -1858,13 +1864,10 @@ function matchCellHTML(matchId) {
 
   const slotHTML = (position, team) => {
     const isWinner = team && winner === team;
-    let resultClass = '';
-    if (result && isWinner) {
-      resultClass = team === result.winner ? ' is-correct' : ' is-wrong';
-    }
-    const impossibleHere = !!(team && state.bracketReach && !state.bracketReach.participants(matchId).has(team));
-    const wrongCompletedPick = !!(result && isWinner && team !== result.winner);
-    const strikeClass = (impossibleHere || wrongCompletedPick) ? ' is-eliminated' : '';
+    const earnedStagePoint = !!(isWinner && teamAdvancedFromStage(match.stage, team));
+    const resultClass = earnedStagePoint ? ' is-correct' : '';
+    const eliminated = !!(team && state.bracketReach && isOutOfContention(state.bracketReach, team));
+    const strikeClass = eliminated ? ' is-eliminated' : '';
     const pill = teamPillHTML(team, { placeholder: '?' });
     if (!team || !canAdvance || disabled) {
       return `<div class="bracket-slot bracket-slot--readonly ${isWinner ? 'is-winner' : ''}${resultClass}${strikeClass}">${pill}</div>`;
